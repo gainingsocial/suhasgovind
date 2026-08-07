@@ -1,0 +1,9 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+  - 'packages/providers/*'
+  - 'workers/*'
+  - 'workflows/*'
+
+# Keep framework versions deterministic. Per plan §4.2 "Deployment rule":
+# do not allow unattended major framework upgrades.

@@ -1,0 +1,9 @@
+node_modules
+dist
+coverage
+.turbo
+.next
+.open-next
+.wrangler
+pnpm-lock.yaml
+packages/db/migrations/**/*.sql
