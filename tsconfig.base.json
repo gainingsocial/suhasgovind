@@ -3,6 +3,11 @@
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2023"],
+    // Every runtime package in this repo targets the Cloudflare Workers runtime, so its
+    // types are the ambient environment: `crypto`, `fetch`, `Request`, R2, Queues,
+    // Durable Objects and Workflows. Deliberately NOT `DOM` — that would let browser-only
+    // globals typecheck in code that has no browser. `apps/web` overrides this.
+    "types": ["@cloudflare/workers-types"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "moduleDetection": "force",

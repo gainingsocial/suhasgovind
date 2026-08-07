@@ -2,6 +2,7 @@
   "name": "gaining-social",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "Agent-Native Unified Social API — social execution infrastructure for software and AI agents",
   "packageManager": "pnpm@10.34.5",
   "engines": {
@@ -25,13 +26,15 @@
     "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm boundaries && pnpm build"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260804.1",
+    "@eslint/js": "^10.0.1",
     "@types/node": "^22.15.0",
     "@vitest/coverage-v8": "^4.1.10",
     "dependency-cruiser": "^17.0.0",
     "eslint": "^10.8.0",
     "prettier": "^3.9.6",
     "turbo": "^2.10.8",
-    "typescript": "^7.0.2",
+    "typescript": "^6.0.3",
     "typescript-eslint": "^8.66.0",
     "vitest": "^4.1.10"
   }
