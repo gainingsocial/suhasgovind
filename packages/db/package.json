@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@gs/contracts": "workspace:*",
+    "@gs/domain": "workspace:*",
     "@gs/errors": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "postgres": "^3.4.9"

@@ -66,6 +66,9 @@ importers:
       '@gs/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@gs/domain':
+        specifier: workspace:*
+        version: link:../domain
       '@gs/errors':
         specifier: workspace:*
         version: link:../errors

@@ -87,6 +87,18 @@ module.exports = {
       to: { path: '^(apps|workers|workflows|packages/(db|domain|events))/' },
     },
 
+    // ---- dependencies point inward, toward the domain ----
+    {
+      name: 'domain-must-stay-pure',
+      severity: 'error',
+      comment:
+        'Clean-architecture direction: infrastructure depends on the domain, never the ' +
+        'reverse. @gs/db may import @gs/domain (it must enforce domain invariants); ' +
+        '@gs/domain may not import @gs/db, a provider, or an app.',
+      from: { path: '^packages/domain/' },
+      to: { path: '^(apps|workers|workflows|packages/(db|providers))/' },
+    },
+
     // ---- contracts stay dependency-light so SDKs can consume them ----
     {
       name: 'contracts-must-stay-portable',
