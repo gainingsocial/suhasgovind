@@ -87,13 +87,15 @@ create API key → create profile → connect a provider → upload media
 
 | Command             | What it does                                                  |
 | ------------------- | ------------------------------------------------------------- |
-| `pnpm ci`           | lint + typecheck + test + boundaries + build (what CI runs)    |
+| `pnpm run ci`       | Everything CI runs. `run` is required — pnpm reserves bare `ci` |
 | `pnpm test`         | Vitest across all packages                                     |
 | `pnpm typecheck`    | TypeScript across the workspace                                |
 | `pnpm boundaries`   | dependency-cruiser — enforces the layering rules in ADR-004    |
 | `pnpm db:generate`  | Generate a migration from the Drizzle schema                   |
 | `pnpm db:migrate`   | Apply pending migrations                                       |
 | `pnpm openapi:emit` | Regenerate `packages/contracts/openapi/openapi.json`           |
+| `pnpm --filter @gs/api dev`    | Run the API Worker locally via wrangler             |
+| `pnpm --filter @gs/api deploy` | Deploy the API Worker to Cloudflare                 |
 | `pnpm format`       | Prettier                                                       |
 
 ## Non-negotiable rules

@@ -1,0 +1,24 @@
+# Local secrets for `wrangler dev` (plan §84). Copy to `apps/api/.dev.vars`.
+#
+# `vars` in wrangler.jsonc holds non-secret configuration and is committed.
+# Anything secret belongs here locally, and in Worker Secrets / Secrets Store in
+# a deployed environment (plan §6.6) — never in wrangler.jsonc.
+#
+# NOTHING in this file is a real secret.
+
+# Direct Postgres URL, used only until a Hyperdrive binding exists.
+DATABASE_URL="postgresql://gs_app:password@127.0.0.1:54322/postgres"
+
+# Application-layer credential encryption (plan §7.1).
+# Generate with: node scripts/generate-secrets.mjs
+CREDENTIAL_KEK_V1="REPLACE_ME_base64_32_bytes"
+CREDENTIAL_KEK_ACTIVE_VERSION="1"
+
+# API key hashing pepper (plan §38).
+API_KEY_HASH_PEPPER="REPLACE_ME_base64_32_bytes"
+
+# Outbound customer webhook signing root (plan §36).
+WEBHOOK_SIGNING_ROOT="REPLACE_ME_base64_32_bytes"
+
+# Hosted connect session signing (plan §22).
+CONNECT_SESSION_SIGNING_KEY="REPLACE_ME_base64_32_bytes"

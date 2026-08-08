@@ -1,0 +1,71 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "gs-api",
+  "main": "src/index.ts",
+  // Pinned deliberately. Plan §4.2 "Deployment rule": no unattended runtime upgrades.
+  "compatibility_date": "2026-08-01",
+  // Node built-ins used by `postgres` and the crypto helpers once the DB path is wired.
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "vars": {
+    "ENVIRONMENT": "test",
+    "SERVICE_VERSION": "0.1.0",
+    "LOG_LEVEL": "info"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "IDEMPOTENCY",
+      "id": "a52d1bbd993c49798cabd91e325a78b6"
+    }
+  ],
+  // Producer bindings only. The consumers live in workers/publisher and
+  // workers/customer-webhooks, which do not exist yet — a consumer declared here would
+  // bind this Worker to messages it has no handler for.
+  "queues": {
+    "producers": [
+      {
+        "binding": "PUBLISH_QUEUE",
+        "queue": "gs-publish"
+      },
+      {
+        "binding": "WEBHOOK_QUEUE",
+        "queue": "gs-webhook-delivery"
+      }
+    ]
+  },
+  // Not yet bound, and both are blocked on something outside this config:
+  //   hyperdrive — needs the Supabase database password, which we do not hold
+  //   r2_buckets — needs R2 enabled on the account
+  // Env declares each optional, so adding the binding here is the only change required.
+  "env": {
+    "production": {
+      "vars": {
+        "ENVIRONMENT": "live",
+        "SERVICE_VERSION": "0.1.0",
+        "LOG_LEVEL": "info"
+      },
+      "kv_namespaces": [
+        {
+          "binding": "IDEMPOTENCY",
+          "id": "a52d1bbd993c49798cabd91e325a78b6"
+        }
+      ],
+      "queues": {
+        "producers": [
+          {
+            "binding": "PUBLISH_QUEUE",
+            "queue": "gs-publish"
+          },
+          {
+            "binding": "WEBHOOK_QUEUE",
+            "queue": "gs-webhook-delivery"
+          }
+        ]
+      }
+    }
+  }
+}

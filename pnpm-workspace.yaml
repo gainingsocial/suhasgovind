@@ -7,3 +7,9 @@ packages:
 
 # Keep framework versions deterministic. Per plan §4.2 "Deployment rule":
 # do not allow unattended major framework upgrades.
+
+# Postinstall scripts are blocked by default. workerd is the Workers runtime binary that
+# `wrangler dev` and `wrangler deploy` execute — without its postinstall there is no
+# runtime to build against.
+onlyBuiltDependencies:
+  - workerd

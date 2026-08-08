@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./ids": "./src/common/ids.ts"
+    "./ids": "./src/common/ids.ts",
+    "./http": "./src/http/health.ts"
   },
   "scripts": {
     "lint": "eslint src",

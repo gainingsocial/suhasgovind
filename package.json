@@ -18,12 +18,12 @@
     "test:coverage": "vitest run --coverage",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\"",
-    "boundaries": "depcruise --config .dependency-cruiser.cjs packages apps workers workflows",
+    "boundaries": "depcruise --config .dependency-cruiser.cjs packages apps",
     "db:generate": "pnpm --filter @gs/db db:generate",
     "db:migrate": "pnpm --filter @gs/db db:migrate",
     "openapi:emit": "pnpm --filter @gs/api openapi:emit",
     "openapi:check": "pnpm --filter @gs/api openapi:check",
-    "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm boundaries && pnpm build"
+    "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm boundaries && pnpm openapi:check && pnpm build"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260804.1",

@@ -1,0 +1,98 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "GainingSocial Unified Social API",
+    "version": "0.1.0",
+    "description": "Social execution infrastructure for software and AI agents. All timestamps are UTC ISO-8601."
+  },
+  "servers": [
+    {
+      "url": "https://api.gainingsocial.com"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "Liveness probe",
+        "description": "Returns 200 whenever the Worker can serve requests. Unauthenticated, and returns no tenant data. Does not check database connectivity.",
+        "tags": [
+          "Operations"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The Worker is serving requests.",
+            "headers": {
+              "x-request-id": {
+                "description": "Echoed request identifier. Quote this when reporting a problem.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "x-trace-id": {
+                "description": "Trace identifier correlating this request across services.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "const": "ok"
+                    },
+                    "environment": {
+                      "type": "string",
+                      "enum": [
+                        "development",
+                        "test",
+                        "live"
+                      ]
+                    },
+                    "version": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "environment",
+                    "version",
+                    "timestamp",
+                    "requestId"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Project-scoped API key. Every authenticated route requires one."
+      }
+    }
+  },
+  "x-error-codes": {
+    "description": "Stable, documented error codes. See docs/errors/.",
+    "notFoundAndServerCodes": "- `PROFILE_NOT_FOUND` (404) — No such profile.\n- `CONNECTION_NOT_FOUND` (404) — No such connection.\n- `DESTINATION_NOT_FOUND` (404) — No such destination.\n- `MEDIA_NOT_FOUND` (404) — No such media asset.\n- `POST_NOT_FOUND` (404) — No such post.\n- `TARGET_NOT_FOUND` (404) — No such publish target.\n- `WEBHOOK_NOT_FOUND` (404) — No such webhook endpoint.\n- `DELIVERY_NOT_FOUND` (404) — No such webhook delivery.\n- `RESOURCE_NOT_FOUND` (404) — The requested resource does not exist.\n- `PROVIDER_UNAVAILABLE` (503) — The social provider is temporarily unavailable.\n- `PROVIDER_TIMEOUT` (504) — The social provider did not respond in time.\n- `UNKNOWN_PROVIDER_ERROR` (502) — The provider returned an error we could not classify.\n- `INTERNAL_ERROR` (500) — An unexpected error occurred.\n- `NOT_IMPLEMENTED` (501) — This operation is not implemented yet."
+  }
+}

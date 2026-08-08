@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["@cloudflare/workers-types", "node"],
+    // Node's type stripping resolves the specifier it is given, with no .js -> .ts
+    // remapping, so scripts run through --experimental-strip-types must import the real
+    // .ts path. Safe here because the package never emits (noEmit is inherited).
+    "allowImportingTsExtensions": true
+  },
+  "include": ["src/**/*.ts", "scripts/**/*.ts"]
+}
