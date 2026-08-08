@@ -77,22 +77,250 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR` — An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me": {
+      "get": {
+        "operationId": "getMe",
+        "summary": "Describe the presenting API key",
+        "description": "Returns the tenant and scopes the presented key resolves to. Requires a valid key but no particular scope — a key may always describe itself, and requiring a scope would stop a misconfigured key from discovering why it is misconfigured.",
+        "tags": [
+          "Identity"
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The key is valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "api_key_id": {
+                      "type": "string"
+                    },
+                    "organization_id": {
+                      "type": "string"
+                    },
+                    "project_id": {
+                      "type": "string"
+                    },
+                    "environment_id": {
+                      "type": "string"
+                    },
+                    "environment": {
+                      "type": "string",
+                      "enum": [
+                        "test",
+                        "live"
+                      ]
+                    },
+                    "scopes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "profiles:read",
+                          "profiles:write",
+                          "connections:read",
+                          "connections:write",
+                          "destinations:read",
+                          "media:read",
+                          "media:write",
+                          "posts:read",
+                          "posts:write",
+                          "capabilities:read",
+                          "webhooks:manage",
+                          "analytics:read",
+                          "inbox:read",
+                          "inbox:write"
+                        ]
+                      }
+                    },
+                    "restricted_to_profile_id": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "api_key_id",
+                    "organization_id",
+                    "project_id",
+                    "environment_id",
+                    "environment",
+                    "scopes",
+                    "restricted_to_profile_id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTHENTICATION_REQUIRED` — An API key is required. Send it as `Authorization: Bearer sk_live_...`.\n\n`API_KEY_MALFORMED` — The API key is malformed. Expected a key beginning with `sk_test_` or `sk_live_`.\n\n`API_KEY_INVALID` — The API key is not valid.\n\n`API_KEY_REVOKED` — This API key has been revoked.\n\n`API_KEY_EXPIRED` — This API key has expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR` — An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
     }
   },
   "components": {
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "retryable": {
+                "type": "boolean"
+              },
+              "docs_url": {
+                "type": "string"
+              },
+              "request_id": {
+                "type": "string"
+              },
+              "trace_id": {
+                "type": "string"
+              },
+              "param": {
+                "type": "string"
+              },
+              "provider": {
+                "type": "string"
+              },
+              "destination_id": {
+                "type": "string"
+              },
+              "post_id": {
+                "type": "string"
+              },
+              "target_id": {
+                "type": "string"
+              },
+              "retry_after": {
+                "type": "string"
+              },
+              "agent_action": {
+                "type": "string"
+              },
+              "suggested_actions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "href": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "description"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "type",
+              "code",
+              "message",
+              "retryable",
+              "docs_url",
+              "request_id",
+              "trace_id"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false
+      }
+    },
     "securitySchemes": {
       "apiKey": {
         "type": "http",
         "scheme": "bearer",
-        "description": "Project-scoped API key. Every authenticated route requires one."
+        "description": "Project-scoped API key, `sk_live_…` or `sk_test_…`, sent as a bearer token. The key determines the tenant and environment; neither can be named by the caller."
       }
     }
-  },
-  "x-error-codes": {
-    "description": "Stable, documented error codes. See docs/errors/.",
-    "notFoundAndServerCodes": "- `PROFILE_NOT_FOUND` (404) — No such profile.\n- `CONNECTION_NOT_FOUND` (404) — No such connection.\n- `DESTINATION_NOT_FOUND` (404) — No such destination.\n- `MEDIA_NOT_FOUND` (404) — No such media asset.\n- `POST_NOT_FOUND` (404) — No such post.\n- `TARGET_NOT_FOUND` (404) — No such publish target.\n- `WEBHOOK_NOT_FOUND` (404) — No such webhook endpoint.\n- `DELIVERY_NOT_FOUND` (404) — No such webhook delivery.\n- `RESOURCE_NOT_FOUND` (404) — The requested resource does not exist.\n- `PROVIDER_UNAVAILABLE` (503) — The social provider is temporarily unavailable.\n- `PROVIDER_TIMEOUT` (504) — The social provider did not respond in time.\n- `UNKNOWN_PROVIDER_ERROR` (502) — The provider returned an error we could not classify.\n- `INTERNAL_ERROR` (500) — An unexpected error occurred.\n- `NOT_IMPLEMENTED` (501) — This operation is not implemented yet."
   }
 }

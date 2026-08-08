@@ -91,25 +91,11 @@ export const apiKeyScopesRelations = relations(apiKeyScopes, ({ one }) => ({
   apiKey: one(apiKeys, { fields: [apiKeyScopes.apiKeyId], references: [apiKeys.id] }),
 }));
 
-/** Every scope the API recognizes (plan §38). Enforced in `packages/auth`. */
-export const API_SCOPES = [
-  'profiles:read',
-  'profiles:write',
-  'connections:read',
-  'connections:write',
-  'destinations:read',
-  'media:read',
-  'media:write',
-  'posts:read',
-  'posts:write',
-  'capabilities:read',
-  'webhooks:manage',
-  'analytics:read',
-  'inbox:read',
-  'inbox:write',
-] as const;
-
-export type ApiScope = (typeof API_SCOPES)[number];
+/**
+ * Every scope the API recognizes (plan §38). Defined in `@gs/contracts` and re-exported
+ * here: `@gs/auth` enforces them and must not depend on the database package.
+ */
+export { API_SCOPES, type ApiScope } from '@gs/contracts/scopes';
 
 export type ApiKey = typeof apiKeys.$inferSelect;
 export type NewApiKey = typeof apiKeys.$inferInsert;

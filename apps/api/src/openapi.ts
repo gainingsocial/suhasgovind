@@ -1,5 +1,5 @@
-import { HealthResponseSchema } from '@gs/contracts/http';
-import { ERROR_CODE_METADATA } from '@gs/errors';
+import { ErrorEnvelopeSchema, HealthResponseSchema, MeResponseSchema } from '@gs/contracts/http';
+import { ERROR_CODE_METADATA, type ErrorCode } from '@gs/errors';
 import { z } from 'zod';
 
 /**
@@ -22,14 +22,33 @@ function jsonSchema(schema: z.ZodType): Record<string, unknown> {
 }
 
 /**
- * Error codes are part of the contract and are documented per route (Rule 5).
- * The catalog in `@gs/errors` is the single source, so this list cannot go stale.
+ * Error responses for a route, built from the catalog in `@gs/errors` (Rule 5:
+ * documented error codes). The catalog is the single source, so a documented code cannot
+ * drift from the one the route actually throws.
+ *
+ * Codes are grouped by status, because one HTTP status can carry several codes and the
+ * response object is keyed by status.
  */
-function documentedErrorCodes(): string {
-  return Object.entries(ERROR_CODE_METADATA)
-    .filter(([, meta]) => meta.status === 404 || meta.status >= 500)
-    .map(([code, meta]) => `- \`${code}\` (${meta.status}) — ${meta.message}`)
-    .join('\n');
+function errorResponses(codes: readonly ErrorCode[]): Record<string, unknown> {
+  const byStatus = new Map<number, ErrorCode[]>();
+  for (const code of codes) {
+    const { status } = ERROR_CODE_METADATA[code];
+    byStatus.set(status, [...(byStatus.get(status) ?? []), code]);
+  }
+
+  return Object.fromEntries(
+    [...byStatus.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([status, group]) => [
+        String(status),
+        {
+          description: group
+            .map((code) => `\`${code}\` — ${ERROR_CODE_METADATA[code].message}`)
+            .join('\n\n'),
+          content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+        },
+      ]),
+  );
 }
 
 export function buildOpenApiDocument(serverUrl: string): Record<string, unknown> {
@@ -68,23 +87,52 @@ export function buildOpenApiDocument(serverUrl: string): Record<string, unknown>
               },
               content: { 'application/json': { schema: jsonSchema(HealthResponseSchema) } },
             },
+            ...errorResponses(['INTERNAL_ERROR']),
+          },
+        },
+      },
+      '/v1/me': {
+        get: {
+          operationId: 'getMe',
+          summary: 'Describe the presenting API key',
+          description:
+            'Returns the tenant and scopes the presented key resolves to. Requires a ' +
+            'valid key but no particular scope — a key may always describe itself, and ' +
+            'requiring a scope would stop a misconfigured key from discovering why it is ' +
+            'misconfigured.',
+          tags: ['Identity'],
+          security: [{ apiKey: [] }],
+          responses: {
+            '200': {
+              description: 'The key is valid.',
+              content: { 'application/json': { schema: jsonSchema(MeResponseSchema) } },
+            },
+            ...errorResponses([
+              'AUTHENTICATION_REQUIRED',
+              'API_KEY_MALFORMED',
+              'API_KEY_INVALID',
+              'API_KEY_REVOKED',
+              'API_KEY_EXPIRED',
+              'INTERNAL_ERROR',
+            ]),
           },
         },
       },
     },
     components: {
+      schemas: {
+        Error: jsonSchema(ErrorEnvelopeSchema),
+      },
       securitySchemes: {
-        // Registered now so routes added later declare a scope rather than inventing one.
         apiKey: {
           type: 'http',
           scheme: 'bearer',
-          description: 'Project-scoped API key. Every authenticated route requires one.',
+          description:
+            'Project-scoped API key, `sk_live_…` or `sk_test_…`, sent as a bearer token. ' +
+            'The key determines the tenant and environment; neither can be named by the ' +
+            'caller.',
         },
       },
-    },
-    'x-error-codes': {
-      description: 'Stable, documented error codes. See docs/errors/.',
-      notFoundAndServerCodes: documentedErrorCodes(),
     },
   };
 }

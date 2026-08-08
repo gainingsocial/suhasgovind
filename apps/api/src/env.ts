@@ -1,3 +1,4 @@
+import type { AuthenticatedPrincipal } from '@gs/auth';
 import type { DeploymentEnvironment } from '@gs/contracts/http';
 import type { Logger, TraceContext } from '@gs/observability';
 
@@ -25,6 +26,14 @@ export interface Env {
 
   /** Pooled Supabase Postgres (plan §5.2, ADR-003). Absent until Hyperdrive exists. */
   HYPERDRIVE?: Hyperdrive;
+  /** Direct connection string, used only where Hyperdrive is not bound. */
+  DATABASE_URL?: string;
+
+  /**
+   * Keyed-hash pepper for API keys (plan §38). A Worker Secret, never a `var` — a `var`
+   * lives in wrangler.jsonc and would be committed.
+   */
+  API_KEY_HASH_PEPPER?: string;
 
   /** Uploaded and derived media (plan §6.5). Absent until R2 is enabled. */
   MEDIA?: R2Bucket;
@@ -36,5 +45,7 @@ export interface AppEnv {
   Variables: {
     trace: TraceContext;
     logger: Logger;
+    /** Set by the authenticate middleware; absent on public routes. */
+    principal: AuthenticatedPrincipal;
   };
 }

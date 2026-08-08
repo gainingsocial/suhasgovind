@@ -1,21 +1,19 @@
 {
-  "name": "@gs/contracts",
+  "name": "@gs/auth",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./ids": "./src/common/ids.ts",
-    "./scopes": "./src/common/scopes.ts",
-    "./http": "./src/http/index.ts"
+    ".": "./src/index.ts"
   },
   "scripts": {
     "lint": "eslint src",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@gs/errors": "workspace:*",
-    "zod": "^4.4.3"
+    "@gs/contracts": "workspace:*",
+    "@gs/crypto": "workspace:*",
+    "@gs/errors": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^6.0.3"

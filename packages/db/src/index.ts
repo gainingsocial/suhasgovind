@@ -10,6 +10,12 @@ export { createDatabaseFromEnv, createDatabaseHandle, schema } from './client.js
 
 export * from './schema/index.js';
 
+export {
+  createApiKeyRepository,
+  findApiKeyByHash,
+  touchApiKeyLastUsed,
+} from './repositories/api-keys.js';
+
 export type {
   CompleteReservationInput,
   ReservationOutcome,

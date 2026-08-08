@@ -15,6 +15,7 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@gs/auth": "workspace:*",
     "@gs/contracts": "workspace:*",
     "@gs/domain": "workspace:*",
     "@gs/errors": "workspace:*",
