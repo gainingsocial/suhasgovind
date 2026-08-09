@@ -26,6 +26,9 @@ module.exports = {
           '\\.d\\.ts$',
           '(^|/)tsconfig\\.json$',
           '(^|/)(babel|webpack)\\.config\\.(js|cjs|mjs|ts)$',
+          // Framework config is loaded by the framework, not imported by anything. It is
+          // an orphan by design, and flagging it trains people to ignore the warning.
+          '(^|/)(next|postcss|open-next|tailwind)\\.config\\.(js|cjs|mjs|ts)$',
         ],
       },
       to: {},

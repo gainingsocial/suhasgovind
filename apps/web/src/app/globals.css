@@ -1,0 +1,164 @@
+@import 'tailwindcss';
+
+/**
+ * Design tokens.
+ *
+ * A publishing dashboard is read far more than it is clicked: people come here to find
+ * out whether something went out, and why it did not. So the palette is deliberately
+ * quiet, and colour is reserved for status — if everything is colourful, a failed target
+ * does not stand out (plan §61, "never hide failed target states").
+ *
+ * Both themes are defined here rather than only overriding in dark mode, so no colour has
+ * its sole definition inside a media query.
+ */
+
+@theme {
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    'Noto Sans', sans-serif;
+  --font-mono:
+    ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, Consolas, monospace;
+
+  /* Ink and surface. Near-black rather than pure black: #000 on a screen has more
+     contrast than paper ever does and reads as harsh over long sessions. */
+  --color-ink-950: oklch(0.16 0.012 265);
+  --color-ink-900: oklch(0.24 0.012 265);
+  --color-ink-700: oklch(0.42 0.012 265);
+  --color-ink-500: oklch(0.58 0.012 265);
+  --color-ink-300: oklch(0.78 0.008 265);
+  --color-ink-200: oklch(0.88 0.006 265);
+  --color-ink-100: oklch(0.94 0.004 265);
+  --color-ink-50: oklch(0.975 0.003 265);
+
+  /* One accent, used for primary action and focus only. */
+  --color-brand-600: oklch(0.52 0.19 265);
+  --color-brand-500: oklch(0.60 0.19 265);
+  --color-brand-100: oklch(0.94 0.04 265);
+
+  /* Status. Each has a text-weight and a wash-weight so a badge and a banner can share
+     a single semantic name. */
+  --color-ok-600: oklch(0.55 0.14 155);
+  --color-ok-100: oklch(0.94 0.05 155);
+  --color-warn-600: oklch(0.62 0.15 75);
+  --color-warn-100: oklch(0.95 0.06 75);
+  --color-fail-600: oklch(0.56 0.19 25);
+  --color-fail-100: oklch(0.95 0.05 25);
+  --color-busy-600: oklch(0.58 0.13 240);
+  --color-busy-100: oklch(0.95 0.04 240);
+
+  --radius-card: 0.75rem;
+}
+
+:root {
+  --surface: var(--color-ink-50);
+  --surface-raised: white;
+  --surface-sunken: var(--color-ink-100);
+  --border: var(--color-ink-200);
+  --border-strong: var(--color-ink-300);
+  --text: var(--color-ink-950);
+  --text-muted: var(--color-ink-700);
+  --text-subtle: var(--color-ink-500);
+
+  color-scheme: light;
+}
+
+/* System preference, only when the user has not chosen explicitly. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --surface: oklch(0.18 0.012 265);
+    --surface-raised: oklch(0.22 0.012 265);
+    --surface-sunken: oklch(0.15 0.012 265);
+    --border: oklch(0.30 0.012 265);
+    --border-strong: oklch(0.38 0.012 265);
+    --text: var(--color-ink-50);
+    --text-muted: var(--color-ink-300);
+    --text-subtle: var(--color-ink-500);
+
+    --color-ok-100: oklch(0.28 0.06 155);
+    --color-warn-100: oklch(0.30 0.07 75);
+    --color-fail-100: oklch(0.28 0.07 25);
+    --color-busy-100: oklch(0.28 0.06 240);
+    --color-brand-100: oklch(0.28 0.07 265);
+
+    color-scheme: dark;
+  }
+}
+
+/* Explicit choice wins in both directions. */
+:root[data-theme='dark'] {
+  --surface: oklch(0.18 0.012 265);
+  --surface-raised: oklch(0.22 0.012 265);
+  --surface-sunken: oklch(0.15 0.012 265);
+  --border: oklch(0.30 0.012 265);
+  --border-strong: oklch(0.38 0.012 265);
+  --text: var(--color-ink-50);
+  --text-muted: var(--color-ink-300);
+  --text-subtle: var(--color-ink-500);
+
+  --color-ok-100: oklch(0.28 0.06 155);
+  --color-warn-100: oklch(0.30 0.07 75);
+  --color-fail-100: oklch(0.28 0.07 25);
+  --color-busy-100: oklch(0.28 0.06 240);
+  --color-brand-100: oklch(0.28 0.07 265);
+
+  color-scheme: dark;
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  /* Stops iOS Safari inflating text in landscape, which breaks careful layouts. */
+  text-size-adjust: 100%;
+}
+
+/**
+ * Focus.
+ *
+ * Visible on keyboard focus only, never suppressed. Plan §61 requires keyboard
+ * navigation, and `outline: none` is the single most common way a dashboard becomes
+ * unusable without a mouse.
+ */
+:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Respect a reduced-motion preference rather than animating regardless. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Skeleton shimmer for async views (plan §61). */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-sunken);
+}
+
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 8%), transparent);
+  animation: shimmer 1.6s infinite;
+}
