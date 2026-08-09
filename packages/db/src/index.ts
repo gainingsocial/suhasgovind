@@ -143,3 +143,12 @@ export {
   releaseRefreshLock,
   storeCredential,
 } from './repositories/credentials.js';
+
+export type { ApiKeySummary, CreateApiKeyInput, MembershipContext } from './repositories/api-key-admin.js';
+export {
+  createApiKey,
+  findMembershipForEnvironment,
+  listApiKeys,
+  listEnvironmentsForUser,
+  revokeApiKey,
+} from './repositories/api-key-admin.js';

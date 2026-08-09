@@ -1,4 +1,4 @@
-import type { AuthenticatedPrincipal } from '@gs/auth';
+import type { AuthenticatedPrincipal, DashboardUser } from '@gs/auth';
 import type { DeploymentEnvironment } from '@gs/contracts/http';
 import type { Database } from '@gs/db';
 import type { Logger, TraceContext } from '@gs/observability';
@@ -55,6 +55,12 @@ export interface Env {
 
   /** Root the per-endpoint webhook signing secrets derive from (plan §36, ADR-007). */
   WEBHOOK_SIGNING_ROOT?: string;
+
+  /**
+   * Supabase project URL, used to fetch the public JWKS that verifies dashboard sessions
+   * (plan §39). Not a secret — it is a public discovery endpoint.
+   */
+  SUPABASE_URL?: string;
 }
 
 /** Hono generic: bindings plus the per-request context the middleware installs. */
@@ -67,5 +73,7 @@ export interface AppEnv {
     principal: AuthenticatedPrincipal;
     /** Set by the withDatabase middleware; absent on routes that need no database. */
     db: Database;
+    /** Set by authenticateHuman; absent on machine-authenticated routes. */
+    user: DashboardUser;
   };
 }

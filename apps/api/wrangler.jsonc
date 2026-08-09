@@ -14,7 +14,10 @@
   "vars": {
     "ENVIRONMENT": "test",
     "SERVICE_VERSION": "0.1.0",
-    "LOG_LEVEL": "info"
+    "LOG_LEVEL": "info",
+    // Public discovery endpoint for the JWKS that verifies dashboard sessions (§39).
+    // Not a secret, so a var rather than a Worker Secret.
+    "SUPABASE_URL": "https://miemfmjjnsqhukxlvcmp.supabase.co"
   },
   "kv_namespaces": [
     {

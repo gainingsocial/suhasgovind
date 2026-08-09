@@ -1,5 +1,10 @@
 import {
+  ApiKeyListResponseSchema,
   CapabilitiesResponseSchema,
+  CreateApiKeyRequestSchema,
+  CreateApiKeyResponseSchema,
+  EnvironmentListResponseSchema,
+  RevokeApiKeyResponseSchema,
   CompleteMediaUploadResponseSchema,
   ConnectionListResponseSchema,
   CreateExternalMediaRequestSchema,
@@ -796,6 +801,80 @@ const ROUTES: RouteSpec[] = [
     successDescription: 'The replay was queued.',
     response: ReplayWebhookDeliveryResponseSchema,
     errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'DELIVERY_NOT_FOUND'],
+  },
+  {
+    method: 'get',
+    path: '/v1/environments',
+    operationId: 'listEnvironments',
+    summary: 'List environments you can access',
+    description:
+      '**Requires a signed-in dashboard session, not an API key.** Returns every ' +
+      'test and live environment your user is a member of, with your role in each.',
+    tags: ['Administration'],
+    scopes: [],
+    successStatus: 200,
+    successDescription: 'Environments you belong to.',
+    response: EnvironmentListResponseSchema,
+    errors: ['AUTHENTICATION_REQUIRED', 'INTERNAL_ERROR'],
+  },
+  {
+    method: 'post',
+    path: '/v1/api-keys',
+    operationId: 'createApiKey',
+    summary: 'Create an API key',
+    description:
+      '**Requires a signed-in dashboard session, not an API key.** A key cannot mint ' +
+      'another key: that would turn one leaked credential into permanent self-renewing ' +
+      'access that revoking the original does not stop.\n\n' +
+      'The key value is returned exactly once. Keys are stored hashed under a pepper, so ' +
+      'it is genuinely unrecoverable afterwards rather than merely hidden.\n\n' +
+      '`scopes` has no default — least privilege only works if stating the purpose is the ' +
+      'easy path. The environment decides the `sk_test_` / `sk_live_` prefix, not you.',
+    tags: ['Administration'],
+    scopes: [],
+    requestBody: CreateApiKeyRequestSchema,
+    successStatus: 201,
+    successDescription: 'The key, shown once.',
+    response: CreateApiKeyResponseSchema,
+    errors: ['AUTHENTICATION_REQUIRED', 'TENANT_FORBIDDEN', 'INVALID_REQUEST', 'INTERNAL_ERROR'],
+  },
+  {
+    method: 'get',
+    path: '/v1/api-keys',
+    operationId: 'listApiKeys',
+    summary: 'List API keys',
+    description:
+      '**Requires a signed-in dashboard session.** Returns each key’s searchable prefix, ' +
+      'never the key itself. Pass `environment_id` as a query parameter.',
+    tags: ['Administration'],
+    scopes: [],
+    successStatus: 200,
+    successDescription: 'Keys in the environment.',
+    response: ApiKeyListResponseSchema,
+    errors: ['AUTHENTICATION_REQUIRED', 'TENANT_FORBIDDEN', 'INVALID_REQUEST', 'INTERNAL_ERROR'],
+  },
+  {
+    method: 'post',
+    path: '/v1/api-keys/{keyId}/revoke',
+    operationId: 'revokeApiKey',
+    summary: 'Revoke an API key',
+    description:
+      '**Requires a signed-in dashboard session.** Takes effect immediately: authentication ' +
+      'reads the key’s status on every request, so the next call with it fails. There is no ' +
+      'undo. Pass `environment_id` as a query parameter.',
+    tags: ['Administration'],
+    scopes: [],
+    pathParams: [{ name: 'keyId', description: 'Public key id, `key_…`.' }],
+    successStatus: 200,
+    successDescription: 'The key is revoked.',
+    response: RevokeApiKeyResponseSchema,
+    errors: [
+      'AUTHENTICATION_REQUIRED',
+      'TENANT_FORBIDDEN',
+      'INVALID_REQUEST',
+      'RESOURCE_NOT_FOUND',
+      'INTERNAL_ERROR',
+    ],
   },
 ];
 
