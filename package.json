@@ -25,7 +25,8 @@
     "openapi:check": "pnpm --filter @gs/api openapi:check",
     "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm boundaries && pnpm openapi:check && pnpm build",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "ci:full": "pnpm run ci && pnpm test:integration"
+    "ci:full": "pnpm run ci && pnpm test:integration",
+    "setup:github": "node scripts/setup-github-actions.mjs"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260804.1",
@@ -35,6 +36,7 @@
     "dependency-cruiser": "^17.0.0",
     "dotenv": "^17.4.2",
     "eslint": "^10.8.0",
+    "libsodium-wrappers": "^0.8.4",
     "prettier": "^3.9.6",
     "turbo": "^2.10.8",
     "typescript": "^6.0.3",
