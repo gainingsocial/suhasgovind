@@ -744,3 +744,61 @@ export async function listPosts(
   const hasMore = rows.length > input.limit;
   return { rows: hasMore ? rows.slice(0, input.limit) : rows, hasMore };
 }
+
+// ---------------------------------------------------------------------------
+// Reconciliation transitions — ADR-006 Layer 4
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolve a target out of `unknown_reconciliation_required`.
+ *
+ * Guarded by the *status* rather than by a lease, and that is deliberate. By the time
+ * reconciliation runs the publishing lease is long released — the worker that timed out
+ * is gone. Using a lease guard here would mean either resurrecting a dead lease or
+ * passing an empty one, and the latter fails at the type level in Postgres.
+ *
+ * The status guard gives exactly the same protection: only one caller can win the
+ * transition out of `unknown_reconciliation_required`, because the second finds nothing
+ * to update. Two reconcilers racing therefore produce one outcome, not two.
+ */
+export async function resolveReconciliation(
+  db: Database,
+  input: {
+    targetId: string;
+    outcome: 'published' | 'retryable_failed' | 'permanent_failed';
+    providerPostId?: string | null;
+    providerPostUrl?: string | null;
+    publishedAt?: Date | null;
+    errorCode?: string | null;
+    errorMessage?: string | null;
+    nextAttemptAt?: Date | null;
+    now?: Date;
+  },
+): Promise<boolean> {
+  const now = input.now ?? new Date();
+
+  const updated = await db
+    .update(postTargets)
+    .set({
+      status: input.outcome,
+      providerPostId: input.providerPostId ?? null,
+      providerPostUrl: input.providerPostUrl ?? null,
+      publishedAt: input.outcome === 'published' ? (input.publishedAt ?? now) : null,
+      errorCode: input.errorCode ?? null,
+      errorMessage: input.errorMessage ?? null,
+      nextAttemptAt: input.nextAttemptAt ?? null,
+      leaseId: null,
+      leaseExpiresAt: null,
+      reconciledAt: now,
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(postTargets.id, input.targetId),
+        eq(postTargets.status, 'unknown_reconciliation_required'),
+      ),
+    )
+    .returning({ id: postTargets.id });
+
+  return updated.length > 0;
+}

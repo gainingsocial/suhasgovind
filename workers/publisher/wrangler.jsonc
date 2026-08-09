@@ -1,0 +1,67 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "gs-publisher",
+  "main": "src/index.ts",
+  // Pinned deliberately. Plan §4.2 "Deployment rule": no unattended runtime upgrades.
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "vars": {
+    "ENVIRONMENT": "test",
+    "SERVICE_VERSION": "0.1.0",
+    "LOG_LEVEL": "info"
+  },
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "563bb35cce9040409987142c4d631c8e"
+    }
+  ],
+  // Producer as well as consumer: a retryable failure re-enqueues itself with a delay,
+  // and reconciliation and status polling are queued rather than run inline.
+  "queues": {
+    "producers": [
+      {
+        "binding": "PUBLISH_QUEUE",
+        "queue": "gs-publish"
+      },
+      {
+        "binding": "WEBHOOK_QUEUE",
+        "queue": "gs-webhook-delivery"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "gs-publish",
+        // Small batches, low concurrency. Publishing is not latency-sensitive, and
+        // uncoordinated parallelism across isolates is exactly what trips provider rate
+        // limits (plan §29).
+        "max_batch_size": 5,
+        "max_batch_timeout": 5,
+        "max_concurrency": 3,
+        // The lease already prevents duplicate publishes, so a retry is safe. Five
+        // attempts before the DLQ, matching the target's own attempt budget.
+        "max_retries": 5,
+        "dead_letter_queue": "gs-publish-dlq"
+      }
+    ]
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "RATE_LIMITER",
+        "class_name": "RateLimiter"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["RateLimiter"]
+    }
+  ]
+}

@@ -74,6 +74,9 @@ importers:
       '@gs/providers':
         specifier: workspace:*
         version: link:../../packages/providers/registry
+      '@gs/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
       hono:
         specifier: ^4.10.3
         version: 4.13.1
@@ -258,6 +261,67 @@ importers:
       vitest:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@22.20.1)(@vitest/coverage-v8@4.1.10)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(tsx@4.23.10))
+
+  packages/storage:
+    devDependencies:
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@22.20.1)(@vitest/coverage-v8@4.1.10)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(tsx@4.23.10))
+
+  workers/publisher:
+    dependencies:
+      '@gs/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@gs/crypto':
+        specifier: workspace:*
+        version: link:../../packages/crypto
+      '@gs/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@gs/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      '@gs/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
+      '@gs/events':
+        specifier: workspace:*
+        version: link:../../packages/events
+      '@gs/observability':
+        specifier: workspace:*
+        version: link:../../packages/observability
+      '@gs/provider-kit':
+        specifier: workspace:*
+        version: link:../../packages/provider-kit
+      '@gs/providers':
+        specifier: workspace:*
+        version: link:../../packages/providers/registry
+      '@gs/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^5.20260804.1
+        version: 5.20260804.1
+      '@gs/provider-mock':
+        specifier: workspace:*
+        version: link:../../packages/providers/mock
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@cloudflare/workers-types@5.20260804.1)(postgres@3.4.9)
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@22.20.1)(@vitest/coverage-v8@4.1.10)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(tsx@4.23.10))
+      wrangler:
+        specifier: ^4.120.0
+        version: 4.120.0(@cloudflare/workers-types@5.20260804.1)
 
 packages:
 

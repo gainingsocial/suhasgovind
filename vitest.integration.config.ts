@@ -16,7 +16,7 @@ config({ path: '.env', quiet: true });
 export default defineConfig({
   test: {
     globals: false,
-    include: ['{apps,packages}/**/src/**/*.integration.test.ts'],
+    include: ['{apps,packages,workers}/**/src/**/*.integration.test.ts'],
     exclude: ['**/node_modules/**', '**/dist/**', '**/.wrangler/**'],
     // One shared database. Parallel files would let one suite's cleanup cascade away
     // another's fixtures mid-assertion.

@@ -58,6 +58,7 @@ export {
   releaseTargetLease,
   listPosts,
   requeueFailedTargets,
+  resolveReconciliation,
   startPublishAttempt,
 } from './repositories/posts.js';
 
@@ -129,3 +130,12 @@ export {
   rotateWebhookSecret,
   updateWebhookEndpoint,
 } from './repositories/webhooks.js';
+
+export type { StoreCredentialInput, StoredCredential } from './repositories/credentials.js';
+export {
+  acquireRefreshLock,
+  findConnectionCredentials,
+  findCredentialsNearingExpiry,
+  releaseRefreshLock,
+  storeCredential,
+} from './repositories/credentials.js';

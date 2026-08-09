@@ -60,9 +60,18 @@ export interface TenantHarness {
   cleanup: () => Promise<void>;
 }
 
-/** Absent DATABASE_URL means the integration suite skips rather than fails. */
+/**
+ * Absent DATABASE_URL means the integration suite skips rather than fails.
+ *
+ * Reached through `globalThis` rather than the bare `process` global on purpose. Every
+ * package here compiles against the Workers runtime types only (see `tsconfig.base.json`),
+ * which is what stops production code accidentally depending on Node built-ins. This is
+ * test scaffolding that genuinely runs under Node, and this is the narrowest way to say
+ * so without loosening the type surface for everything else.
+ */
 export function databaseUrl(): string | undefined {
-  return process.env.DATABASE_URL;
+  const runtime = globalThis as { process?: { env?: Record<string, string | undefined> } };
+  return runtime.process?.env?.DATABASE_URL;
 }
 
 /**

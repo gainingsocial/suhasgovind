@@ -23,7 +23,7 @@ import { Hono, type Context } from 'hono';
 import type { AppEnv } from '../env.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { withDatabase } from '../middleware/database.js';
-import { mediaStorageKey, presign, type R2Credentials } from '../lib/r2-presign.js';
+import { mediaStorageKey, presign, type R2Credentials } from '@gs/storage';
 import { parseBody, requirePathId } from '../lib/request.js';
 import { assertSafeMediaUrl } from '../lib/ssrf.js';
 
