@@ -42,7 +42,7 @@ export default function OverviewPage() {
             description="Newest first"
             action={
               <Button variant="ghost" className="text-xs" aria-label="View all posts">
-                <Link href="/posts">View all</Link>
+                <Link href="/app/posts">View all</Link>
               </Button>
             }
           />
@@ -51,8 +51,8 @@ export default function OverviewPage() {
             description="Create your first post and it will appear here with its status on every destination."
             action={
               <Link
-                href="/compose"
-                className="inline-flex min-h-9 items-center rounded-lg bg-brand-600 px-3 text-sm font-medium text-white"
+                href="/app/compose"
+                className="inline-flex min-h-9 items-center rounded-lg bg-brand-600 px-3 text-sm font-medium text-[var(--on-brand)]"
               >
                 Compose a post
               </Link>
@@ -67,7 +67,7 @@ export default function OverviewPage() {
             description="Connect a social account to a profile before you can publish to it."
             action={
               <Link
-                href="/connections"
+                href="/app/connections"
                 className="inline-flex min-h-9 items-center rounded-lg border px-3 text-sm font-medium"
               >
                 Connect an account
@@ -113,10 +113,10 @@ function Stat({
  */
 function GettingStarted() {
   const steps = [
-    { title: 'Create an API key', body: 'Authenticates every request. Test keys never touch live accounts.', href: '/keys' },
-    { title: 'Add a profile', body: 'A profile is the brand or customer you publish on behalf of.', href: '/profiles' },
-    { title: 'Connect an account', body: 'Link a social account so there is somewhere to publish.', href: '/connections' },
-    { title: 'Publish', body: 'Compose once, send to every destination you selected.', href: '/compose' },
+    { title: 'Create an API key', body: 'Authenticates every request. Test keys never touch live accounts.', href: '/app/keys' },
+    { title: 'Add a profile', body: 'A profile is the brand or customer you publish on behalf of.', href: '/app/profiles' },
+    { title: 'Connect an account', body: 'Link a social account so there is somewhere to publish.', href: '/app/connections' },
+    { title: 'Publish', body: 'Compose once, send to every destination you selected.', href: '/app/compose' },
   ];
 
   return (

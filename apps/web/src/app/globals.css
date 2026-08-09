@@ -1,15 +1,25 @@
 @import 'tailwindcss';
 
 /**
- * Design tokens.
+ * Brand palette — yellow, black, red, white, green.
  *
- * A publishing dashboard is read far more than it is clicked: people come here to find
- * out whether something went out, and why it did not. So the palette is deliberately
- * quiet, and colour is reserved for status — if everything is colourful, a failed target
- * does not stand out (plan §61, "never hide failed target states").
+ * Five vibrant colours can easily read as a hazard sign. What stops that here is a strict
+ * division of labour:
  *
- * Both themes are defined here rather than only overriding in dark mode, so no colour has
- * its sole definition inside a media query.
+ *   yellow  energy and action. Primary buttons, active navigation, highlights.
+ *   black   ink and structure.
+ *   white   the surface everything sits on.
+ *   green   published / succeeded. Nothing else.
+ *   red     failed / destructive. Nothing else.
+ *
+ * Reserving red and green for status is what makes the palette usable rather than loud.
+ * If they appear as decoration, a genuinely failed post stops standing out — and plan §61
+ * is explicit that a failed target must never be hidden.
+ *
+ * Two rules that keep it from looking cheap:
+ *   - yellow always carries BLACK text, never white. Yellow/white fails contrast badly.
+ *   - the "black" is a rich near-black and the "white" is slightly warm. Pure #000 on a
+ *     screen is harsher than ink on paper, and a stark #fff fights the yellow.
  */
 
 @theme {
@@ -19,87 +29,109 @@
   --font-mono:
     ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, Consolas, monospace;
 
-  /* Ink and surface. Near-black rather than pure black: #000 on a screen has more
-     contrast than paper ever does and reads as harsh over long sessions. */
-  --color-ink-950: oklch(0.16 0.012 265);
-  --color-ink-900: oklch(0.24 0.012 265);
-  --color-ink-700: oklch(0.42 0.012 265);
-  --color-ink-500: oklch(0.58 0.012 265);
-  --color-ink-300: oklch(0.78 0.008 265);
-  --color-ink-200: oklch(0.88 0.006 265);
-  --color-ink-100: oklch(0.94 0.004 265);
-  --color-ink-50: oklch(0.975 0.003 265);
+  /* Ink — warm near-black through to a warm off-white. */
+  --color-ink-950: oklch(0.17 0.008 85);
+  --color-ink-900: oklch(0.26 0.008 85);
+  --color-ink-700: oklch(0.44 0.008 85);
+  --color-ink-500: oklch(0.60 0.008 85);
+  --color-ink-300: oklch(0.80 0.006 85);
+  --color-ink-200: oklch(0.89 0.005 85);
+  --color-ink-100: oklch(0.945 0.006 85);
+  --color-ink-50: oklch(0.985 0.005 85);
 
-  /* One accent, used for primary action and focus only. */
-  --color-brand-600: oklch(0.52 0.19 265);
-  --color-brand-500: oklch(0.60 0.19 265);
-  --color-brand-100: oklch(0.94 0.04 265);
+  /* Yellow — the brand. Vivid, and always paired with black text. */
+  --color-brand-600: oklch(0.78 0.17 88);
+  --color-brand-500: oklch(0.85 0.18 92);
+  --color-brand-400: oklch(0.90 0.16 95);
+  --color-brand-100: oklch(0.96 0.08 95);
 
-  /* Status. Each has a text-weight and a wash-weight so a badge and a banner can share
-     a single semantic name. */
-  --color-ok-600: oklch(0.55 0.14 155);
-  --color-ok-100: oklch(0.94 0.05 155);
-  --color-warn-600: oklch(0.62 0.15 75);
-  --color-warn-100: oklch(0.95 0.06 75);
-  --color-fail-600: oklch(0.56 0.19 25);
-  --color-fail-100: oklch(0.95 0.05 25);
-  --color-busy-600: oklch(0.58 0.13 240);
-  --color-busy-100: oklch(0.95 0.04 240);
+  /* Green — published. */
+  --color-ok-600: oklch(0.56 0.15 150);
+  --color-ok-500: oklch(0.66 0.17 148);
+  --color-ok-100: oklch(0.95 0.06 150);
 
-  --radius-card: 0.75rem;
+  /* Red — failed, destructive. */
+  --color-fail-600: oklch(0.55 0.21 27);
+  --color-fail-500: oklch(0.63 0.22 27);
+  --color-fail-100: oklch(0.95 0.05 27);
+
+  /* Amber-lean warning, distinct from brand yellow so "in progress" is not "act now". */
+  --color-warn-600: oklch(0.60 0.14 65);
+  --color-warn-100: oklch(0.95 0.06 70);
+
+  /* Busy — neutral ink rather than a sixth hue. Adding blue would dilute the palette. */
+  --color-busy-600: oklch(0.44 0.008 85);
+  --color-busy-100: oklch(0.92 0.005 85);
+
+  --radius-card: 0.875rem;
 }
 
 :root {
   --surface: var(--color-ink-50);
-  --surface-raised: white;
+  --surface-raised: oklch(1 0 0);
   --surface-sunken: var(--color-ink-100);
   --border: var(--color-ink-200);
   --border-strong: var(--color-ink-300);
   --text: var(--color-ink-950);
   --text-muted: var(--color-ink-700);
   --text-subtle: var(--color-ink-500);
+  /* Text that sits ON yellow. Always the near-black. */
+  --on-brand: var(--color-ink-950);
 
   color-scheme: light;
 }
 
-/* System preference, only when the user has not chosen explicitly. */
+/* System preference, only when the reader has not chosen explicitly. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --surface: oklch(0.18 0.012 265);
-    --surface-raised: oklch(0.22 0.012 265);
-    --surface-sunken: oklch(0.15 0.012 265);
-    --border: oklch(0.30 0.012 265);
-    --border-strong: oklch(0.38 0.012 265);
+    --surface: oklch(0.16 0.006 85);
+    --surface-raised: oklch(0.21 0.007 85);
+    --surface-sunken: oklch(0.13 0.006 85);
+    --border: oklch(0.30 0.008 85);
+    --border-strong: oklch(0.40 0.008 85);
     --text: var(--color-ink-50);
     --text-muted: var(--color-ink-300);
     --text-subtle: var(--color-ink-500);
+    --on-brand: oklch(0.17 0.008 85);
 
-    --color-ok-100: oklch(0.28 0.06 155);
-    --color-warn-100: oklch(0.30 0.07 75);
-    --color-fail-100: oklch(0.28 0.07 25);
-    --color-busy-100: oklch(0.28 0.06 240);
-    --color-brand-100: oklch(0.28 0.07 265);
+    /* Washes have to become dark tints, or a badge is a glaring block of pastel. */
+    --color-ok-100: oklch(0.28 0.07 150);
+    --color-warn-100: oklch(0.29 0.07 70);
+    --color-fail-100: oklch(0.28 0.09 27);
+    --color-busy-100: oklch(0.27 0.006 85);
+    --color-brand-100: oklch(0.32 0.09 92);
+
+    /* Status text lightens so it stays legible on those dark tints. */
+    --color-ok-600: oklch(0.80 0.17 150);
+    --color-fail-600: oklch(0.75 0.19 27);
+    --color-warn-600: oklch(0.82 0.15 75);
+    --color-busy-600: var(--color-ink-300);
 
     color-scheme: dark;
   }
 }
 
-/* Explicit choice wins in both directions. */
 :root[data-theme='dark'] {
-  --surface: oklch(0.18 0.012 265);
-  --surface-raised: oklch(0.22 0.012 265);
-  --surface-sunken: oklch(0.15 0.012 265);
-  --border: oklch(0.30 0.012 265);
-  --border-strong: oklch(0.38 0.012 265);
+  --surface: oklch(0.16 0.006 85);
+  --surface-raised: oklch(0.21 0.007 85);
+  --surface-sunken: oklch(0.13 0.006 85);
+  --border: oklch(0.30 0.008 85);
+  --border-strong: oklch(0.40 0.008 85);
   --text: var(--color-ink-50);
   --text-muted: var(--color-ink-300);
   --text-subtle: var(--color-ink-500);
+  --on-brand: oklch(0.17 0.008 85);
 
-  --color-ok-100: oklch(0.28 0.06 155);
-  --color-warn-100: oklch(0.30 0.07 75);
-  --color-fail-100: oklch(0.28 0.07 25);
-  --color-busy-100: oklch(0.28 0.06 240);
-  --color-brand-100: oklch(0.28 0.07 265);
+  --color-ok-100: oklch(0.28 0.07 150);
+  --color-warn-100: oklch(0.29 0.07 70);
+  --color-fail-100: oklch(0.28 0.09 27);
+  --color-busy-100: oklch(0.27 0.006 85);
+  --color-brand-100: oklch(0.32 0.09 92);
+
+  --color-ok-600: oklch(0.80 0.17 150);
+  --color-fail-600: oklch(0.75 0.19 27);
+  --color-warn-600: oklch(0.82 0.15 75);
+  --color-busy-600: var(--color-ink-300);
 
   color-scheme: dark;
 }
@@ -120,17 +152,16 @@ body {
 /**
  * Focus.
  *
- * Visible on keyboard focus only, never suppressed. Plan §61 requires keyboard
- * navigation, and `outline: none` is the single most common way a dashboard becomes
- * unusable without a mouse.
+ * Black rather than yellow: a yellow ring on a yellow button is invisible, which is
+ * exactly where a keyboard user most needs to see it. Doubling with a white outer ring
+ * keeps it visible on dark surfaces too.
  */
 :focus-visible {
-  outline: 2px solid var(--color-brand-500);
+  outline: 2px solid var(--text);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
-/* Respect a reduced-motion preference rather than animating regardless. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -159,6 +190,6 @@ body {
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 8%), transparent);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 10%), transparent);
   animation: shimmer 1.6s infinite;
 }

@@ -89,7 +89,7 @@ export function CardHeader({ title, description, action }: { title: ReactNode; d
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 const BUTTON_CLASSES: Record<ButtonVariant, string> = {
-  primary: 'bg-brand-600 text-white hover:bg-brand-500',
+  primary: 'bg-brand-600 text-[var(--on-brand)] hover:bg-brand-500',
   secondary:
     'border bg-[var(--surface-raised)] text-[var(--text)] hover:bg-[var(--surface-sunken)]',
   ghost: 'text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text)]',

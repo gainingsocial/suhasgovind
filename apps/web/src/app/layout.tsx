@@ -1,19 +1,54 @@
 import type { Metadata, Viewport } from 'next';
 
-import { Shell } from '@/components/shell';
-
 import './globals.css';
 
+const SITE_URL = 'https://gainingsocial.com';
+
+/**
+ * Root layout.
+ *
+ * Deliberately thin: it owns only <html>, <body> and the site-wide metadata defaults.
+ * The two route groups have genuinely different chrome — marketing has a public header
+ * and footer built for reading, the dashboard has an app shell built for working — so
+ * each brings its own layout rather than one layout branching on the URL.
+ *
+ * `metadataBase` is what makes every relative Open Graph and canonical URL resolve to an
+ * absolute one. Without it Next emits relative URLs, which crawlers and social scrapers
+ * silently ignore — the tags are present and useless.
+ */
 export const metadata: Metadata = {
-  title: { default: 'GainingSocial', template: '%s · GainingSocial' },
-  description: 'One API. Multiple social networks. Production-grade publishing.',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: 'GainingSocial — One API for publishing to every social network',
+    template: '%s · GainingSocial',
+  },
+  description:
+    'Publish to Bluesky, LinkedIn, Instagram, TikTok and more through a single REST API. ' +
+    'Built-in duplicate prevention, per-platform validation before you post, and webhooks ' +
+    'that tell you the moment something goes live or fails.',
+  applicationName: 'GainingSocial',
+  authors: [{ name: 'GainingSocial' }],
+  creator: 'GainingSocial',
+  openGraph: {
+    type: 'website',
+    siteName: 'GainingSocial',
+    locale: 'en_US',
+    url: SITE_URL,
+  },
+  twitter: { card: 'summary_large_image' },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 },
+  },
+  alternates: { canonical: '/' },
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  // Zoom is left enabled deliberately. Locking it is a common dashboard mistake and it
-  // removes the only accessibility affordance some readers have on a phone.
+  // Zoom stays enabled. Locking it is a common mistake that removes the only
+  // accessibility affordance some readers have on a phone.
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#f7f7f8' },
     { media: '(prefers-color-scheme: dark)', color: '#1b1c20' },
@@ -23,19 +58,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body>
-        {/* First tab stop on every page. Without it, keyboard users traverse the whole
-            navigation before reaching content on every single navigation. */}
-        <a
-          href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-brand-600 focus:px-4 focus:py-2 focus:text-sm focus:text-white"
-        >
-          Skip to content
-        </a>
-        <Shell>
-          <div id="main">{children}</div>
-        </Shell>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
