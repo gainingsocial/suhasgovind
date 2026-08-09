@@ -6,5 +6,7 @@
  * `@gs/contracts/ids` keep working independently of this barrel.
  */
 export * from './common/ids.js';
+export * from './common/providers.js';
 export * from './common/scopes.js';
 export * from './http/index.js';
+export * from './providers/index.js';

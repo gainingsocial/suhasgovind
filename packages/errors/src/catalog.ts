@@ -333,6 +333,13 @@ export const ERROR_CODE_METADATA: Record<ErrorCode, ErrorCodeMetadata> = {
   ),
 
   // ---- provider-side --------------------------------------------------------
+  PROVIDER_NOT_SUPPORTED: m(
+    'validation_error',
+    400,
+    false,
+    'This provider is not supported.',
+    'check_supported_providers',
+  ),
   PROVIDER_UNAVAILABLE: m(
     'provider_error',
     503,

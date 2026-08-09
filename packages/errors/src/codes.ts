@@ -85,6 +85,12 @@ export const ERROR_CODES = [
   'PLAN_LIMIT_REACHED',
 
   // ---- provider-side (plan §79) --------------------------------------------
+  /**
+   * No adapter is registered for the named provider. Distinct from a caller naming a
+   * provider that does not exist: both surface here, because telling an unauthenticated
+   * caller which providers are merely unbuilt leaks the roadmap.
+   */
+  'PROVIDER_NOT_SUPPORTED',
   'PROVIDER_UNAVAILABLE',
   'PROVIDER_TIMEOUT',
   'PROVIDER_REJECTED_CONTENT',

@@ -6,8 +6,11 @@
   "exports": {
     ".": "./src/index.ts",
     "./ids": "./src/common/ids.ts",
+    "./providers": "./src/common/providers.ts",
     "./scopes": "./src/common/scopes.ts",
-    "./http": "./src/http/index.ts"
+    "./http": "./src/http/index.ts",
+    "./capabilities": "./src/providers/capabilities.ts",
+    "./validation": "./src/providers/validation.ts"
   },
   "scripts": {
     "lint": "eslint src",
