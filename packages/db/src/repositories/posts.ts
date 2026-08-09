@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull, lt, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, isNull, lt, or, sql } from 'drizzle-orm';
 
 import { newUuidV7 } from '@gs/contracts/ids';
 import type { PostStatus, PostTargetStatus } from '@gs/domain';
@@ -680,4 +680,67 @@ export async function findOverdueScheduledPosts(
     )
     .orderBy(asc(posts.publishAt))
     .limit(options.limit ?? 100);
+}
+
+// ---------------------------------------------------------------------------
+// Listing
+// ---------------------------------------------------------------------------
+
+export interface ListPostsInput {
+  projectEnvironmentId: string;
+  limit: number;
+  order: 'asc' | 'desc';
+  cursor?: string;
+  profileId?: string;
+  status?: PostStatus;
+  restrictedToProfileId?: string | null;
+}
+
+export interface PostListRow {
+  post: Post;
+  targetCount: number;
+  publishedTargetCount: number;
+}
+
+/**
+ * A page of posts with rolled-up target counts.
+ *
+ * The counts come from a lateral aggregate rather than a second query per post: a page of
+ * 25 posts would otherwise be 26 round trips, and a list view is the most-hit read in the
+ * dashboard.
+ */
+export async function listPosts(
+  db: Database,
+  input: ListPostsInput,
+): Promise<{ rows: PostListRow[]; hasMore: boolean }> {
+  const conditions = [eq(posts.projectEnvironmentId, input.projectEnvironmentId)];
+
+  if (input.profileId) conditions.push(eq(posts.profileId, input.profileId));
+  if (input.status) conditions.push(eq(posts.status, input.status));
+  // Enforced in SQL so a route cannot forget it (plan §38).
+  if (input.restrictedToProfileId != null) {
+    conditions.push(eq(posts.profileId, input.restrictedToProfileId));
+  }
+  if (input.cursor) {
+    conditions.push(input.order === 'desc' ? lt(posts.id, input.cursor) : gt(posts.id, input.cursor));
+  }
+
+  const rows = await db
+    .select({
+      post: posts,
+      targetCount: sql<number>`(
+        select count(*)::int from ${postTargets} where ${postTargets.postId} = ${posts.id}
+      )`,
+      publishedTargetCount: sql<number>`(
+        select count(*)::int from ${postTargets}
+        where ${postTargets.postId} = ${posts.id} and ${postTargets.status} = 'published'
+      )`,
+    })
+    .from(posts)
+    .where(and(...conditions))
+    .orderBy(input.order === 'desc' ? desc(posts.id) : asc(posts.id))
+    .limit(input.limit + 1);
+
+  const hasMore = rows.length > input.limit;
+  return { rows: hasMore ? rows.slice(0, input.limit) : rows, hasMore };
 }

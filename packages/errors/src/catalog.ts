@@ -149,6 +149,20 @@ export const ERROR_CODE_METADATA: Record<ErrorCode, ErrorCodeMetadata> = {
     'inspect_target_status',
   ),
   CONFLICTING_STATE: m('conflict_error', 409, false, 'The resource changed while this request was in flight.', 'reload_and_retry'),
+  IDEMPOTENCY_KEY_REQUIRED: m(
+    'idempotency_error',
+    400,
+    false,
+    'An Idempotency-Key header is required for this operation.',
+    'retry_with_an_idempotency_key',
+  ),
+  VALIDATION_FAILED: m(
+    'validation_error',
+    422,
+    false,
+    'One or more publish targets cannot accept this content as composed.',
+    'run_preflight_and_fix_reported_issues',
+  ),
   RESOURCE_ALREADY_EXISTS: m(
     'conflict_error',
     409,

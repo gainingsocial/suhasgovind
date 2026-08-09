@@ -38,6 +38,8 @@ export const ERROR_CODES = [
   'RESOURCE_NOT_FOUND',
 
   // ---- idempotency & conflict ----------------------------------------------
+  /** POST /v1/posts requires one: a duplicate published post cannot be undone. */
+  'IDEMPOTENCY_KEY_REQUIRED',
   'IDEMPOTENCY_KEY_REUSED',
   'IDEMPOTENCY_REQUEST_IN_PROGRESS',
   'DUPLICATE_CONTENT_BLOCKED',
@@ -83,6 +85,8 @@ export const ERROR_CODES = [
   'SCHEDULE_IN_PAST',
   'SCHEDULE_TOO_FAR_AHEAD',
   'SCHEDULE_NOT_SUPPORTED',
+  /** Preflight found at least one target that cannot publish as composed. */
+  'VALIDATION_FAILED',
   'TARGETS_REQUIRED',
   'DUPLICATE_DESTINATION',
 

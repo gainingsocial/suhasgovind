@@ -36,6 +36,8 @@ export type {
   LeaseResult,
   LeaseTargetInput,
   RecalculateResult,
+  ListPostsInput,
+  PostListRow,
   RecordAttemptInput,
 } from './repositories/posts.js';
 export {
@@ -54,6 +56,7 @@ export {
   markTargetRetryableFailure,
   recalculatePostStatus,
   releaseTargetLease,
+  listPosts,
   requeueFailedTargets,
   startPublishAttempt,
 } from './repositories/posts.js';

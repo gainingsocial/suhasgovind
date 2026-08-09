@@ -53,9 +53,15 @@ importers:
       '@gs/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@gs/crypto':
+        specifier: workspace:*
+        version: link:../../packages/crypto
       '@gs/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@gs/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       '@gs/errors':
         specifier: workspace:*
         version: link:../../packages/errors
@@ -78,9 +84,6 @@ importers:
       '@cloudflare/workers-types':
         specifier: ^5.20260804.1
         version: 5.20260804.1
-      '@gs/crypto':
-        specifier: workspace:*
-        version: link:../../packages/crypto
       tsx:
         specifier: ^4.20.6
         version: 4.23.10

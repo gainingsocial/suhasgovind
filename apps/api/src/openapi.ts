@@ -6,7 +6,15 @@ import {
   CreateMediaUploadRequestSchema,
   CreateMediaUploadResponseSchema,
   DeleteMediaResponseSchema,
+  CancelPostResponseSchema,
+  CreatePostRequestSchema,
+  ListPostsQuerySchema,
   MediaSchema,
+  PostListResponseSchema,
+  PostSchema,
+  PreflightRequestSchema,
+  PreflightResponseSchema,
+  RetryPostResponseSchema,
   ConnectionSchema,
   CreateProfileRequestSchema,
   DeleteProfileResponseSchema,
@@ -502,6 +510,124 @@ const ROUTES: RouteSpec[] = [
     successDescription: 'The asset was deleted.',
     response: DeleteMediaResponseSchema,
     errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'MEDIA_NOT_FOUND'],
+  },
+  {
+    method: 'post',
+    path: '/v1/posts/preflight',
+    operationId: 'preflightPost',
+    summary: 'Validate a post without publishing',
+    description:
+      'Takes exactly the same body as POST /v1/posts, so you can check precisely what you ' +
+      'are about to send. Performs no provider side effect and is safe to call freely. ' +
+      'Returns 200 even when invalid — reporting problems is the job, and a 4xx would make ' +
+      '"your content has a warning" look like "your request was malformed". Findings carry ' +
+      'an agent_action and, where one exists, a concrete autofix.',
+    tags: ['Publishing'],
+    scopes: ['posts:read'],
+    requestBody: PreflightRequestSchema,
+    successStatus: 200,
+    successDescription: 'Per-target validation results.',
+    response: PreflightResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'PROFILE_NOT_FOUND', 'DUPLICATE_DESTINATION'],
+  },
+  {
+    method: 'post',
+    path: '/v1/posts',
+    operationId: 'createPost',
+    summary: 'Publish a post',
+    description:
+      'Returns **202**, always. Publishing is asynchronous and must never depend on your ' +
+      'client holding a connection open. Watch target status or subscribe to a webhook.\n\n' +
+      'An `Idempotency-Key` header is **required**: a duplicate published post cannot be ' +
+      'undone, so retrying safely needs something to deduplicate on. A repeat with the same ' +
+      'key replays the original response byte-for-byte; the same key with a different body ' +
+      'is a 409.\n\n' +
+      'One logical post, N targets. Per-target `overrides` replace canonical content rather ' +
+      'than merging — an override of `media_ids: []` means "publish this one without media".',
+    tags: ['Publishing'],
+    scopes: ['posts:write'],
+    requestBody: CreatePostRequestSchema,
+    successStatus: 202,
+    successDescription: 'The post was accepted and queued.',
+    response: PostSchema,
+    errors: [
+      ...AUTH_ERRORS,
+      'INVALID_REQUEST',
+      'IDEMPOTENCY_KEY_REQUIRED',
+      'IDEMPOTENCY_KEY_REUSED',
+      'IDEMPOTENCY_REQUEST_IN_PROGRESS',
+      'VALIDATION_FAILED',
+      'PROFILE_NOT_FOUND',
+      'DUPLICATE_DESTINATION',
+    ],
+  },
+  {
+    method: 'get',
+    path: '/v1/posts',
+    operationId: 'listPosts',
+    summary: 'List posts',
+    description:
+      'Omits per-target detail — a page of 25 posts each with 10 targets is a response ' +
+      'nobody reads in full. Rolled-up counts are enough for a list view; fetch a post for ' +
+      'the rest.',
+    tags: ['Publishing'],
+    scopes: ['posts:read'],
+    querySchema: ListPostsQuerySchema,
+    successStatus: 200,
+    successDescription: 'A page of posts.',
+    response: PostListResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST'],
+  },
+  {
+    method: 'get',
+    path: '/v1/posts/{postId}',
+    operationId: 'getPost',
+    summary: 'Retrieve a post',
+    description:
+      'Includes every target with its current status. `partially_published` is a real ' +
+      'outcome, not an error: some destinations succeeded and some did not, and each target ' +
+      'carries its own normalized error code.',
+    tags: ['Publishing'],
+    scopes: ['posts:read'],
+    pathParams: [{ name: 'postId', description: 'Public post id, `pst_…`.' }],
+    successStatus: 200,
+    successDescription: 'The post and its targets.',
+    response: PostSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'POST_NOT_FOUND'],
+  },
+  {
+    method: 'post',
+    path: '/v1/posts/{postId}/cancel',
+    operationId: 'cancelPost',
+    summary: 'Cancel a post',
+    description:
+      'Cancels every target not already published or in flight. Targets that are ' +
+      '`publishing` or `provider_processing` are deliberately left alone: a call may already ' +
+      'be at the provider, and marking it cancelled would claim an outcome we do not control.',
+    tags: ['Publishing'],
+    scopes: ['posts:write'],
+    pathParams: [{ name: 'postId', description: 'Public post id, `pst_…`.' }],
+    successStatus: 200,
+    successDescription: 'How many targets were cancelled.',
+    response: CancelPostResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'POST_NOT_FOUND'],
+  },
+  {
+    method: 'post',
+    path: '/v1/posts/{postId}/retry',
+    operationId: 'retryPost',
+    summary: 'Retry failed targets',
+    description:
+      'Requeues only `retryable_failed` targets. A `permanent_failed` target fails the same ' +
+      'way again, and one in `unknown_reconciliation_required` must be reconciled first — ' +
+      'retrying it could duplicate a post that did in fact publish.',
+    tags: ['Publishing'],
+    scopes: ['posts:write'],
+    pathParams: [{ name: 'postId', description: 'Public post id, `pst_…`.' }],
+    successStatus: 202,
+    successDescription: 'How many targets were requeued.',
+    response: RetryPostResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'POST_NOT_FOUND'],
   },
 ];
 

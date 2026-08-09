@@ -9,6 +9,7 @@ import { me } from './routes/me.js';
 import { connections } from './routes/connections.js';
 import { media } from './routes/media.js';
 import { destinations, platforms } from './routes/platforms.js';
+import { posts } from './routes/posts.js';
 import { profiles } from './routes/profiles.js';
 
 /**
@@ -31,6 +32,7 @@ app.route('/v1/connections', connections);
 app.route('/v1/platforms', platforms);
 app.route('/v1/destinations', destinations);
 app.route('/v1/media', media);
+app.route('/v1/posts', posts);
 
 app.get('/openapi.json', (c) => c.json(buildOpenApiDocument(new URL(c.req.url).origin)));
 
