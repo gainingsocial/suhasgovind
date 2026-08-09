@@ -2,6 +2,7 @@ import { isProviderName, type ProviderName } from '@gs/contracts/providers';
 import { ApiError } from '@gs/errors';
 import type { ProviderAdapterFactory, SocialProviderAdapter } from '@gs/provider-kit';
 import { createBlueskyAdapter } from '@gs/provider-bluesky';
+import { createLinkedInAdapter } from '@gs/provider-linkedin';
 import { createMockAdapter } from '@gs/provider-mock';
 import { createTelegramAdapter } from '@gs/provider-telegram';
 
@@ -28,6 +29,7 @@ const FACTORIES: Partial<Record<ProviderName, ProviderAdapterFactory>> = {
   mock: createMockAdapter,
   bluesky: createBlueskyAdapter,
   telegram: createTelegramAdapter,
+  linkedin: createLinkedInAdapter,
 };
 
 /**

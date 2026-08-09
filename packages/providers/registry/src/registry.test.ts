@@ -35,11 +35,16 @@ describe('provider registry', () => {
   });
 
   it('rejects a known provider that has no adapter yet', () => {
-    // `linkedin` is a real provider in PROVIDER_NAMES with no implementation. It must
-    // fail the same way as an unknown name rather than returning undefined into a
-    // publish path (Rule 14).
-    expect(() => getAdapter('linkedin')).toThrow(ApiError);
-    expect(hasAdapter('linkedin')).toBe(false);
+    // Picked dynamically rather than hard-coded. Naming a specific provider means this
+    // test breaks the day that adapter ships — which is a green-to-red change caused by
+    // progress, not by a regression.
+    const unimplemented = PROVIDER_NAMES.find((provider) => !hasAdapter(provider));
+    if (!unimplemented) return; // Every provider is built; nothing left to assert.
+
+    // It must fail the same way as an unknown name rather than returning undefined into
+    // a publish path (Rule 14).
+    expect(() => getAdapter(unimplemented)).toThrow(ApiError);
+    expect(hasAdapter(unimplemented)).toBe(false);
   });
 
   it('reports implemented providers as a subset of all known providers', () => {
