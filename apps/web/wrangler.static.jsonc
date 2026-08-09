@@ -1,0 +1,14 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "gs-web",
+  "compatibility_date": "2026-08-01",
+  // Assets-only: no Worker script. Cloudflare serves the exported HTML directly, which
+  // is both faster and cheaper than routing static files through a Worker.
+  "assets": {
+    "directory": "out",
+    // `single-page-application` would rewrite every 404 to index.html and break the
+    // dedicated not-found page. `auto-trailing-slash` matches Next's export layout.
+    "not_found_handling": "404-page",
+    "html_handling": "auto-trailing-slash"
+  }
+}

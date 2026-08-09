@@ -1,0 +1,82 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Cloudflare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Gate the deploy on the same checks CI runs. Deploying code that does not pass
+      # is how a broken build reaches production while the red tick is still pending.
+      - run: pnpm run ci
+        env:
+          NEXT_PUBLIC_API_URL: https://api.gainingsocial.com
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+
+      # API first: the dashboard calls it, so a dashboard expecting a new endpoint should
+      # never go live before that endpoint exists.
+      - name: Deploy API
+        run: pnpm --filter @gs/api run deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Deploy publisher
+        run: pnpm --filter @gs/worker-publisher run deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Deploy reconciler
+        run: pnpm --filter @gs/worker-reconciler run deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Deploy customer-webhooks
+        run: pnpm --filter @gs/worker-customer-webhooks run deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # The dashboard must be built on Linux. OpenNext resolves manifest paths in a way
+      # that breaks on Windows — the deployed Worker fails at runtime with
+      # "Dynamic require of /.next/server/middleware-manifest.json is not supported".
+      # This job is the supported build environment, not a convenience.
+      - name: Deploy dashboard
+        run: pnpm --filter @gs/web run deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NEXT_PUBLIC_API_URL: https://api.gainingsocial.com
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+
+      - name: Verify the API is serving
+        run: |
+          for i in $(seq 1 10); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' https://api.gainingsocial.com/health || true)
+            if [ "$code" = "200" ]; then echo "API healthy"; exit 0; fi
+            sleep 6
+          done
+          echo "API did not return 200 after deploy"; exit 1

@@ -116,7 +116,11 @@ module.exports = {
 
   options: {
     doNotFollow: { path: 'node_modules' },
-    exclude: { path: '(\\.test\\.ts$|\\.spec\\.ts$|/dist/|/\\.next/|/\\.wrangler/)' },
+    // `out/` and `.open-next/` are build output. Cruising them reports the bundler's own
+    // chunk graph as architecture violations, which buries the real ones.
+    exclude: {
+      path: '(\\.test\\.ts$|\\.spec\\.ts$|/dist/|/\\.next/|/\\.wrangler/|/out/|/\\.open-next/)',
+    },
     tsConfig: { fileName: 'tsconfig.base.json' },
     tsPreCompilationDeps: true,
     enhancedResolveOptions: {

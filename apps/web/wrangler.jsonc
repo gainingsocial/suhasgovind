@@ -1,0 +1,19 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "gs-web",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-08-01",
+  // OpenNext needs both: nodejs_compat for Node built-ins Next relies on, and
+  // global_fetch_strictly_public so server-side fetches to our own domain go out through
+  // the internet rather than looping back into this Worker.
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": { "enabled": true, "head_sampling_rate": 1 },
+  "vars": {
+    "NEXT_PUBLIC_API_URL": "https://api.gainingsocial.com",
+    "NEXT_PUBLIC_SUPABASE_URL": "https://miemfmjjnsqhukxlvcmp.supabase.co"
+  }
+}

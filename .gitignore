@@ -32,3 +32,7 @@ pnpm-debug.log*
 # packages/contracts/openapi — everything else generated is ignored.
 tmp/
 .scratch/
+
+# Next.js / OpenNext build output
+apps/web/out/
+apps/web/.open-next/
