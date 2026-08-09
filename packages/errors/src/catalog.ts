@@ -149,6 +149,13 @@ export const ERROR_CODE_METADATA: Record<ErrorCode, ErrorCodeMetadata> = {
     'inspect_target_status',
   ),
   CONFLICTING_STATE: m('conflict_error', 409, false, 'The resource changed while this request was in flight.', 'reload_and_retry'),
+  RESOURCE_ALREADY_EXISTS: m(
+    'conflict_error',
+    409,
+    false,
+    'A resource with that identifier already exists.',
+    'fetch_the_existing_resource_or_choose_another_identifier',
+  ),
 
   // ---- connection health ----------------------------------------------------
   CONNECTION_REAUTH_REQUIRED: m(

@@ -1,5 +1,6 @@
 import type { AuthenticatedPrincipal } from '@gs/auth';
 import type { DeploymentEnvironment } from '@gs/contracts/http';
+import type { Database } from '@gs/db';
 import type { Logger, TraceContext } from '@gs/observability';
 
 /**
@@ -47,5 +48,7 @@ export interface AppEnv {
     logger: Logger;
     /** Set by the authenticate middleware; absent on public routes. */
     principal: AuthenticatedPrincipal;
+    /** Set by the withDatabase middleware; absent on routes that need no database. */
+    db: Database;
   };
 }

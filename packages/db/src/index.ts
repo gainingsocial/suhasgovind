@@ -57,3 +57,19 @@ export {
   requeueFailedTargets,
   startPublishAttempt,
 } from './repositories/posts.js';
+
+export type {
+  CreateProfileInput,
+  ListProfilesInput,
+  ProfileScope,
+  UpdateProfileInput,
+} from './repositories/profiles.js';
+export {
+  countProfiles,
+  createProfile,
+  findProfileById,
+  findProfileOwnership,
+  listProfiles,
+  softDeleteProfile,
+  updateProfile,
+} from './repositories/profiles.js';

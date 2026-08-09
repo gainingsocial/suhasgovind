@@ -6,6 +6,7 @@ import { requestContext } from './middleware/request-context.js';
 import { buildOpenApiDocument } from './openapi.js';
 import { health } from './routes/health.js';
 import { me } from './routes/me.js';
+import { profiles } from './routes/profiles.js';
 
 /**
  * Public API gateway (plan §6.1).
@@ -22,6 +23,7 @@ app.route('/health', health);
 // pin a version prefix on everything.
 app.route('/v1/health', health);
 app.route('/v1/me', me);
+app.route('/v1/profiles', profiles);
 
 app.get('/openapi.json', (c) => c.json(buildOpenApiDocument(new URL(c.req.url).origin)));
 

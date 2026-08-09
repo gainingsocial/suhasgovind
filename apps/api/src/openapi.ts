@@ -1,33 +1,48 @@
-import { ErrorEnvelopeSchema, HealthResponseSchema, MeResponseSchema } from '@gs/contracts/http';
+import {
+  CreateProfileRequestSchema,
+  DeleteProfileResponseSchema,
+  ErrorEnvelopeSchema,
+  HealthResponseSchema,
+  ListProfilesQuerySchema,
+  MeResponseSchema,
+  ProfileListResponseSchema,
+  ProfileSchema,
+  UpdateProfileRequestSchema,
+} from '@gs/contracts/http';
+import { API_SCOPES, type ApiScope } from '@gs/contracts/scopes';
 import { ERROR_CODE_METADATA, type ErrorCode } from '@gs/errors';
 import { z } from 'zod';
 
 /**
  * OpenAPI document, generated from the same Zod schemas the routes validate with
- * (plan §85 Rule 5). Generating rather than hand-writing is the point: a schema and its
- * documentation cannot drift when there is only one of them.
+ * (plan §85 Rule 5, §46 "OpenAPI is a product artifact").
  *
- * Zod v4 emits JSON Schema natively, so no additional OpenAPI dependency is pulled in.
- * `io: 'output'` matters — a schema with defaults or transforms has a wider input type
- * than output type, and a response body is the output side.
+ * Generating rather than hand-writing is the point: a schema and its documentation cannot
+ * drift when there is only one of them. The route table below is declarative for the same
+ * reason — a hand-maintained `paths` object silently omits routes, and an omitted route is
+ * an undocumented one.
+ *
+ * Zod v4 emits JSON Schema natively, so no extra OpenAPI dependency is pulled in.
  */
 
 const SPEC_VERSION = '3.1.0';
 
-function jsonSchema(schema: z.ZodType): Record<string, unknown> {
-  const generated = z.toJSONSchema(schema, { io: 'output', target: 'draft-2020-12' });
+/**
+ * `io: 'output'` matters: a schema with defaults or transforms has a wider input type than
+ * output type, and a response body is the output side. Using the input projection would
+ * document optional fields that responses always populate.
+ */
+function jsonSchema(schema: z.ZodType, io: 'input' | 'output' = 'output'): Record<string, unknown> {
+  const generated = z.toJSONSchema(schema, { io, target: 'draft-2020-12' });
   // OpenAPI supplies its own $schema; leaving Zod's in makes some tooling complain.
   delete (generated as Record<string, unknown>).$schema;
   return generated as Record<string, unknown>;
 }
 
 /**
- * Error responses for a route, built from the catalog in `@gs/errors` (Rule 5:
- * documented error codes). The catalog is the single source, so a documented code cannot
- * drift from the one the route actually throws.
- *
- * Codes are grouped by status, because one HTTP status can carry several codes and the
- * response object is keyed by status.
+ * Error responses, built from the catalog in `@gs/errors` (Rule 5: documented error
+ * codes). The catalog is the single source, so a documented code cannot drift from the
+ * one the route actually throws.
  */
 function errorResponses(codes: readonly ErrorCode[]): Record<string, unknown> {
   const byStatus = new Map<number, ErrorCode[]>();
@@ -51,7 +66,232 @@ function errorResponses(codes: readonly ErrorCode[]): Record<string, unknown> {
   );
 }
 
+/** Errors every authenticated route can return. Restating them per route invites omission. */
+const AUTH_ERRORS = [
+  'AUTHENTICATION_REQUIRED',
+  'API_KEY_MALFORMED',
+  'API_KEY_INVALID',
+  'API_KEY_REVOKED',
+  'API_KEY_EXPIRED',
+  'INSUFFICIENT_SCOPE',
+  'TENANT_FORBIDDEN',
+  'INTERNAL_ERROR',
+] as const satisfies readonly ErrorCode[];
+
+interface RouteSpec {
+  method: 'get' | 'post' | 'patch' | 'delete';
+  path: string;
+  operationId: string;
+  summary: string;
+  description: string;
+  tags: string[];
+  /** Omit for public routes. Scopes are documented, not just required. */
+  scopes?: readonly ApiScope[];
+  requestBody?: z.ZodType;
+  querySchema?: z.ZodType;
+  pathParams?: { name: string; description: string }[];
+  successStatus: number;
+  successDescription: string;
+  response: z.ZodType;
+  errors: readonly ErrorCode[];
+}
+
+/**
+ * Query parameters, derived from the same Zod schema the route parses with. Hand-listing
+ * them is how a `limit` cap ends up documented as 1000 while the code enforces 100.
+ */
+function queryParameters(schema: z.ZodType): Record<string, unknown>[] {
+  const generated = jsonSchema(schema, 'input') as {
+    properties?: Record<string, Record<string, unknown>>;
+    required?: string[];
+  };
+
+  return Object.entries(generated.properties ?? {}).map(([name, definition]) => ({
+    name,
+    in: 'query',
+    required: generated.required?.includes(name) ?? false,
+    schema: definition,
+    ...(definition.description ? { description: definition.description } : {}),
+  }));
+}
+
+function buildOperation(route: RouteSpec): Record<string, unknown> {
+  const parameters = [
+    ...(route.pathParams ?? []).map((param) => ({
+      name: param.name,
+      in: 'path',
+      required: true,
+      description: param.description,
+      schema: { type: 'string' },
+    })),
+    ...(route.querySchema ? queryParameters(route.querySchema) : []),
+  ];
+
+  return {
+    operationId: route.operationId,
+    summary: route.summary,
+    description: route.scopes
+      ? `${route.description}\n\nRequires scope: ${route.scopes.map((s) => `\`${s}\``).join(', ') || 'none beyond a valid key'}.`
+      : route.description,
+    tags: route.tags,
+    security: route.scopes === undefined ? [] : [{ apiKey: [] }],
+    ...(parameters.length > 0 ? { parameters } : {}),
+    ...(route.requestBody
+      ? {
+          requestBody: {
+            required: true,
+            content: { 'application/json': { schema: jsonSchema(route.requestBody, 'input') } },
+          },
+        }
+      : {}),
+    responses: {
+      [String(route.successStatus)]: {
+        description: route.successDescription,
+        headers: {
+          'x-request-id': {
+            description: 'Echoed request identifier. Quote this when reporting a problem.',
+            schema: { type: 'string' },
+          },
+          'x-trace-id': {
+            description: 'Trace identifier correlating this request across services.',
+            schema: { type: 'string' },
+          },
+        },
+        content: { 'application/json': { schema: jsonSchema(route.response) } },
+      },
+      ...errorResponses(route.errors),
+    },
+  };
+}
+
+const PROFILE_ID_PARAM = [
+  { name: 'profileId', description: 'Public profile id, `pro_…`.' },
+];
+
+const ROUTES: RouteSpec[] = [
+  {
+    method: 'get',
+    path: '/health',
+    operationId: 'getHealth',
+    summary: 'Liveness probe',
+    description:
+      'Returns 200 whenever the Worker can serve requests. Unauthenticated, and returns ' +
+      'no tenant data. Does not check database connectivity — a database blip should not ' +
+      'make the platform recycle a Worker that can still serve cached and queue-bound work.',
+    tags: ['Operations'],
+    successStatus: 200,
+    successDescription: 'The Worker is serving requests.',
+    response: HealthResponseSchema,
+    errors: ['INTERNAL_ERROR'],
+  },
+  {
+    method: 'get',
+    path: '/v1/me',
+    operationId: 'getMe',
+    summary: 'Describe the presenting API key',
+    description:
+      'Returns the tenant and scopes the presented key resolves to. Requires a valid key ' +
+      'but no particular scope — a key may always describe itself, and requiring a scope ' +
+      'would stop a misconfigured key from discovering why it is misconfigured.',
+    tags: ['Identity'],
+    scopes: [],
+    successStatus: 200,
+    successDescription: 'The key is valid.',
+    response: MeResponseSchema,
+    errors: AUTH_ERRORS,
+  },
+  {
+    method: 'post',
+    path: '/v1/profiles',
+    operationId: 'createProfile',
+    summary: 'Create a profile',
+    description:
+      'A profile is the white-label tenant primitive — your customer, brand, location or ' +
+      'creator identity. Everything publishable hangs off one. Supplying `external_id` is ' +
+      'recommended: it makes creation naturally idempotent from your side, because a ' +
+      'repeat conflicts rather than silently creating a duplicate customer.',
+    tags: ['Profiles'],
+    scopes: ['profiles:write'],
+    requestBody: CreateProfileRequestSchema,
+    successStatus: 201,
+    successDescription: 'The profile was created.',
+    response: ProfileSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'RESOURCE_ALREADY_EXISTS'],
+  },
+  {
+    method: 'get',
+    path: '/v1/profiles',
+    operationId: 'listProfiles',
+    summary: 'List profiles',
+    description:
+      'Cursor-paginated, newest first. The cursor is the last id on the previous page, so ' +
+      'a row inserted mid-pagination cannot shift a page boundary and make you skip or ' +
+      'repeat an item — which offset pagination over an actively-written table does.',
+    tags: ['Profiles'],
+    scopes: ['profiles:read'],
+    querySchema: ListProfilesQuerySchema,
+    successStatus: 200,
+    successDescription: 'A page of profiles.',
+    response: ProfileListResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST'],
+  },
+  {
+    method: 'get',
+    path: '/v1/profiles/{profileId}',
+    operationId: 'getProfile',
+    summary: 'Retrieve a profile',
+    description: 'Returns 404 for a profile belonging to another tenant.',
+    tags: ['Profiles'],
+    scopes: ['profiles:read'],
+    pathParams: PROFILE_ID_PARAM,
+    successStatus: 200,
+    successDescription: 'The profile.',
+    response: ProfileSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'PROFILE_NOT_FOUND'],
+  },
+  {
+    method: 'patch',
+    path: '/v1/profiles/{profileId}',
+    operationId: 'updateProfile',
+    summary: 'Update a profile',
+    description:
+      'An absent key leaves the field unchanged; an explicit `null` clears it. The two are ' +
+      'genuinely different, and conflating them would make clearing a field impossible.',
+    tags: ['Profiles'],
+    scopes: ['profiles:write'],
+    pathParams: PROFILE_ID_PARAM,
+    requestBody: UpdateProfileRequestSchema,
+    successStatus: 200,
+    successDescription: 'The updated profile.',
+    response: ProfileSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'PROFILE_NOT_FOUND', 'RESOURCE_ALREADY_EXISTS'],
+  },
+  {
+    method: 'delete',
+    path: '/v1/profiles/{profileId}',
+    operationId: 'deleteProfile',
+    summary: 'Delete a profile',
+    description:
+      'Soft delete. The row is retained for the deletion window so in-flight publishes can ' +
+      'still resolve their tenancy chain; a hard delete would strand queued targets with an ' +
+      'unresolvable owner.',
+    tags: ['Profiles'],
+    scopes: ['profiles:write'],
+    pathParams: PROFILE_ID_PARAM,
+    successStatus: 200,
+    successDescription: 'The profile was deleted.',
+    response: DeleteProfileResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'PROFILE_NOT_FOUND'],
+  },
+];
+
 export function buildOpenApiDocument(serverUrl: string): Record<string, unknown> {
+  const paths: Record<string, Record<string, unknown>> = {};
+
+  for (const route of ROUTES) {
+    paths[route.path] = { ...paths[route.path], [route.method]: buildOperation(route) };
+  }
+
   return {
     openapi: SPEC_VERSION,
     info: {
@@ -59,70 +299,12 @@ export function buildOpenApiDocument(serverUrl: string): Record<string, unknown>
       version: '0.1.0',
       description:
         'Social execution infrastructure for software and AI agents. ' +
-        'All timestamps are UTC ISO-8601.',
+        'All timestamps are UTC ISO-8601. All resource ids are prefixed and opaque.',
     },
     servers: [{ url: serverUrl }],
-    paths: {
-      '/health': {
-        get: {
-          operationId: 'getHealth',
-          summary: 'Liveness probe',
-          description:
-            'Returns 200 whenever the Worker can serve requests. Unauthenticated, and ' +
-            'returns no tenant data. Does not check database connectivity.',
-          tags: ['Operations'],
-          security: [],
-          responses: {
-            '200': {
-              description: 'The Worker is serving requests.',
-              headers: {
-                'x-request-id': {
-                  description: 'Echoed request identifier. Quote this when reporting a problem.',
-                  schema: { type: 'string' },
-                },
-                'x-trace-id': {
-                  description: 'Trace identifier correlating this request across services.',
-                  schema: { type: 'string' },
-                },
-              },
-              content: { 'application/json': { schema: jsonSchema(HealthResponseSchema) } },
-            },
-            ...errorResponses(['INTERNAL_ERROR']),
-          },
-        },
-      },
-      '/v1/me': {
-        get: {
-          operationId: 'getMe',
-          summary: 'Describe the presenting API key',
-          description:
-            'Returns the tenant and scopes the presented key resolves to. Requires a ' +
-            'valid key but no particular scope — a key may always describe itself, and ' +
-            'requiring a scope would stop a misconfigured key from discovering why it is ' +
-            'misconfigured.',
-          tags: ['Identity'],
-          security: [{ apiKey: [] }],
-          responses: {
-            '200': {
-              description: 'The key is valid.',
-              content: { 'application/json': { schema: jsonSchema(MeResponseSchema) } },
-            },
-            ...errorResponses([
-              'AUTHENTICATION_REQUIRED',
-              'API_KEY_MALFORMED',
-              'API_KEY_INVALID',
-              'API_KEY_REVOKED',
-              'API_KEY_EXPIRED',
-              'INTERNAL_ERROR',
-            ]),
-          },
-        },
-      },
-    },
+    paths,
     components: {
-      schemas: {
-        Error: jsonSchema(ErrorEnvelopeSchema),
-      },
+      schemas: { Error: jsonSchema(ErrorEnvelopeSchema) },
       securitySchemes: {
         apiKey: {
           type: 'http',
@@ -134,5 +316,6 @@ export function buildOpenApiDocument(serverUrl: string): Record<string, unknown>
         },
       },
     },
+    'x-scopes': API_SCOPES,
   };
 }

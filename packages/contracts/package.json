@@ -10,7 +10,8 @@
     "./scopes": "./src/common/scopes.ts",
     "./http": "./src/http/index.ts",
     "./capabilities": "./src/providers/capabilities.ts",
-    "./validation": "./src/providers/validation.ts"
+    "./validation": "./src/providers/validation.ts",
+    "./pagination": "./src/common/pagination.ts"
   },
   "scripts": {
     "lint": "eslint src",

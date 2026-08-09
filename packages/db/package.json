@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./schema": "./src/schema/index.ts"
+    "./schema": "./src/schema/index.ts",
+    "./test-support": "./src/test-support/seed.ts"
   },
   "scripts": {
     "lint": "eslint src scripts",
@@ -24,6 +25,7 @@
   },
   "devDependencies": {
     "drizzle-kit": "^0.31.10",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "@gs/crypto": "workspace:*"
   }
 }

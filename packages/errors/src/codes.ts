@@ -45,6 +45,13 @@ export const ERROR_CODES = [
   'POST_NOT_RETRYABLE',
   'TARGET_NOT_RETRYABLE',
   'CONFLICTING_STATE',
+  /**
+   * A uniqueness constraint the caller controls was violated — most often an
+   * `external_id` already claimed within the environment. Distinct from
+   * `CONFLICTING_STATE`, which is about a resource being in the wrong state for an
+   * operation rather than a value already being taken.
+   */
+  'RESOURCE_ALREADY_EXISTS',
 
   // ---- connection health (plan §12.3, §42) ---------------------------------
   'CONNECTION_REAUTH_REQUIRED',

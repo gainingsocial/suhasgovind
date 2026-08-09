@@ -4,6 +4,7 @@ import { Hono } from 'hono';
 
 import type { AppEnv } from '../env.js';
 import { authenticate } from '../middleware/authenticate.js';
+import { withDatabase } from '../middleware/database.js';
 
 /**
  * Key introspection (plan §38).
@@ -14,7 +15,7 @@ import { authenticate } from '../middleware/authenticate.js';
  */
 export const me = new Hono<AppEnv>();
 
-me.get('/', authenticate(), (c) => {
+me.get('/', withDatabase(), authenticate(), (c) => {
   const principal = c.get('principal');
 
   const body = MeResponseSchema.parse({
