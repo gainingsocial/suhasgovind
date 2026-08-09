@@ -1,5 +1,5 @@
 {
-  "name": "@gs/providers",
+  "name": "@gs/provider-bluesky",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -13,9 +13,7 @@
   "dependencies": {
     "@gs/contracts": "workspace:*",
     "@gs/errors": "workspace:*",
-    "@gs/provider-kit": "workspace:*",
-    "@gs/provider-mock": "workspace:*",
-    "@gs/provider-bluesky": "workspace:*"
+    "@gs/provider-kit": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^6.0.3",
