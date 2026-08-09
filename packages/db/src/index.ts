@@ -152,3 +152,15 @@ export {
   listEnvironmentsForUser,
   revokeApiKey,
 } from './repositories/api-key-admin.js';
+
+export type {
+  ProviderAppCredentialFields,
+  UpsertProviderAppInput,
+} from './repositories/provider-apps.js';
+export {
+  deleteProviderApp,
+  findProviderApp,
+  listProviderApps,
+  setApprovalStatus,
+  upsertProviderApp,
+} from './repositories/provider-apps.js';
