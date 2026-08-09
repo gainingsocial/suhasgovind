@@ -31,6 +31,12 @@ export interface SeededTenant {
   apiKeyId: string;
   profileId: string;
   publicProfileId: string;
+  /** A healthy `mock` connection, so publishing paths have something to resolve. */
+  connectionId: string;
+  publicConnectionId: string;
+  destinationId: string;
+  publicDestinationId: string;
+  providerDestinationId: string;
 }
 
 export interface TenantHarness {
@@ -119,11 +125,17 @@ export async function createTenantHarness(
 
   const build = (label: string) => {
     const s = suffix();
-    const organizationId = newUuidV7();
-    const projectId = newUuidV7();
-    const projectEnvironmentId = newUuidV7();
-    const profileId = newUuidV7();
-    return { label, s, organizationId, projectId, projectEnvironmentId, profileId };
+    return {
+      label,
+      s,
+      organizationId: newUuidV7(),
+      projectId: newUuidV7(),
+      projectEnvironmentId: newUuidV7(),
+      profileId: newUuidV7(),
+      connectionId: newUuidV7(),
+      destinationId: newUuidV7(),
+      providerDestinationId: `mock_dst_${s}`,
+    };
   };
 
   const a = build('a');
@@ -165,6 +177,55 @@ export async function createTenantHarness(
     })),
   );
 
+  // A healthy `mock` connection and destination per tenant, so publishing and capability
+  // paths have something real to resolve. Seeded here rather than per-suite because every
+  // route beyond profiles needs one, and the ownership chain
+  // (destination → connection → profile → environment → project) only exists if all of it
+  // is present.
+  await db.insert(schema.socialConnections).values(
+    [a, b].map((t) => ({
+      id: t.connectionId,
+      profileId: t.profileId,
+      projectEnvironmentId: t.projectEnvironmentId,
+      projectId: t.projectId,
+      organizationId: t.organizationId,
+      provider: 'mock',
+      authStrategy: 'api_key' as const,
+      providerAccountId: `mock_account_${t.s}`,
+      providerAccountName: 'Mock Account',
+      providerAccountHandle: '@mock',
+      health: 'healthy' as const,
+      setupCompletedAt: new Date(),
+    })),
+  );
+
+  await db.insert(schema.connectionScopes).values(
+    [a, b].flatMap((t) =>
+      ['post.write', 'post.read', 'destination.read'].map((scope) => ({
+        id: newUuidV7(),
+        connectionId: t.connectionId,
+        scope,
+        granted: true,
+      })),
+    ),
+  );
+
+  await db.insert(schema.socialDestinations).values(
+    [a, b].map((t) => ({
+      id: t.destinationId,
+      connectionId: t.connectionId,
+      profileId: t.profileId,
+      projectEnvironmentId: t.projectEnvironmentId,
+      organizationId: t.organizationId,
+      provider: 'mock',
+      providerDestinationId: t.providerDestinationId,
+      destinationType: 'feed',
+      name: `Mock feed ${t.s}`,
+      handle: '@mock',
+      selected: true,
+    })),
+  );
+
   const keyA = await buildKey(a, scopes, null);
   const keyB = await buildKey(b, scopes, options.restrictTenantBToProfile ? b.profileId : null);
 
@@ -182,6 +243,11 @@ export async function createTenantHarness(
     apiKeyId: keyId,
     profileId: t.profileId,
     publicProfileId: toPublicId('profile', t.profileId),
+    connectionId: t.connectionId,
+    publicConnectionId: toPublicId('connection', t.connectionId),
+    destinationId: t.destinationId,
+    publicDestinationId: toPublicId('destination', t.destinationId),
+    providerDestinationId: t.providerDestinationId,
   });
 
   return {

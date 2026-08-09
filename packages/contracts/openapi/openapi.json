@@ -1151,6 +1151,2046 @@
           }
         }
       }
+    },
+    "/v1/connections": {
+      "get": {
+        "operationId": "listConnections",
+        "summary": "List connections",
+        "description": "A connection is one authorization relationship with a provider. It is a live thing that degrades — check `health` before assuming it can publish. Disconnected connections are excluded unless `include_disconnected` is set.\n\nRequires scope: `connections:read`.",
+        "tags": [
+          "Connections"
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": "desc",
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
+            "name": "profile_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "mock",
+                "bluesky",
+                "telegram",
+                "linkedin",
+                "facebook",
+                "instagram",
+                "threads",
+                "tiktok",
+                "youtube",
+                "pinterest",
+                "google_business_profile",
+                "x",
+                "discord"
+              ],
+              "description": "Social platform identifier."
+            },
+            "description": "Social platform identifier."
+          },
+          {
+            "name": "health",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "healthy",
+                "refresh_due",
+                "refreshing",
+                "reauth_required",
+                "permission_missing",
+                "rate_limited",
+                "provider_degraded",
+                "disconnected",
+                "revoked"
+              ]
+            }
+          },
+          {
+            "name": "include_disconnected",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of connections.",
+            "headers": {
+              "x-request-id": {
+                "description": "Echoed request identifier. Quote this when reporting a problem.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "x-trace-id": {
+                "description": "Trace identifier correlating this request across services.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "const": "list"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "object": {
+                            "type": "string",
+                            "const": "connection"
+                          },
+                          "profile_id": {
+                            "type": "string"
+                          },
+                          "provider": {
+                            "type": "string",
+                            "enum": [
+                              "mock",
+                              "bluesky",
+                              "telegram",
+                              "linkedin",
+                              "facebook",
+                              "instagram",
+                              "threads",
+                              "tiktok",
+                              "youtube",
+                              "pinterest",
+                              "google_business_profile",
+                              "x",
+                              "discord"
+                            ],
+                            "description": "Social platform identifier."
+                          },
+                          "auth_strategy": {
+                            "type": "string",
+                            "enum": [
+                              "oauth2",
+                              "oauth2_pkce",
+                              "oauth1",
+                              "manual_token",
+                              "bot_token",
+                              "webhook_url",
+                              "api_key",
+                              "app_password",
+                              "custom"
+                            ]
+                          },
+                          "provider_account_id": {
+                            "type": "string"
+                          },
+                          "provider_account_name": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "provider_account_handle": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "provider_account_avatar_url": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "health": {
+                            "type": "string",
+                            "enum": [
+                              "healthy",
+                              "refresh_due",
+                              "refreshing",
+                              "reauth_required",
+                              "permission_missing",
+                              "rate_limited",
+                              "provider_degraded",
+                              "disconnected",
+                              "revoked"
+                            ]
+                          },
+                          "health_detail": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "health_checked_at": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "setup_completed_at": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "granted_scopes": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "connected_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                          },
+                          "disconnected_at": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "last_used_at": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "object",
+                          "profile_id",
+                          "provider",
+                          "auth_strategy",
+                          "provider_account_id",
+                          "provider_account_name",
+                          "provider_account_handle",
+                          "provider_account_avatar_url",
+                          "health",
+                          "health_detail",
+                          "health_checked_at",
+                          "setup_completed_at",
+                          "granted_scopes",
+                          "connected_at",
+                          "disconnected_at",
+                          "last_used_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "next_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "object",
+                    "data",
+                    "has_more",
+                    "next_cursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`INVALID_REQUEST` — The request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTHENTICATION_REQUIRED` — An API key is required. Send it as `Authorization: Bearer sk_live_...`.\n\n`API_KEY_MALFORMED` — The API key is malformed. Expected a key beginning with `sk_test_` or `sk_live_`.\n\n`API_KEY_INVALID` — The API key is not valid.\n\n`API_KEY_REVOKED` — This API key has been revoked.\n\n`API_KEY_EXPIRED` — This API key has expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR` — An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/connections/{connectionId}": {
+      "get": {
+        "operationId": "getConnection",
+        "summary": "Retrieve a connection",
+        "description": "Never returns credential material — not the token, not its ciphertext. `health` and `granted_scopes` are the observable surface, and they explain any failure you will see.\n\nRequires scope: `connections:read`.",
+        "tags": [
+          "Connections"
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "connectionId",
+            "in": "path",
+            "required": true,
+            "description": "Public connection id, `con_…`.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The connection.",
+            "headers": {
+              "x-request-id": {
+                "description": "Echoed request identifier. Quote this when reporting a problem.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "x-trace-id": {
+                "description": "Trace identifier correlating this request across services.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "object": {
+                      "type": "string",
+                      "const": "connection"
+                    },
+                    "profile_id": {
+                      "type": "string"
+                    },
+                    "provider": {
+                      "type": "string",
+                      "enum": [
+                        "mock",
+                        "bluesky",
+                        "telegram",
+                        "linkedin",
+                        "facebook",
+                        "instagram",
+                        "threads",
+                        "tiktok",
+                        "youtube",
+                        "pinterest",
+                        "google_business_profile",
+                        "x",
+                        "discord"
+                      ],
+                      "description": "Social platform identifier."
+                    },
+                    "auth_strategy": {
+                      "type": "string",
+                      "enum": [
+                        "oauth2",
+                        "oauth2_pkce",
+                        "oauth1",
+                        "manual_token",
+                        "bot_token",
+                        "webhook_url",
+                        "api_key",
+                        "app_password",
+                        "custom"
+                      ]
+                    },
+                    "provider_account_id": {
+                      "type": "string"
+                    },
+                    "provider_account_name": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "provider_account_handle": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "provider_account_avatar_url": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "health": {
+                      "type": "string",
+                      "enum": [
+                        "healthy",
+                        "refresh_due",
+                        "refreshing",
+                        "reauth_required",
+                        "permission_missing",
+                        "rate_limited",
+                        "provider_degraded",
+                        "disconnected",
+                        "revoked"
+                      ]
+                    },
+                    "health_detail": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "health_checked_at": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "setup_completed_at": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "granted_scopes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "connected_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                    },
+                    "disconnected_at": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "last_used_at": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "object",
+                    "profile_id",
+                    "provider",
+                    "auth_strategy",
+                    "provider_account_id",
+                    "provider_account_name",
+                    "provider_account_handle",
+                    "provider_account_avatar_url",
+                    "health",
+                    "health_detail",
+                    "health_checked_at",
+                    "setup_completed_at",
+                    "granted_scopes",
+                    "connected_at",
+                    "disconnected_at",
+                    "last_used_at"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`INVALID_REQUEST` — The request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTHENTICATION_REQUIRED` — An API key is required. Send it as `Authorization: Bearer sk_live_...`.\n\n`API_KEY_MALFORMED` — The API key is malformed. Expected a key beginning with `sk_test_` or `sk_live_`.\n\n`API_KEY_INVALID` — The API key is not valid.\n\n`API_KEY_REVOKED` — This API key has been revoked.\n\n`API_KEY_EXPIRED` — This API key has expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`CONNECTION_NOT_FOUND` — No such connection.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR` — An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/connections/{connectionId}/destinations": {
+      "get": {
+        "operationId": "listConnectionDestinations",
+        "summary": "List a connection’s destinations",
+        "description": "A destination is an actual publishable surface: a Page, an organization, a board, a channel. One connection commonly yields several, which is why they are separate objects. Only `selected` destinations can be published to.\n\nRequires scope: `destinations:read`.",
+        "tags": [
+          "Connections"
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "connectionId",
+            "in": "path",
+            "required": true,
+            "description": "Public connection id, `con_…`.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The connection’s destinations.",
+            "headers": {
+              "x-request-id": {
+                "description": "Echoed request identifier. Quote this when reporting a problem.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "x-trace-id": {
+                "description": "Trace identifier correlating this request across services.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "const": "list"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "object": {
+                            "type": "string",
+                            "const": "destination"
+                          },
+                          "connection_id": {
+                            "type": "string"
+                          },
+                          "profile_id": {
+                            "type": "string"
+                          },
+                          "provider": {
+                            "type": "string",
+                            "enum": [
+                              "mock",
+                              "bluesky",
+                              "telegram",
+                              "linkedin",
+                              "facebook",
+                              "instagram",
+                              "threads",
+                              "tiktok",
+                              "youtube",
+                              "pinterest",
+                              "google_business_profile",
+                              "x",
+                              "discord"
+                            ],
+                            "description": "Social platform identifier."
+                          },
+                          "destination_type": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "handle": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "avatar_url": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "url": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "selected": {
+                            "type": "boolean"
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                          },
+                          "updated_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "object",
+                          "connection_id",
+                          "profile_id",
+                          "provider",
+                          "destination_type",
+                          "name",
+                          "handle",
+                          "avatar_url",
+                          "url",
+                          "selected",
+                          "created_at",
+                          "updated_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "next_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "object",
+                    "data",
+                    "has_more",
+                    "next_cursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`INVALID_REQUEST` — The request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTHENTICATION_REQUIRED` — An API key is required. Send it as `Authorization: Bearer sk_live_...`.\n\n`API_KEY_MALFORMED` — The API key is malformed. Expected a key beginning with `sk_test_` or `sk_live_`.\n\n`API_KEY_INVALID` — The API key is not valid.\n\n`API_KEY_REVOKED` — This API key has been revoked.\n\n`API_KEY_EXPIRED` — This API key has expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`CONNECTION_NOT_FOUND` — No such connection.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR` — An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/connections/{connectionId}/disconnect": {
+      "post": {
+        "operationId": "disconnectConnection",
+        "summary": "Disconnect a connection",
+        "description": "Idempotent: disconnecting an already-disconnected connection succeeds. Soft, so a later reconnect of the same provider account updates cleanly rather than creating a duplicate that would double-post.\n\nRequires scope: `connections:write`.",
+        "tags": [
+          "Connections"
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "connectionId",
+            "in": "path",
+            "required": true,
+            "description": "Public connection id, `con_…`.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The connection is disconnected.",
+            "headers": {
+              "x-request-id": {
+                "description": "Echoed request identifier. Quote this when reporting a problem.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "x-trace-id": {
+                "description": "Trace identifier correlating this request across services.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "object": {
+                      "type": "string",
+                      "const": "connection"
+                    },
+                    "disconnected": {
+                      "type": "boolean",
+                      "const": true
+                    },
+                    "revoked_at_provider": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "object",
+                    "disconnected",
+                    "revoked_at_provider"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`INVALID_REQUEST` — The request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTHENTICATION_REQUIRED` — An API key is required. Send it as `Authorization: Bearer sk_live_...`.\n\n`API_KEY_MALFORMED` — The API key is malformed. Expected a key beginning with `sk_test_` or `sk_live_`.\n\n`API_KEY_INVALID` — The API key is not valid.\n\n`API_KEY_REVOKED` — This API key has been revoked.\n\n`API_KEY_EXPIRED` — This API key has expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`CONNECTION_NOT_FOUND` — No such connection.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR` — An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/platforms": {
+      "get": {
+        "operationId": "listPlatforms",
+        "summary": "List supported platforms",
+        "description": "Every provider the product targets. `available: false` means the adapter is not built yet — listed so a UI can render it from the API rather than hard-coding a second list that drifts.\n\nRequires scope: `capabilities:read`.",
+        "tags": [
+          "Capabilities"
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The platform list.",
+            "headers": {
+              "x-request-id": {
+                "description": "Echoed request identifier. Quote this when reporting a problem.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "x-trace-id": {
+                "description": "Trace identifier correlating this request across services.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "const": "list"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string",
+                            "enum": [
+                              "mock",
+                              "bluesky",
+                              "telegram",
+                              "linkedin",
+                              "facebook",
+                              "instagram",
+                              "threads",
+                              "tiktok",
+                              "youtube",
+                              "pinterest",
+                              "google_business_profile",
+                              "x",
+                              "discord"
+                            ],
+                            "description": "Social platform identifier."
+                          },
+                          "object": {
+                            "type": "string",
+                            "const": "platform"
+                          },
+                          "display_name": {
+                            "type": "string"
+                          },
+                          "auth_strategy": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "oauth2",
+                                  "oauth2_pkce",
+                                  "oauth1",
+                                  "manual_token",
+                                  "bot_token",
+                                  "webhook_url",
+                                  "api_key",
+                                  "app_password",
+                                  "custom"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "available": {
+                            "type": "boolean"
+                          },
+                          "requires_provider_app": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "provider",
+                          "object",
+                          "display_name",
+                          "auth_strategy",
+                          "available",
+                          "requires_provider_app"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "next_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "object",
+                    "data",
+                    "has_more",
+                    "next_cursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTHENTICATION_REQUIRED` — An API key is required. Send it as `Authorization: Bearer sk_live_...`.\n\n`API_KEY_MALFORMED` — The API key is malformed. Expected a key beginning with `sk_test_` or `sk_live_`.\n\n`API_KEY_INVALID` — The API key is not valid.\n\n`API_KEY_REVOKED` — This API key has been revoked.\n\n`API_KEY_EXPIRED` — This API key has expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR` — An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/platforms/{provider}/capabilities": {
+      "get": {
+        "operationId": "getPlatformCapabilities",
+        "summary": "Generic platform capabilities",
+        "description": "What the platform can do at all. Account-specific narrowing is deliberately absent — for what a particular connected account can do, call the destination capabilities endpoint, which accounts for granted scopes, account type and platform approval state.\n\nRequires scope: `capabilities:read`.",
+        "tags": [
+          "Capabilities"
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "description": "Provider identifier, e.g. `bluesky`.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Generic capabilities for the platform.",
+            "headers": {
+              "x-request-id": {
+                "description": "Echoed request identifier. Quote this when reporting a problem.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "x-trace-id": {
+                "description": "Trace identifier correlating this request across services.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "schema_version": {
+                      "type": "number",
+                      "const": 1
+                    },
+                    "provider": {
+                      "type": "string",
+                      "enum": [
+                        "mock",
+                        "bluesky",
+                        "telegram",
+                        "linkedin",
+                        "facebook",
+                        "instagram",
+                        "threads",
+                        "tiktok",
+                        "youtube",
+                        "pinterest",
+                        "google_business_profile",
+                        "x",
+                        "discord"
+                      ],
+                      "description": "Social platform identifier."
+                    },
+                    "adapter_version": {
+                      "type": "string"
+                    },
+                    "resolution": {
+                      "type": "string",
+                      "enum": [
+                        "generic",
+                        "effective"
+                      ]
+                    },
+                    "publishing": {
+                      "type": "object",
+                      "properties": {
+                        "text_only": {
+                          "type": "boolean"
+                        },
+                        "image": {
+                          "type": "boolean"
+                        },
+                        "video": {
+                          "type": "boolean"
+                        },
+                        "carousel": {
+                          "type": "boolean"
+                        },
+                        "story": {
+                          "type": "boolean"
+                        },
+                        "reel": {
+                          "type": "boolean"
+                        },
+                        "link_preview": {
+                          "type": "boolean"
+                        },
+                        "poll": {
+                          "type": "boolean"
+                        },
+                        "native_scheduling": {
+                          "type": "boolean"
+                        },
+                        "thread": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "text_only",
+                        "image",
+                        "video",
+                        "carousel",
+                        "story",
+                        "reel",
+                        "link_preview",
+                        "poll",
+                        "native_scheduling",
+                        "thread"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "actions": {
+                      "type": "object",
+                      "properties": {
+                        "delete_post": {
+                          "type": "boolean"
+                        },
+                        "edit_post": {
+                          "type": "boolean"
+                        },
+                        "comments_read": {
+                          "type": "boolean"
+                        },
+                        "comments_reply": {
+                          "type": "boolean"
+                        },
+                        "dm_send": {
+                          "type": "boolean"
+                        },
+                        "analytics_read": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "delete_post",
+                        "edit_post",
+                        "comments_read",
+                        "comments_reply",
+                        "dm_send",
+                        "analytics_read"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "constraints": {
+                      "type": "object",
+                      "properties": {
+                        "max_text_length": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "max_media_count": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "max_image_bytes": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "max_video_bytes": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "max_video_duration_seconds": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "min_video_duration_seconds": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "supported_image_types": {
+                          "readOnly": true,
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "supported_video_types": {
+                          "readOnly": true,
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "supported_aspect_ratios": {
+                          "readOnly": true,
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "max_hashtags": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "max_mentions": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowed_privacy_levels": {
+                          "readOnly": true,
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "supports_alt_text": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "max_text_length",
+                        "max_media_count",
+                        "max_image_bytes",
+                        "max_video_bytes",
+                        "max_video_duration_seconds",
+                        "min_video_duration_seconds",
+                        "supported_image_types",
+                        "supported_video_types",
+                        "supported_aspect_ratios",
+                        "max_hashtags",
+                        "max_mentions",
+                        "allowed_privacy_levels",
+                        "supports_alt_text"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "restrictions": {
+                      "readOnly": true,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "capability": {
+                            "type": "string",
+                            "description": "Dotted path, e.g. `publishing.video`."
+                          },
+                          "reason": {
+                            "type": "string",
+                            "enum": [
+                              "scope_missing",
+                              "account_type_ineligible",
+                              "provider_approval_pending",
+                              "subscription_required",
+                              "region_unavailable",
+                              "rollout_pending",
+                              "provider_deprecated"
+                            ]
+                          },
+                          "message": {
+                            "type": "string"
+                          },
+                          "agent_action": {
+                            "type": "string"
+                          },
+                          "required_scopes": {
+                            "readOnly": true,
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "capability",
+                          "reason",
+                          "message",
+                          "agent_action"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "resolved_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "schema_version",
+                    "provider",
+                    "adapter_version",
+                    "resolution",
+                    "publishing",
+                    "actions",
+                    "constraints",
+                    "restrictions",
+                    "resolved_at"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`PROVIDER_NOT_SUPPORTED` — This provider is not supported.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTHENTICATION_REQUIRED` — An API key is required. Send it as `Authorization: Bearer sk_live_...`.\n\n`API_KEY_MALFORMED` — The API key is malformed. Expected a key beginning with `sk_test_` or `sk_live_`.\n\n`API_KEY_INVALID` — The API key is not valid.\n\n`API_KEY_REVOKED` — This API key has been revoked.\n\n`API_KEY_EXPIRED` — This API key has expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR` — An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/destinations/{destinationId}/capabilities": {
+      "get": {
+        "operationId": "getDestinationCapabilities",
+        "summary": "Effective capabilities for a destination",
+        "description": "What THIS destination can actually do, narrowed by granted scopes, account type, subscription, platform approval and rollout. Every capability that is unavailable carries a `restrictions` entry explaining why and what would lift it — `video: false` alone cannot distinguish \"unsupported\" from \"missing a scope\", and the fix differs.\n\nRequires scope: `capabilities:read`.",
+        "tags": [
+          "Capabilities"
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "destinationId",
+            "in": "path",
+            "required": true,
+            "description": "Public destination id, `dst_…`.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Effective capabilities for the destination.",
+            "headers": {
+              "x-request-id": {
+                "description": "Echoed request identifier. Quote this when reporting a problem.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "x-trace-id": {
+                "description": "Trace identifier correlating this request across services.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "schema_version": {
+                      "type": "number",
+                      "const": 1
+                    },
+                    "provider": {
+                      "type": "string",
+                      "enum": [
+                        "mock",
+                        "bluesky",
+                        "telegram",
+                        "linkedin",
+                        "facebook",
+                        "instagram",
+                        "threads",
+                        "tiktok",
+                        "youtube",
+                        "pinterest",
+                        "google_business_profile",
+                        "x",
+                        "discord"
+                      ],
+                      "description": "Social platform identifier."
+                    },
+                    "adapter_version": {
+                      "type": "string"
+                    },
+                    "resolution": {
+                      "type": "string",
+                      "enum": [
+                        "generic",
+                        "effective"
+                      ]
+                    },
+                    "publishing": {
+                      "type": "object",
+                      "properties": {
+                        "text_only": {
+                          "type": "boolean"
+                        },
+                        "image": {
+                          "type": "boolean"
+                        },
+                        "video": {
+                          "type": "boolean"
+                        },
+                        "carousel": {
+                          "type": "boolean"
+                        },
+                        "story": {
+                          "type": "boolean"
+                        },
+                        "reel": {
+                          "type": "boolean"
+                        },
+                        "link_preview": {
+                          "type": "boolean"
+                        },
+                        "poll": {
+                          "type": "boolean"
+                        },
+                        "native_scheduling": {
+                          "type": "boolean"
+                        },
+                        "thread": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "text_only",
+                        "image",
+                        "video",
+                        "carousel",
+                        "story",
+                        "reel",
+                        "link_preview",
+                        "poll",
+                        "native_scheduling",
+                        "thread"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "actions": {
+                      "type": "object",
+                      "properties": {
+                        "delete_post": {
+                          "type": "boolean"
+                        },
+                        "edit_post": {
+                          "type": "boolean"
+                        },
+                        "comments_read": {
+                          "type": "boolean"
+                        },
+                        "comments_reply": {
+                          "type": "boolean"
+                        },
+                        "dm_send": {
+                          "type": "boolean"
+                        },
+                        "analytics_read": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "delete_post",
+                        "edit_post",
+                        "comments_read",
+                        "comments_reply",
+                        "dm_send",
+                        "analytics_read"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "constraints": {
+                      "type": "object",
+                      "properties": {
+                        "max_text_length": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "max_media_count": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "max_image_bytes": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "max_video_bytes": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "max_video_duration_seconds": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "min_video_duration_seconds": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "supported_image_types": {
+                          "readOnly": true,
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "supported_video_types": {
+                          "readOnly": true,
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "supported_aspect_ratios": {
+                          "readOnly": true,
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "max_hashtags": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "max_mentions": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowed_privacy_levels": {
+                          "readOnly": true,
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "supports_alt_text": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "max_text_length",
+                        "max_media_count",
+                        "max_image_bytes",
+                        "max_video_bytes",
+                        "max_video_duration_seconds",
+                        "min_video_duration_seconds",
+                        "supported_image_types",
+                        "supported_video_types",
+                        "supported_aspect_ratios",
+                        "max_hashtags",
+                        "max_mentions",
+                        "allowed_privacy_levels",
+                        "supports_alt_text"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "restrictions": {
+                      "readOnly": true,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "capability": {
+                            "type": "string",
+                            "description": "Dotted path, e.g. `publishing.video`."
+                          },
+                          "reason": {
+                            "type": "string",
+                            "enum": [
+                              "scope_missing",
+                              "account_type_ineligible",
+                              "provider_approval_pending",
+                              "subscription_required",
+                              "region_unavailable",
+                              "rollout_pending",
+                              "provider_deprecated"
+                            ]
+                          },
+                          "message": {
+                            "type": "string"
+                          },
+                          "agent_action": {
+                            "type": "string"
+                          },
+                          "required_scopes": {
+                            "readOnly": true,
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "capability",
+                          "reason",
+                          "message",
+                          "agent_action"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "resolved_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "schema_version",
+                    "provider",
+                    "adapter_version",
+                    "resolution",
+                    "publishing",
+                    "actions",
+                    "constraints",
+                    "restrictions",
+                    "resolved_at"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`INVALID_REQUEST` — The request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTHENTICATION_REQUIRED` — An API key is required. Send it as `Authorization: Bearer sk_live_...`.\n\n`API_KEY_MALFORMED` — The API key is malformed. Expected a key beginning with `sk_test_` or `sk_live_`.\n\n`API_KEY_INVALID` — The API key is not valid.\n\n`API_KEY_REVOKED` — This API key has been revoked.\n\n`API_KEY_EXPIRED` — This API key has expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`DESTINATION_NOT_FOUND` — No such destination.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR` — An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {

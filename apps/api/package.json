@@ -18,7 +18,9 @@
     "@gs/errors": "workspace:*",
     "@gs/observability": "workspace:*",
     "hono": "^4.10.3",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "@gs/provider-kit": "workspace:*",
+    "@gs/providers": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260804.1",

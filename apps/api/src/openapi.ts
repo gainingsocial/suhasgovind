@@ -1,10 +1,17 @@
 import {
+  CapabilitiesResponseSchema,
+  ConnectionListResponseSchema,
+  ConnectionSchema,
   CreateProfileRequestSchema,
   DeleteProfileResponseSchema,
+  DestinationListResponseSchema,
+  DisconnectConnectionResponseSchema,
   ErrorEnvelopeSchema,
   HealthResponseSchema,
+  ListConnectionsQuerySchema,
   ListProfilesQuerySchema,
   MeResponseSchema,
+  PlatformListResponseSchema,
   ProfileListResponseSchema,
   ProfileSchema,
   UpdateProfileRequestSchema,
@@ -282,6 +289,124 @@ const ROUTES: RouteSpec[] = [
     successDescription: 'The profile was deleted.',
     response: DeleteProfileResponseSchema,
     errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'PROFILE_NOT_FOUND'],
+  },
+  {
+    method: 'get',
+    path: '/v1/connections',
+    operationId: 'listConnections',
+    summary: 'List connections',
+    description:
+      'A connection is one authorization relationship with a provider. It is a live thing ' +
+      'that degrades — check `health` before assuming it can publish. Disconnected ' +
+      'connections are excluded unless `include_disconnected` is set.',
+    tags: ['Connections'],
+    scopes: ['connections:read'],
+    querySchema: ListConnectionsQuerySchema,
+    successStatus: 200,
+    successDescription: 'A page of connections.',
+    response: ConnectionListResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST'],
+  },
+  {
+    method: 'get',
+    path: '/v1/connections/{connectionId}',
+    operationId: 'getConnection',
+    summary: 'Retrieve a connection',
+    description:
+      'Never returns credential material — not the token, not its ciphertext. `health` and ' +
+      '`granted_scopes` are the observable surface, and they explain any failure you will see.',
+    tags: ['Connections'],
+    scopes: ['connections:read'],
+    pathParams: [{ name: 'connectionId', description: 'Public connection id, `con_…`.' }],
+    successStatus: 200,
+    successDescription: 'The connection.',
+    response: ConnectionSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'CONNECTION_NOT_FOUND'],
+  },
+  {
+    method: 'get',
+    path: '/v1/connections/{connectionId}/destinations',
+    operationId: 'listConnectionDestinations',
+    summary: 'List a connection’s destinations',
+    description:
+      'A destination is an actual publishable surface: a Page, an organization, a board, a ' +
+      'channel. One connection commonly yields several, which is why they are separate ' +
+      'objects. Only `selected` destinations can be published to.',
+    tags: ['Connections'],
+    scopes: ['destinations:read'],
+    pathParams: [{ name: 'connectionId', description: 'Public connection id, `con_…`.' }],
+    successStatus: 200,
+    successDescription: 'The connection’s destinations.',
+    response: DestinationListResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'CONNECTION_NOT_FOUND'],
+  },
+  {
+    method: 'post',
+    path: '/v1/connections/{connectionId}/disconnect',
+    operationId: 'disconnectConnection',
+    summary: 'Disconnect a connection',
+    description:
+      'Idempotent: disconnecting an already-disconnected connection succeeds. Soft, so a ' +
+      'later reconnect of the same provider account updates cleanly rather than creating a ' +
+      'duplicate that would double-post.',
+    tags: ['Connections'],
+    scopes: ['connections:write'],
+    pathParams: [{ name: 'connectionId', description: 'Public connection id, `con_…`.' }],
+    successStatus: 200,
+    successDescription: 'The connection is disconnected.',
+    response: DisconnectConnectionResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'CONNECTION_NOT_FOUND'],
+  },
+  {
+    method: 'get',
+    path: '/v1/platforms',
+    operationId: 'listPlatforms',
+    summary: 'List supported platforms',
+    description:
+      'Every provider the product targets. `available: false` means the adapter is not built ' +
+      'yet — listed so a UI can render it from the API rather than hard-coding a second list ' +
+      'that drifts.',
+    tags: ['Capabilities'],
+    scopes: ['capabilities:read'],
+    successStatus: 200,
+    successDescription: 'The platform list.',
+    response: PlatformListResponseSchema,
+    errors: AUTH_ERRORS,
+  },
+  {
+    method: 'get',
+    path: '/v1/platforms/{provider}/capabilities',
+    operationId: 'getPlatformCapabilities',
+    summary: 'Generic platform capabilities',
+    description:
+      'What the platform can do at all. Account-specific narrowing is deliberately absent — ' +
+      'for what a particular connected account can do, call the destination capabilities ' +
+      'endpoint, which accounts for granted scopes, account type and platform approval state.',
+    tags: ['Capabilities'],
+    scopes: ['capabilities:read'],
+    pathParams: [{ name: 'provider', description: 'Provider identifier, e.g. `bluesky`.' }],
+    successStatus: 200,
+    successDescription: 'Generic capabilities for the platform.',
+    response: CapabilitiesResponseSchema,
+    errors: [...AUTH_ERRORS, 'PROVIDER_NOT_SUPPORTED'],
+  },
+  {
+    method: 'get',
+    path: '/v1/destinations/{destinationId}/capabilities',
+    operationId: 'getDestinationCapabilities',
+    summary: 'Effective capabilities for a destination',
+    description:
+      'What THIS destination can actually do, narrowed by granted scopes, account type, ' +
+      'subscription, platform approval and rollout. Every capability that is unavailable ' +
+      'carries a `restrictions` entry explaining why and what would lift it — `video: false` ' +
+      'alone cannot distinguish "unsupported" from "missing a scope", and the fix differs.',
+    tags: ['Capabilities'],
+    scopes: ['capabilities:read'],
+    pathParams: [{ name: 'destinationId', description: 'Public destination id, `dst_…`.' }],
+    successStatus: 200,
+    successDescription: 'Effective capabilities for the destination.',
+    response: CapabilitiesResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'DESTINATION_NOT_FOUND'],
   },
 ];
 

@@ -73,3 +73,21 @@ export {
   softDeleteProfile,
   updateProfile,
 } from './repositories/profiles.js';
+
+export type {
+  ConnectionWithScopes,
+  DestinationOwnership,
+  ListConnectionsInput,
+} from './repositories/connections.js';
+export {
+  countConnections,
+  disconnectConnection,
+  findConnectionById,
+  findDestinationById,
+  findDestinationOwnership,
+  findDestinationOwnerships,
+  listConnections,
+  listDestinationsForConnection,
+  setConnectionHealth,
+  storeDestinationCapabilities,
+} from './repositories/connections.js';
