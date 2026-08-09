@@ -1,6 +1,12 @@
 import {
   CapabilitiesResponseSchema,
+  CompleteMediaUploadResponseSchema,
   ConnectionListResponseSchema,
+  CreateExternalMediaRequestSchema,
+  CreateMediaUploadRequestSchema,
+  CreateMediaUploadResponseSchema,
+  DeleteMediaResponseSchema,
+  MediaSchema,
   ConnectionSchema,
   CreateProfileRequestSchema,
   DeleteProfileResponseSchema,
@@ -407,6 +413,95 @@ const ROUTES: RouteSpec[] = [
     successDescription: 'Effective capabilities for the destination.',
     response: CapabilitiesResponseSchema,
     errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'DESTINATION_NOT_FOUND'],
+  },
+  {
+    method: 'post',
+    path: '/v1/media/uploads',
+    operationId: 'createMediaUpload',
+    summary: 'Start a media upload',
+    description:
+      'Returns a presigned URL. PUT the bytes straight to it, then call the complete ' +
+      'endpoint. The bytes never pass through the API — a large video would exceed both the ' +
+      'request-size limit and the CPU budget. The declared content type and length are ' +
+      'signed into the URL, so it cannot be reused to upload something else.',
+    tags: ['Media'],
+    scopes: ['media:write'],
+    requestBody: CreateMediaUploadRequestSchema,
+    successStatus: 201,
+    successDescription: 'Presigned upload details.',
+    response: CreateMediaUploadResponseSchema,
+    errors: [
+      ...AUTH_ERRORS,
+      'INVALID_REQUEST',
+      'PROFILE_NOT_FOUND',
+      'MEDIA_TYPE_UNSUPPORTED',
+      'MEDIA_TOO_LARGE',
+    ],
+  },
+  {
+    method: 'post',
+    path: '/v1/media/uploads/{mediaId}/complete',
+    operationId: 'completeMediaUpload',
+    summary: 'Complete a media upload',
+    description:
+      'Confirms the bytes are in place and queues the metadata probe. The asset is not ' +
+      'ready until probing finishes: until then the only thing known about the file is what ' +
+      'the client claimed, and validating against a claim would approve posts the provider ' +
+      'then rejects. Safe to call twice.',
+    tags: ['Media'],
+    scopes: ['media:write'],
+    pathParams: [{ name: 'mediaId', description: 'Public media id, `med_…`.' }],
+    successStatus: 200,
+    successDescription: 'The media asset.',
+    response: CompleteMediaUploadResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'MEDIA_NOT_FOUND', 'CONFLICTING_STATE'],
+  },
+  {
+    method: 'post',
+    path: '/v1/media/external',
+    operationId: 'createExternalMedia',
+    summary: 'Register externally hosted media',
+    description:
+      'Registers a URL you already host. It is validated against SSRF rules before anything ' +
+      'fetches it — private, loopback, link-local and cloud-metadata addresses are refused, ' +
+      'including the IPv4-mapped IPv6 spellings of them.',
+    tags: ['Media'],
+    scopes: ['media:write'],
+    requestBody: CreateExternalMediaRequestSchema,
+    successStatus: 201,
+    successDescription: 'The media asset.',
+    response: MediaSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'PROFILE_NOT_FOUND', 'MEDIA_URL_NOT_ALLOWED'],
+  },
+  {
+    method: 'get',
+    path: '/v1/media/{mediaId}',
+    operationId: 'getMedia',
+    summary: 'Retrieve a media asset',
+    description: 'Poll until `status` is `ready` before attaching the asset to a post.',
+    tags: ['Media'],
+    scopes: ['media:read'],
+    pathParams: [{ name: 'mediaId', description: 'Public media id, `med_…`.' }],
+    successStatus: 200,
+    successDescription: 'The media asset.',
+    response: MediaSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'MEDIA_NOT_FOUND'],
+  },
+  {
+    method: 'delete',
+    path: '/v1/media/{mediaId}',
+    operationId: 'deleteMedia',
+    summary: 'Delete a media asset',
+    description:
+      'Soft delete. A published post’s timeline still references the asset, and the stored ' +
+      'object is reaped separately once nothing in flight can need it.',
+    tags: ['Media'],
+    scopes: ['media:write'],
+    pathParams: [{ name: 'mediaId', description: 'Public media id, `med_…`.' }],
+    successStatus: 200,
+    successDescription: 'The asset was deleted.',
+    response: DeleteMediaResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'MEDIA_NOT_FOUND'],
   },
 ];
 

@@ -91,3 +91,17 @@ export {
   setConnectionHealth,
   storeDestinationCapabilities,
 } from './repositories/connections.js';
+
+export type { CreateUploadIntentInput, ProbeResult } from './repositories/media.js';
+export {
+  createExternalMedia,
+  createUploadIntent,
+  expireAbandonedUploads,
+  findMediaById,
+  findMediaByIds,
+  findMediaOwnership,
+  markProbeFailed,
+  markProbed,
+  markUploaded,
+  softDeleteMedia,
+} from './repositories/media.js';

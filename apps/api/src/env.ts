@@ -36,8 +36,22 @@ export interface Env {
    */
   API_KEY_HASH_PEPPER?: string;
 
-  /** Uploaded and derived media (plan §6.5). Absent until R2 is enabled. */
+  /** Uploaded and derived media (plan §6.5). */
   MEDIA?: R2Bucket;
+  /** Metadata probe queue. Probing never runs in the request path (Rule 10). */
+  MEDIA_QUEUE?: Queue;
+
+  /**
+   * R2 S3 credentials for presigned uploads (plan §31).
+   *
+   * Separate from the MEDIA binding on purpose: a binding lets the Worker read and write
+   * objects itself, which would mean streaming every upload through the Worker. These
+   * sign a URL the client uses directly. Worker Secrets, never vars.
+   */
+  R2_ACCOUNT_ID?: string;
+  R2_ACCESS_KEY_ID?: string;
+  R2_SECRET_ACCESS_KEY?: string;
+  R2_BUCKET?: string;
 }
 
 /** Hono generic: bindings plus the per-request context the middleware installs. */
