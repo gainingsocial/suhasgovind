@@ -115,10 +115,14 @@ export type {
   DeliveryWithEvent,
   EmitEventInput,
   EndpointWithSubscriptions,
+  LeasedDelivery,
+  RecordDeliveryResultInput,
   UpdateEndpointInput,
 } from './repositories/webhooks.js';
 export {
   createWebhookEndpoint,
+  leaseWebhookDelivery,
+  recordDeliveryResult,
   deleteWebhookEndpoint,
   emitWebhookEvent,
   findDueDeliveries,

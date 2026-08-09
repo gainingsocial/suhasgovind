@@ -60,7 +60,25 @@ export interface ReconcileMessage {
   traceId?: string;
 }
 
-export type PublishMessage = PublishTargetMessage | PollStatusMessage | ReconcileMessage;
+/**
+ * Fan a scheduled post out to its targets.
+ *
+ * Sent by the reconciler when a post's time has arrived. It exists because the delayed
+ * message the publish path sends can be lost, and because Cloudflare Queues cap how far
+ * ahead a message may be delayed — a post scheduled for next month cannot be represented
+ * as a delayed message at all.
+ */
+export interface ScheduledPostMessage {
+  type: 'publish.scheduled_post';
+  postId: string;
+  traceId?: string;
+}
+
+export type PublishMessage =
+  | PublishTargetMessage
+  | PollStatusMessage
+  | ReconcileMessage
+  | ScheduledPostMessage;
 
 export interface WorkerContext {
   logger: Logger;

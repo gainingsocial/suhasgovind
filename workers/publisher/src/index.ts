@@ -1,4 +1,4 @@
-import { createDatabaseFromEnv } from '@gs/db';
+import { createDatabaseFromEnv, enqueueTargets, recalculatePostStatus } from '@gs/db';
 import { createLogger, newTraceContext, parseLogLevel } from '@gs/observability';
 
 import type { Env, PublishMessage } from './env.js';
@@ -56,6 +56,32 @@ export default {
             case 'publish.reconcile': {
               const outcome = await reconcileTarget(handle.db, env, body, logger);
               logger.info('publish.reconcile.done', { postTargetId: body.postTargetId, outcome });
+              break;
+            }
+            case 'publish.scheduled_post': {
+              // A scheduled post's time has arrived. Move its targets to `queued` and fan
+              // one message out per target — the per-target lease is what serializes them,
+              // so this is safe even if the same scheduled message arrives twice.
+              const queued = await enqueueTargets(handle.db, { postId: body.postId });
+
+              if (queued.length > 0 && env.PUBLISH_QUEUE) {
+                await env.PUBLISH_QUEUE.sendBatch(
+                  queued.map((target: { id: string }) => ({
+                    body: {
+                      type: 'publish.target' as const,
+                      postId: body.postId,
+                      postTargetId: target.id,
+                      traceId: body.traceId,
+                    },
+                  })),
+                );
+              }
+
+              await recalculatePostStatus(handle.db, body.postId);
+              logger.info('publish.scheduled_post.fanned_out', {
+                postId: body.postId,
+                targets: queued.length,
+              });
               break;
             }
           }

@@ -1,6 +1,6 @@
 import { newUuidV7 } from '@gs/contracts/ids';
 import { ApiError } from '@gs/errors';
-import { and, asc, desc, eq, gt, inArray, isNull, lt, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, isNull, lt, or, sql } from 'drizzle-orm';
 
 import type { Database, Transaction } from '../client.js';
 import {
@@ -457,4 +457,162 @@ export async function findDueDeliveries(
     )
     .orderBy(asc(webhookDeliveries.nextAttemptAt))
     .limit(limit);
+}
+
+// ---------------------------------------------------------------------------
+// Delivery execution
+// ---------------------------------------------------------------------------
+
+export interface LeasedDelivery {
+  delivery: WebhookDelivery;
+  endpoint: WebhookEndpoint;
+  event: {
+    id: string;
+    eventType: string;
+    apiVersion: string;
+    payload: Record<string, unknown>;
+    createdAt: Date;
+  };
+  leaseId: string;
+}
+
+/**
+ * Acquire the exclusive right to attempt one delivery.
+ *
+ * The same conditional-UPDATE shape as the publish target lease, and for the same reason:
+ * queue delivery is at-least-once, so a redelivery must not cause a second POST to the
+ * customer. We promise at-least-once to them, but that is a promise about our retries —
+ * sending the same attempt twice because our own queue hiccuped is just a bug.
+ */
+export async function leaseWebhookDelivery(
+  db: Database,
+  input: { deliveryId: string; leaseSeconds?: number; now?: Date },
+): Promise<LeasedDelivery | null> {
+  const now = input.now ?? new Date();
+  const leaseId = newUuidV7();
+  const leaseExpiresAt = new Date(now.getTime() + (input.leaseSeconds ?? 120) * 1000);
+
+  const [leased] = await db
+    .update(webhookDeliveries)
+    .set({
+      status: 'delivering',
+      leaseId,
+      leaseExpiresAt,
+      attemptCount: sql`${webhookDeliveries.attemptCount} + 1`,
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(webhookDeliveries.id, input.deliveryId),
+        inArray(webhookDeliveries.status, ['pending', 'failed_retryable']),
+        or(isNull(webhookDeliveries.leaseExpiresAt), lt(webhookDeliveries.leaseExpiresAt, now)),
+      ),
+    )
+    .returning();
+
+  if (!leased) return null;
+
+  const [context] = await db
+    .select({ endpoint: webhookEndpoints, event: outboundWebhookEvents })
+    .from(webhookDeliveries)
+    .innerJoin(webhookEndpoints, eq(webhookEndpoints.id, webhookDeliveries.webhookEndpointId))
+    .innerJoin(outboundWebhookEvents, eq(outboundWebhookEvents.id, webhookDeliveries.eventId))
+    .where(eq(webhookDeliveries.id, input.deliveryId))
+    .limit(1);
+
+  if (!context) return null;
+
+  return {
+    delivery: leased,
+    endpoint: context.endpoint,
+    event: {
+      id: context.event.id,
+      eventType: context.event.eventType,
+      apiVersion: context.event.apiVersion,
+      payload: context.event.payload,
+      createdAt: context.event.createdAt,
+    },
+    leaseId,
+  };
+}
+
+export interface RecordDeliveryResultInput {
+  deliveryId: string;
+  leaseId: string;
+  status: 'succeeded' | 'failed_retryable' | 'exhausted';
+  statusCode?: number | null;
+  durationMs?: number;
+  responseExcerpt?: string | null;
+  error?: string | null;
+  nextAttemptAt?: Date | null;
+  /** Disable the endpoint once consecutive failures reach this. */
+  autoDisableAfter?: number;
+  now?: Date;
+}
+
+/**
+ * Record the outcome and update the endpoint's health.
+ *
+ * One transaction, because the delivery row and the endpoint's failure counter have to
+ * agree: a delivery recorded as failed while the counter says the endpoint is healthy
+ * would let a dead endpoint retry forever.
+ */
+export async function recordDeliveryResult(
+  db: Database,
+  input: RecordDeliveryResultInput,
+): Promise<void> {
+  const now = input.now ?? new Date();
+  const succeeded = input.status === 'succeeded';
+
+  await db.transaction(async (tx: Transaction) => {
+    const [updated] = await tx
+      .update(webhookDeliveries)
+      .set({
+        status: input.status,
+        leaseId: null,
+        leaseExpiresAt: null,
+        lastStatusCode: input.statusCode ?? null,
+        lastDurationMs: input.durationMs ?? null,
+        lastResponseExcerpt: input.responseExcerpt ?? null,
+        lastError: input.error ?? null,
+        nextAttemptAt: input.nextAttemptAt ?? null,
+        deliveredAt: succeeded ? now : null,
+        exhaustedAt: input.status === 'exhausted' ? now : null,
+        updatedAt: now,
+      })
+      // Lease-guarded, so a worker whose lease expired cannot overwrite the outcome
+      // recorded by whoever took the delivery over.
+      .where(
+        and(eq(webhookDeliveries.id, input.deliveryId), eq(webhookDeliveries.leaseId, input.leaseId)),
+      )
+      .returning({ endpointId: webhookDeliveries.webhookEndpointId });
+
+    if (!updated) return;
+
+    if (succeeded) {
+      await tx
+        .update(webhookEndpoints)
+        .set({ consecutiveFailures: 0, lastSuccessAt: now, autoDisabledAt: null, updatedAt: now })
+        .where(eq(webhookEndpoints.id, updated.endpointId));
+      return;
+    }
+
+    const threshold = input.autoDisableAfter ?? Number.MAX_SAFE_INTEGER;
+
+    await tx
+      .update(webhookEndpoints)
+      .set({
+        consecutiveFailures: sql`${webhookEndpoints.consecutiveFailures} + 1`,
+        lastFailureAt: now,
+        // Auto-disable in the same statement as the increment, so the decision is made
+        // against the value being written rather than a separately-read stale one.
+        status: sql`CASE WHEN ${webhookEndpoints.consecutiveFailures} + 1 >= ${threshold}
+                         THEN 'auto_disabled'::webhook_endpoint_status
+                         ELSE ${webhookEndpoints.status} END`,
+        autoDisabledAt: sql`CASE WHEN ${webhookEndpoints.consecutiveFailures} + 1 >= ${threshold}
+                                 THEN ${now} ELSE ${webhookEndpoints.autoDisabledAt} END`,
+        updatedAt: now,
+      })
+      .where(eq(webhookEndpoints.id, updated.endpointId));
+  });
 }
