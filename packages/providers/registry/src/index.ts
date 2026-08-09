@@ -3,6 +3,7 @@ import { ApiError } from '@gs/errors';
 import type { ProviderAdapterFactory, SocialProviderAdapter } from '@gs/provider-kit';
 import { createBlueskyAdapter } from '@gs/provider-bluesky';
 import { createMockAdapter } from '@gs/provider-mock';
+import { createTelegramAdapter } from '@gs/provider-telegram';
 
 /**
  * The adapter registry (plan P1, §19).
@@ -26,6 +27,7 @@ import { createMockAdapter } from '@gs/provider-mock';
 const FACTORIES: Partial<Record<ProviderName, ProviderAdapterFactory>> = {
   mock: createMockAdapter,
   bluesky: createBlueskyAdapter,
+  telegram: createTelegramAdapter,
 };
 
 /**
