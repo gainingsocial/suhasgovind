@@ -6,3 +6,6 @@ export { assertOwnership, authorize, requireScopes } from './authorize.js';
 
 export type { DashboardUser } from './dashboard-session.js';
 export { clearJwksCache, verifyDashboardSession } from './dashboard-session.js';
+
+export type { SessionPrincipalInput } from './session-principal.js';
+export { principalFromSession, scopesForRole } from './session-principal.js';
