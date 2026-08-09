@@ -2,9 +2,12 @@ import { isProviderName, type ProviderName } from '@gs/contracts/providers';
 import { ApiError } from '@gs/errors';
 import type { ProviderAdapterFactory, SocialProviderAdapter } from '@gs/provider-kit';
 import { createBlueskyAdapter } from '@gs/provider-bluesky';
+import { createFacebookAdapter } from '@gs/provider-facebook';
+import { createInstagramAdapter } from '@gs/provider-instagram';
 import { createLinkedInAdapter } from '@gs/provider-linkedin';
 import { createMockAdapter } from '@gs/provider-mock';
 import { createTelegramAdapter } from '@gs/provider-telegram';
+import { createThreadsAdapter } from '@gs/provider-threads';
 
 /**
  * The adapter registry (plan P1, §19).
@@ -30,6 +33,9 @@ const FACTORIES: Partial<Record<ProviderName, ProviderAdapterFactory>> = {
   bluesky: createBlueskyAdapter,
   telegram: createTelegramAdapter,
   linkedin: createLinkedInAdapter,
+  facebook: createFacebookAdapter,
+  instagram: createInstagramAdapter,
+  threads: createThreadsAdapter,
 };
 
 /**

@@ -322,6 +322,19 @@ export interface ReconcileInput {
   readonly idempotencyKey: string;
   /** Only consider posts created at or after this instant. UTC ISO-8601. */
   readonly attemptedAfter: string;
+  /**
+   * The ids `prepare` created for this exact attempt, replayed from storage.
+   *
+   * Where a platform publishes in two steps — Instagram and Threads create a media
+   * container and then publish it by id — this is the difference between a provable answer
+   * and a guess. The container is a real object whose state the platform tracks, so it can
+   * be asked directly whether it was published. Searching recent posts for matching text
+   * cannot distinguish this post from an identical one published deliberately an hour ago,
+   * and says nothing at all about a post with no text.
+   *
+   * Empty for adapters that prepare nothing, which is most of them.
+   */
+  readonly providerMediaIds: readonly string[];
 }
 
 export interface ReconcileResult {

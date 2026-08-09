@@ -1,5 +1,5 @@
 {
-  "name": "@gs/providers",
+  "name": "@gs/provider-instagram",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -13,14 +13,8 @@
   "dependencies": {
     "@gs/contracts": "workspace:*",
     "@gs/errors": "workspace:*",
-    "@gs/provider-bluesky": "workspace:*",
-    "@gs/provider-facebook": "workspace:*",
-    "@gs/provider-instagram": "workspace:*",
     "@gs/provider-kit": "workspace:*",
-    "@gs/provider-linkedin": "workspace:*",
-    "@gs/provider-mock": "workspace:*",
-    "@gs/provider-telegram": "workspace:*",
-    "@gs/provider-threads": "workspace:*"
+    "@gs/provider-meta-core": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^6.0.3",

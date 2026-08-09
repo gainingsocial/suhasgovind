@@ -89,6 +89,7 @@ describe('mock provider simulation', () => {
       content: content(),
       idempotencyKey: 'fingerprint-orphan',
       attemptedAfter: new Date(Date.now() - 60_000).toISOString(),
+      providerMediaIds: [],
     });
 
     // Must be `found`. Anything else and the engine would republish, duplicating.
@@ -120,6 +121,7 @@ describe('mock provider simulation', () => {
       content: content(),
       idempotencyKey: 'fingerprint-absent',
       attemptedAfter: new Date(Date.now() - 60_000).toISOString(),
+      providerMediaIds: [],
     });
 
     expect(reconciled.conclusion).toBe('absent');

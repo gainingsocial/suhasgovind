@@ -51,6 +51,7 @@ export {
   leaseTargetForExecution,
   markTargetPermanentFailure,
   markTargetProviderProcessing,
+  recordPreparedProviderIds,
   markTargetPublished,
   markTargetReconciliationRequired,
   markTargetRetryableFailure,

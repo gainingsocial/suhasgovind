@@ -147,6 +147,7 @@ describe('linkedin reconciliation', () => {
       content: content(),
       idempotencyKey: 'fingerprint',
       attemptedAfter: new Date().toISOString(),
+      providerMediaIds: [],
     });
 
     // Failing closed is the point: retrying on uncertainty is how a duplicate happens.

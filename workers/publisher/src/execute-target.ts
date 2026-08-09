@@ -5,6 +5,7 @@ import {
   leaseTargetForExecution,
   markTargetPermanentFailure,
   markTargetProviderProcessing,
+  recordPreparedProviderIds,
   markTargetPublished,
   markTargetReconciliationRequired,
   markTargetRetryableFailure,
@@ -276,6 +277,16 @@ export async function executeTarget(
         destinationExternalId: context.destinationExternalId,
       },
       content: context.content,
+    });
+
+    // ---- 5b. persist what preparation created -------------------------------
+    // Before the irreversible call, never after. If the publish below never returns, these
+    // ids are the only thing that lets reconciliation ask the provider a direct question
+    // instead of guessing from recent post text (ADR-006 Layer 4).
+    await recordPreparedProviderIds(db, {
+      targetId: target.id,
+      leaseId,
+      providerIds: prepared.providerMediaIds,
     });
 
     // ---- 6. publish --------------------------------------------------------

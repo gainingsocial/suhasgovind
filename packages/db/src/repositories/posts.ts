@@ -458,6 +458,35 @@ export async function markTargetProviderProcessing(
   return updated.length > 0;
 }
 
+/**
+ * Record the provider-side ids that `prepare()` created, before anything is published
+ * (ADR-006 Layer 4).
+ *
+ * Written in its own statement rather than folded into the publish transition, because the
+ * whole point is that it must survive a publish that never returns. A container id learned
+ * during preparation and lost when the worker died is exactly the information
+ * reconciliation needs and cannot recover any other way.
+ *
+ * Lease-guarded like every other write in the execution path: a worker whose lease has
+ * already been stolen must not overwrite the ids belonging to the attempt that replaced it.
+ */
+export async function recordPreparedProviderIds(
+  db: Database,
+  input: { targetId: string; leaseId: string; providerIds: readonly string[]; now?: Date },
+): Promise<boolean> {
+  // Nothing to record is the common case — most adapters and most posts prepare nothing.
+  // Skipping the round trip keeps the publish path as short as it was.
+  if (input.providerIds.length === 0) return true;
+
+  const updated = await db
+    .update(postTargets)
+    .set({ preparedProviderIds: [...input.providerIds], updatedAt: input.now ?? new Date() })
+    .where(and(eq(postTargets.id, input.targetId), eq(postTargets.leaseId, input.leaseId)))
+    .returning({ id: postTargets.id });
+
+  return updated.length > 0;
+}
+
 // ---------------------------------------------------------------------------
 // Aggregate status — plan §78
 // ---------------------------------------------------------------------------

@@ -26,7 +26,7 @@
  * Usage:
  *   node --experimental-strip-types scripts/migrate.ts [--dry-run]
  */
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -126,6 +126,40 @@ async function resolveExecutor(): Promise<Executor> {
   );
 }
 
+/**
+ * Refuse to run if a `.sql` file exists that the journal does not list.
+ *
+ * `readMigrationFiles` walks the journal, not the directory, so a hand-written migration
+ * that nobody added to `meta/_journal.json` is invisible to it. Without this check the run
+ * prints "Already up to date — no pending migrations" and exits 0, having applied nothing.
+ *
+ * That is the worst possible failure for a migration tool: a green run, a deploy that
+ * follows it, and application code expecting a column that was never created. Rule 7 says
+ * every DB change gets a migration; silently skipping one defeats the rule while appearing
+ * to honour it.
+ */
+async function assertEveryMigrationIsJournalled(
+  migrationsFolder: string,
+  entries: readonly JournalEntry[],
+): Promise<void> {
+  const files = (await readdir(migrationsFolder))
+    .filter((name) => name.endsWith('.sql'))
+    .map((name) => name.replace(/\.sql$/, ''));
+
+  const journalled = new Set(entries.map((entry) => entry.tag));
+  const orphans = files.filter((tag) => !journalled.has(tag)).sort();
+
+  if (orphans.length === 0) return;
+
+  throw new Error(
+    `These migration files are not listed in meta/_journal.json and would be skipped ` +
+      `silently:\n${orphans.map((tag) => `  - ${tag}.sql`).join('\n')}\n\n` +
+      `Add an entry for each — { "idx", "version": "7", "when": <epoch ms>, "tag", ` +
+      `"breakpoints": false } — or generate the migration with \`pnpm --filter @gs/db ` +
+      `run db:generate\`, which writes the journal for you.`,
+  );
+}
+
 async function main(): Promise<void> {
   const dryRun = process.argv.includes('--dry-run');
   const migrationsFolder = path.join(
@@ -140,6 +174,8 @@ async function main(): Promise<void> {
   const journal = JSON.parse(
     await readFile(path.join(migrationsFolder, 'meta', '_journal.json'), 'utf8'),
   ) as { entries: JournalEntry[] };
+
+  await assertEveryMigrationIsJournalled(migrationsFolder, journal.entries);
 
   const executor = await resolveExecutor();
   console.log(`Target: ${executor.transport}`);

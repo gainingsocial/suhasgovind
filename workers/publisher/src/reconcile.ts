@@ -85,6 +85,10 @@ export async function reconcileTarget(
     content: context.content,
     idempotencyKey: target.contentFingerprint ?? target.id,
     attemptedAfter: new Date(Date.now() - LOOKBACK_MS).toISOString(),
+    // Recorded by the attempt that failed, before it made the irreversible call. For a
+    // container-based platform this lets the adapter ask "was container X published?"
+    // instead of searching recent posts for matching text.
+    providerMediaIds: target.preparedProviderIds ?? [],
   });
 
   if (result.conclusion === 'found' && result.externalPostId) {

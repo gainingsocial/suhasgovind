@@ -152,6 +152,19 @@ export const postTargets = pgTable(
     /** The fully resolved payload actually sent, captured for the timeline and for replay. */
     resolvedContent: jsonb('resolved_content').$type<Record<string, unknown>>(),
 
+    /**
+     * Provider-side ids created during `prepare()` — media containers, unpublished
+     * photos, upload sessions (ADR-006 Layer 4).
+     *
+     * Written before the irreversible publish call, because that is the only moment they
+     * exist and reconciliation runs in a later invocation. For Instagram and Threads this
+     * is what turns "did the post go out?" from a caption search into a direct question
+     * the platform can answer definitively.
+     *
+     * Opaque object ids, never credentials.
+     */
+    preparedProviderIds: jsonb('prepared_provider_ids').$type<string[]>(),
+
     // ---- execution lease (ADR-006 Layer 2) ----
     leaseId: uuid('lease_id'),
     leaseExpiresAt: timestamp('lease_expires_at', { withTimezone: true }),

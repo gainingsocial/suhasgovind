@@ -69,23 +69,57 @@ deadline to upgrade to Standard.
 
 ### Meta — Facebook Pages, Instagram, Threads
 
-One app covers all three. Business Verification is the long pole and gates Advanced Access.
+Adapters built and certified. Credentials go into `provider_apps`; no deploy is needed to
+switch any of these on.
 
-| Field | Value |
-| --- | --- |
-| Status | ☐ not started |
-| Portal | https://developers.facebook.com |
-| App type | Business |
-| Products | Facebook Login for Business, Instagram Graph API, Threads API |
-| Business Verification | ☐ not started — start immediately, independent of app review |
-| App review | Requires screencast; budget 4–6 weeks |
-| Test assets | Instagram **Business or Creator** account linked to a Facebook Page |
-| App ID / secret | Not yet issued |
-| Reviewer feedback | — |
+**Two app registrations, not one.** Facebook Pages and Instagram share a single Meta app —
+an Instagram professional account is reached through the Facebook Page it is linked to, so
+one consent screen produces both. **Threads is registered separately**, on its own host
+(`graph.threads.net`) with its own client id and secret. A Threads credential pasted into
+the Meta app slot authenticates against nothing, and the resulting error does not say so.
+
+Business Verification is the long pole and gates Advanced Access for all of them. It is
+independent of app review — start it first and let the two run in parallel.
+
+| Field | Facebook + Instagram | Threads |
+| --- | --- | --- |
+| Status | ☐ not started | ☐ not started |
+| Portal | https://developers.facebook.com | https://developers.facebook.com |
+| App type | Business | Threads app (separate registration) |
+| Products | Facebook Login for Business, Instagram Graph API | Threads API |
+| Business Verification | ☐ required | ☐ required |
+| App review | Screencast required; budget 4–6 weeks | Screencast required |
+| App ID / secret | Not yet issued | Not yet issued |
+| Redirect URI | `https://api.gainingsocial.com/v1/oauth/facebook/callback`<br>`https://api.gainingsocial.com/v1/oauth/instagram/callback` | `https://api.gainingsocial.com/v1/oauth/threads/callback` |
+| Reviewer feedback | — | — |
 
 Permissions requiring Advanced Access:
-`pages_manage_posts`, `pages_read_engagement`, `pages_show_list`, `instagram_basic`,
-`instagram_content_publish`, `business_management`, `threads_basic`, `threads_content_publish`
+`pages_manage_posts`, `pages_read_engagement`, `pages_show_list`, `pages_manage_engagement`,
+`publish_video`, `instagram_basic`, `instagram_content_publish`, `business_management`,
+`threads_basic`, `threads_content_publish`, `threads_read_replies`, `threads_manage_replies`
+
+**Test assets to prepare before recording the screencast.** Meta rejects submissions whose
+recording does not show each permission actually being used, so these have to exist first:
+
+- A Facebook **Page** on the reviewing account, with the reviewer added as an admin.
+- An Instagram account switched to **Business or Creator** — a personal account cannot
+  publish through the API at all, and this is the single most common reason a Meta
+  integration appears to connect and then has no destinations.
+- That Instagram account **linked to the Page** (Page settings → Linked accounts). The link
+  is what makes it visible to `/me/accounts`; without it, the connection succeeds and
+  returns nothing to post to.
+- A Threads profile on the same account, for the separate Threads submission.
+
+**Things the adapters already handle, so they do not need to be discovered during review:**
+
+- The Facebook Login callback returns a token valid for about an hour. It is exchanged for
+  a long-lived one before anything is stored.
+- Publishing uses the **Page** access token, not the user token that listed the Pages.
+- `appsecret_proof` is sent on every Facebook and Instagram call, so the app can be
+  configured to require it without anything breaking. Threads does not implement it and is
+  deliberately excluded.
+- Error 506 (duplicate post) routes to reconciliation rather than being reported as a
+  failure — see the note in `packages/providers/meta-core/src/graph.ts`.
 
 ---
 
