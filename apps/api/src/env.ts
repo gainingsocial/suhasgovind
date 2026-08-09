@@ -52,6 +52,9 @@ export interface Env {
   R2_ACCESS_KEY_ID?: string;
   R2_SECRET_ACCESS_KEY?: string;
   R2_BUCKET?: string;
+
+  /** Root the per-endpoint webhook signing secrets derive from (plan §36, ADR-007). */
+  WEBHOOK_SIGNING_ROOT?: string;
 }
 
 /** Hono generic: bindings plus the per-request context the middleware installs. */

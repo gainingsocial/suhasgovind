@@ -108,3 +108,24 @@ export {
   markUploaded,
   softDeleteMedia,
 } from './repositories/media.js';
+
+export type {
+  CreateEndpointInput,
+  DeliveryWithEvent,
+  EmitEventInput,
+  EndpointWithSubscriptions,
+  UpdateEndpointInput,
+} from './repositories/webhooks.js';
+export {
+  createWebhookEndpoint,
+  deleteWebhookEndpoint,
+  emitWebhookEvent,
+  findDueDeliveries,
+  findWebhookDeliveryById,
+  findWebhookEndpointById,
+  listWebhookDeliveries,
+  listWebhookEndpoints,
+  replayWebhookDelivery,
+  rotateWebhookSecret,
+  updateWebhookEndpoint,
+} from './repositories/webhooks.js';

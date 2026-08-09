@@ -14,7 +14,18 @@ import {
   PostSchema,
   PreflightRequestSchema,
   PreflightResponseSchema,
+  CreateWebhookEndpointRequestSchema,
+  CreateWebhookEndpointResponseSchema,
+  DeleteWebhookEndpointResponseSchema,
+  ListWebhookDeliveriesQuerySchema,
+  ReplayWebhookDeliveryResponseSchema,
   RetryPostResponseSchema,
+  RotateWebhookSecretResponseSchema,
+  TestWebhookResponseSchema,
+  UpdateWebhookEndpointRequestSchema,
+  WebhookDeliveryListResponseSchema,
+  WebhookEndpointListResponseSchema,
+  WebhookEndpointSchema,
   ConnectionSchema,
   CreateProfileRequestSchema,
   DeleteProfileResponseSchema,
@@ -30,6 +41,7 @@ import {
   ProfileSchema,
   UpdateProfileRequestSchema,
 } from '@gs/contracts/http';
+import { PaginationQuerySchema } from '@gs/contracts/pagination';
 import { API_SCOPES, type ApiScope } from '@gs/contracts/scopes';
 import { ERROR_CODE_METADATA, type ErrorCode } from '@gs/errors';
 import { z } from 'zod';
@@ -628,6 +640,162 @@ const ROUTES: RouteSpec[] = [
     successDescription: 'How many targets were requeued.',
     response: RetryPostResponseSchema,
     errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'POST_NOT_FOUND'],
+  },
+  {
+    method: 'post',
+    path: '/v1/webhooks',
+    operationId: 'createWebhookEndpoint',
+    summary: 'Register a webhook endpoint',
+    description:
+      'Delivery is **at least once**. Every event keeps one stable `event_id` across all ' +
+      'its attempts — deduplicate on it.\n\n' +
+      'The signing secret is returned exactly once here and at rotation. It is derived ' +
+      'from a root held outside the database rather than stored, so it genuinely cannot be ' +
+      'retrieved again.\n\n' +
+      'An empty `event_types` subscribes to everything, which is the useful default for a ' +
+      'first integration. HTTPS only: the body carries tenant data and is signed but not ' +
+      'encrypted.',
+    tags: ['Webhooks'],
+    scopes: ['webhooks:manage'],
+    requestBody: CreateWebhookEndpointRequestSchema,
+    successStatus: 201,
+    successDescription: 'The endpoint and its signing secret.',
+    response: CreateWebhookEndpointResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST'],
+  },
+  {
+    method: 'get',
+    path: '/v1/webhooks',
+    operationId: 'listWebhookEndpoints',
+    summary: 'List webhook endpoints',
+    description:
+      'An endpoint in `auto_disabled` was disabled by us after sustained failure, so a dead ' +
+      'endpoint stops burning retries. Re-enable it with a PATCH once it is fixed.',
+    tags: ['Webhooks'],
+    scopes: ['webhooks:manage'],
+    querySchema: PaginationQuerySchema,
+    successStatus: 200,
+    successDescription: 'A page of endpoints.',
+    response: WebhookEndpointListResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST'],
+  },
+  {
+    method: 'get',
+    path: '/v1/webhooks/{webhookId}',
+    operationId: 'getWebhookEndpoint',
+    summary: 'Retrieve a webhook endpoint',
+    description: 'Never returns the signing secret; it is only shown at creation and rotation.',
+    tags: ['Webhooks'],
+    scopes: ['webhooks:manage'],
+    pathParams: [{ name: 'webhookId', description: 'Public endpoint id, `wh_…`.' }],
+    successStatus: 200,
+    successDescription: 'The endpoint.',
+    response: WebhookEndpointSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'WEBHOOK_NOT_FOUND'],
+  },
+  {
+    method: 'patch',
+    path: '/v1/webhooks/{webhookId}',
+    operationId: 'updateWebhookEndpoint',
+    summary: 'Update a webhook endpoint',
+    description:
+      '`event_types` replaces the whole set rather than merging — merging would make ' +
+      'removing a subscription impossible. Setting `enabled: true` also clears the ' +
+      'consecutive-failure counter, so a fixed endpoint is not re-disabled on its next hiccup.',
+    tags: ['Webhooks'],
+    scopes: ['webhooks:manage'],
+    pathParams: [{ name: 'webhookId', description: 'Public endpoint id, `wh_…`.' }],
+    requestBody: UpdateWebhookEndpointRequestSchema,
+    successStatus: 200,
+    successDescription: 'The updated endpoint.',
+    response: WebhookEndpointSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'WEBHOOK_NOT_FOUND'],
+  },
+  {
+    method: 'delete',
+    path: '/v1/webhooks/{webhookId}',
+    operationId: 'deleteWebhookEndpoint',
+    summary: 'Delete a webhook endpoint',
+    description:
+      'Deliveries are removed with it. Unlike other resources this is a hard delete: an ' +
+      'endpoint you removed should stop receiving traffic immediately, not linger where a ' +
+      'sweeper might still pick it up.',
+    tags: ['Webhooks'],
+    scopes: ['webhooks:manage'],
+    pathParams: [{ name: 'webhookId', description: 'Public endpoint id, `wh_…`.' }],
+    successStatus: 200,
+    successDescription: 'The endpoint was deleted.',
+    response: DeleteWebhookEndpointResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'WEBHOOK_NOT_FOUND'],
+  },
+  {
+    method: 'post',
+    path: '/v1/webhooks/{webhookId}/rotate-secret',
+    operationId: 'rotateWebhookSecret',
+    summary: 'Rotate the signing secret',
+    description:
+      'Returns a new secret and keeps the previous one verifying until ' +
+      '`previous_secret_valid_until`, so you can deploy the new one without dropping ' +
+      'deliveries in the gap.',
+    tags: ['Webhooks'],
+    scopes: ['webhooks:manage'],
+    pathParams: [{ name: 'webhookId', description: 'Public endpoint id, `wh_…`.' }],
+    successStatus: 200,
+    successDescription: 'The new secret and the overlap window.',
+    response: RotateWebhookSecretResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'WEBHOOK_NOT_FOUND'],
+  },
+  {
+    method: 'get',
+    path: '/v1/webhooks/{webhookId}/deliveries',
+    operationId: 'listWebhookDeliveries',
+    summary: 'List delivery attempts',
+    description:
+      'Each row carries the HTTP status, duration, attempt count, next retry and a scrubbed ' +
+      'excerpt of your endpoint’s response — enough to debug a failing integration without ' +
+      'reading our logs.',
+    tags: ['Webhooks'],
+    scopes: ['webhooks:manage'],
+    pathParams: [{ name: 'webhookId', description: 'Public endpoint id, `wh_…`.' }],
+    querySchema: ListWebhookDeliveriesQuerySchema,
+    successStatus: 200,
+    successDescription: 'A page of deliveries.',
+    response: WebhookDeliveryListResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'WEBHOOK_NOT_FOUND'],
+  },
+  {
+    method: 'post',
+    path: '/v1/webhooks/{webhookId}/test',
+    operationId: 'testWebhookEndpoint',
+    summary: 'Send a test event',
+    description:
+      'Sends a synthetic event through the real delivery path, so what you wire up against ' +
+      'is exactly what production sends. A special-cased test payload would let the real ' +
+      'path stay broken while the test one worked.',
+    tags: ['Webhooks'],
+    scopes: ['webhooks:manage'],
+    pathParams: [{ name: 'webhookId', description: 'Public endpoint id, `wh_…`.' }],
+    successStatus: 202,
+    successDescription: 'The test delivery was queued.',
+    response: TestWebhookResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'WEBHOOK_NOT_FOUND', 'CONFLICTING_STATE'],
+  },
+  {
+    method: 'post',
+    path: '/v1/webhook-deliveries/{deliveryId}/replay',
+    operationId: 'replayWebhookDelivery',
+    summary: 'Replay a delivery',
+    description:
+      'Queues a fresh delivery of the same event. The original attempt is preserved as the ' +
+      'historical record rather than reset — a conversation about why something failed ' +
+      'needs the failure to still exist.',
+    tags: ['Webhooks'],
+    scopes: ['webhooks:manage'],
+    pathParams: [{ name: 'deliveryId', description: 'Public delivery id, `whd_…`.' }],
+    successStatus: 202,
+    successDescription: 'The replay was queued.',
+    response: ReplayWebhookDeliveryResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'DELIVERY_NOT_FOUND'],
   },
 ];
 

@@ -11,6 +11,7 @@ import { media } from './routes/media.js';
 import { destinations, platforms } from './routes/platforms.js';
 import { posts } from './routes/posts.js';
 import { profiles } from './routes/profiles.js';
+import { webhookDeliveriesRoute, webhooks } from './routes/webhooks.js';
 
 /**
  * Public API gateway (plan §6.1).
@@ -33,6 +34,8 @@ app.route('/v1/platforms', platforms);
 app.route('/v1/destinations', destinations);
 app.route('/v1/media', media);
 app.route('/v1/posts', posts);
+app.route('/v1/webhooks', webhooks);
+app.route('/v1/webhook-deliveries', webhookDeliveriesRoute);
 
 app.get('/openapi.json', (c) => c.json(buildOpenApiDocument(new URL(c.req.url).origin)));
 
