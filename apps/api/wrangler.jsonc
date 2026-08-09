@@ -37,10 +37,20 @@
       }
     ]
   },
-  // Not yet bound, and both are blocked on something outside this config:
-  //   hyperdrive — needs the Supabase database password, which we do not hold
-  //   r2_buckets — needs R2 enabled on the account
-  // Env declares each optional, so adding the binding here is the only change required.
+  // Pooled Postgres. Connects as `gs_app` (migration 0002), never `postgres`, and reaches
+  // Supabase's direct host — which is IPv6-only, and which Hyperdrive resolves fine.
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "563bb35cce9040409987142c4d631c8e"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "gs-media-dev"
+    }
+  ],
   "env": {
     "production": {
       "vars": {
@@ -65,7 +75,22 @@
             "queue": "gs-webhook-delivery"
           }
         ]
-      }
+      },
+      // A distinct config so production can be re-pointed at its own Supabase project
+      // without touching this file. Both currently resolve to the same database —
+      // Phase 0 calls for a separate production project, which is still outstanding.
+      "hyperdrive": [
+        {
+          "binding": "HYPERDRIVE",
+          "id": "04758a98fb28438faae433e4b7bbf601"
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "MEDIA",
+          "bucket_name": "gs-media-prod"
+        }
+      ]
     }
   }
 }

@@ -94,8 +94,8 @@ create API key → create profile → connect a provider → upload media
 | `pnpm db:generate`  | Generate a migration from the Drizzle schema                   |
 | `pnpm db:migrate`   | Apply pending migrations                                       |
 | `pnpm openapi:emit` | Regenerate `packages/contracts/openapi/openapi.json`           |
-| `pnpm --filter @gs/api dev`    | Run the API Worker locally via wrangler             |
-| `pnpm --filter @gs/api deploy` | Deploy the API Worker to Cloudflare                 |
+| `pnpm --filter @gs/api dev`        | Run the API Worker locally via wrangler         |
+| `pnpm --filter @gs/api run deploy` | Deploy the API Worker. `run` required — pnpm reserves bare `deploy` |
 | `pnpm format`       | Prettier                                                       |
 
 ## Non-negotiable rules

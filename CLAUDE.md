@@ -69,7 +69,8 @@ Violating any of these is a bug, not a style disagreement.
 ```bash
 pnpm run ci                # what CI runs: lint, typecheck, test, boundaries, openapi, build
                            # `run` is required — pnpm reserves the bare `ci` command
-pnpm --filter @gs/api deploy   # deploy the API Worker
+pnpm --filter @gs/api run deploy   # deploy the API Worker
+                           # `run` is required here too — pnpm reserves bare `deploy`
 pnpm test -- <pattern>     # focused tests
 pnpm boundaries            # architectural layering check
 ```
