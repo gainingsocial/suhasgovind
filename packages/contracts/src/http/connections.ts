@@ -249,6 +249,62 @@ export const RefreshConnectionResponseSchema = z.object({
   rotated: z.boolean(),
 });
 
+/**
+ * Platform application credentials (plan §23).
+ *
+ * The mechanism that turns a granted platform approval into a data change rather than a
+ * deploy. Authenticated by a dashboard session, never by an API key: a client secret is
+ * the key to every connection ever made through that application, so an API key that
+ * could write one would be a far worse leak than the key itself.
+ */
+export const ProviderAppSchema = z.object({
+  id: z.string(),
+  object: z.literal('provider_app'),
+  provider: ProviderNameSchema,
+  ownership: z.enum(['platform_managed', 'customer_managed']),
+  /** Public half of the credential pair. The secret is never returned by any endpoint. */
+  client_id: z.string().nullable(),
+  /** False until a client id and secret have been stored. */
+  configured: z.boolean(),
+  approval_status: z.string(),
+  scopes: z.array(z.string()),
+  /** The URL to register with the platform. Copy it into their developer console. */
+  redirect_uri: z.string(),
+  updated_at: z.iso.datetime(),
+});
+
+export const ProviderAppListResponseSchema = listResponseSchema(ProviderAppSchema);
+
+export const UpsertProviderAppRequestSchema = z.object({
+  provider: ProviderNameSchema,
+  client_id: z.string().min(1).max(255),
+  /** Encrypted on arrival and never readable afterwards, exactly like a user token. */
+  client_secret: z.string().min(1).max(4096),
+  /**
+   * `customer_managed` — your own platform application, scoped to your project and
+   * invisible to everyone else. This is the default and the only value most callers can
+   * use.
+   *
+   * `platform_managed` — the shared application every customer connects through.
+   * Restricted to platform operators, because one shared app authorizes every connection
+   * on the system and an org admin must not be able to replace or delete it.
+   */
+  ownership: z.enum(['customer_managed', 'platform_managed']).default('customer_managed'),
+  /** Scopes to request at consent time. The adapter's defaults apply when omitted. */
+  scopes: z.array(z.string()).max(50).default([]),
+  /**
+   * Where the platform's review stands. Free text because every platform names its stages
+   * differently, and forcing them into one enum loses the detail that matters.
+   */
+  approval_status: z.string().max(64).default('approved'),
+});
+
+export const DeleteProviderAppResponseSchema = z.object({
+  id: z.string(),
+  object: z.literal('provider_app'),
+  deleted: z.literal(true),
+});
+
 /** `GET /v1/platforms` — what the product supports, and what is merely planned. */
 export const PlatformSchema = z.object({
   provider: ProviderNameSchema,
@@ -262,5 +318,43 @@ export const PlatformSchema = z.object({
 });
 
 export const PlatformListResponseSchema = listResponseSchema(PlatformSchema);
+
+/**
+ * Provider health (plan §41).
+ *
+ * Derived from what actually happened — recent publish attempts — rather than read from a
+ * status table somebody has to remember to update. A derived answer cannot go stale, and
+ * "is Instagram working right now" is a question the attempt record already answers.
+ *
+ * Scoped to the caller's own environment. A global figure would tell an integrator that
+ * the platform is fine while every one of *their* posts is failing on an expired token,
+ * which is worse than saying nothing.
+ */
+export const ProviderHealthSchema = z.object({
+  provider: ProviderNameSchema,
+  object: z.literal('provider_health'),
+  /**
+   * `operational` — publishing normally.
+   * `degraded` — failing more than occasionally.
+   * `failing` — nothing has succeeded in the window.
+   * `no_recent_activity` — nothing was attempted, so nothing is known. Deliberately not
+   * reported as healthy: an absence of failures is not evidence of success.
+   */
+  status: z.enum(['operational', 'degraded', 'failing', 'no_recent_activity']),
+  /** Fraction of recent attempts that succeeded, or null when there were none. */
+  success_rate: z.number().min(0).max(1).nullable(),
+  attempts: z.number().int().nonnegative(),
+  last_success_at: z.iso.datetime().nullable(),
+  last_failure_at: z.iso.datetime().nullable(),
+  /** Normalized code from the most recent failure (plan §79). */
+  last_error_code: z.string().nullable(),
+});
+
+export const ProviderHealthResponseSchema = z.object({
+  object: z.literal('list'),
+  /** How far back the figures look. */
+  window_hours: z.number().int().positive(),
+  data: z.array(ProviderHealthSchema),
+});
 
 export const CapabilitiesResponseSchema = ProviderCapabilitiesSchema;

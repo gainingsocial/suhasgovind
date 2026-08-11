@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { MediaKindSchema } from '../providers/capabilities.js';
+import { TargetValidationResultSchema } from '../providers/validation.js';
 
 /**
  * Media contracts (plan §31).
@@ -105,4 +106,30 @@ export const DeleteMediaResponseSchema = z.object({
   id: z.string(),
   object: z.literal('media'),
   deleted: z.literal(true),
+});
+
+/**
+ * Media preflight (plan §14, §18, P16).
+ *
+ * Answers "will this asset be accepted on these platforms" without composing a post. The
+ * separation matters because media is the expensive half: a 200 MB video that Instagram
+ * will reject on aspect ratio should be discovered before it is uploaded anywhere, not
+ * after a post is composed around it.
+ */
+export const MediaPreflightRequestSchema = z.object({
+  media_ids: z.array(z.string()).min(1).max(20),
+  /** Check against these destinations. Their effective capability is what is applied. */
+  destination_ids: z.array(z.string()).min(1).max(50),
+});
+
+export const MediaPreflightResponseSchema = z.object({
+  object: z.literal('media_preflight'),
+  /** True only when every asset is acceptable on every named destination. */
+  valid: z.boolean(),
+  /**
+   * The same per-target shape post preflight returns. Deliberately identical: a client
+   * that can render one set of findings can render both, and a second shape would mean
+   * two renderers that drift.
+   */
+  targets: z.array(TargetValidationResultSchema),
 });

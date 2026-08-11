@@ -14,11 +14,16 @@ import {
   CancelPostResponseSchema,
   CreatePostRequestSchema,
   ListPostsQuerySchema,
+  MediaPreflightRequestSchema,
+  MediaPreflightResponseSchema,
   MediaSchema,
   PostListResponseSchema,
   PostSchema,
+  PostTimelineResponseSchema,
   PreflightRequestSchema,
   PreflightResponseSchema,
+  ProviderHealthResponseSchema,
+  RetryTargetResponseSchema,
   CreateWebhookEndpointRequestSchema,
   CreateWebhookEndpointResponseSchema,
   DeleteWebhookEndpointResponseSchema,
@@ -42,8 +47,12 @@ import {
   DeleteProfileResponseSchema,
   DestinationListResponseSchema,
   DisconnectConnectionResponseSchema,
+  DeleteProviderAppResponseSchema,
+  ProviderAppListResponseSchema,
+  ProviderAppSchema,
   RefreshConnectionResponseSchema,
   SelectDestinationsRequestSchema,
+  UpsertProviderAppRequestSchema,
   ErrorEnvelopeSchema,
   HealthResponseSchema,
   ListConnectionsQuerySchema,
@@ -525,6 +534,100 @@ const ROUTES: RouteSpec[] = [
     errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'CONNECTION_NOT_FOUND'],
   },
   {
+    method: 'post',
+    path: '/v1/posts/{postId}/targets/{targetId}/retry',
+    operationId: 'retryPostTarget',
+    summary: 'Retry one publish target',
+    description:
+      'Requeues a single failed target without touching the ones that succeeded. Partial ' +
+      'success is the normal case for multi-target publishing, not the exception, so acting ' +
+      'on one destination has to be possible.\n\n' +
+      'Only a `retryable_failed` target can be retried. A `permanent_failed` one fails the ' +
+      'same way again, and an `unknown_reconciliation_required` one is refused outright — ' +
+      'retrying before the outcome is known could publish it twice.',
+    tags: ['Publishing'],
+    scopes: ['posts:write'],
+    pathParams: [
+      { name: 'postId', description: 'Public post id, `pst_…`.' },
+      { name: 'targetId', description: 'Public target id, `ptg_…`.' },
+    ],
+    successStatus: 202,
+    successDescription: 'The target was requeued.',
+    response: RetryTargetResponseSchema,
+    errors: [
+      ...AUTH_ERRORS,
+      'INVALID_REQUEST',
+      'POST_NOT_FOUND',
+      'TARGET_NOT_FOUND',
+      'TARGET_NOT_RETRYABLE',
+    ],
+  },
+  {
+    method: 'get',
+    path: '/v1/posts/{postId}/timeline',
+    operationId: 'getPostTimeline',
+    summary: 'Retrieve a post’s timeline',
+    description:
+      'Everything that happened to a post and its targets, in one time-ordered list: when ' +
+      'it was accepted, when each target was queued, every attempt, and how each one ended.\n\n' +
+      'Ordered strictly by time and never grouped by target, because what a timeline is for ' +
+      'is seeing that one provider stalled for twenty seconds while another published in two. ' +
+      'Derived from the post, its targets and their attempts, so it cannot disagree with the ' +
+      'state it describes.',
+    tags: ['Publishing'],
+    scopes: ['posts:read'],
+    pathParams: [{ name: 'postId', description: 'Public post id, `pst_…`.' }],
+    successStatus: 200,
+    successDescription: 'The post timeline.',
+    response: PostTimelineResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'POST_NOT_FOUND'],
+  },
+  {
+    method: 'post',
+    path: '/v1/media/preflight',
+    operationId: 'preflightMedia',
+    summary: 'Check media against destinations',
+    description:
+      'Answers whether these assets are acceptable on these destinations, without composing ' +
+      'a post. Media is the expensive half of publishing — an aspect-ratio rejection should ' +
+      'surface before a large video is uploaded anywhere.\n\n' +
+      'Runs the same validation engine as post preflight with no text and no schedule, so a ' +
+      'platform that requires a caption reports that as a finding. Returns 200 even when ' +
+      'invalid: reporting problems is what the endpoint is for.',
+    tags: ['Validation'],
+    scopes: ['media:read'],
+    requestBody: MediaPreflightRequestSchema,
+    successStatus: 200,
+    successDescription: 'The validation result. Check `valid`.',
+    response: MediaPreflightResponseSchema,
+    errors: [
+      ...AUTH_ERRORS,
+      'INVALID_REQUEST',
+      'DESTINATION_NOT_FOUND',
+      'MEDIA_NOT_FOUND',
+      'PROVIDER_NOT_SUPPORTED',
+    ],
+  },
+  {
+    method: 'get',
+    path: '/v1/provider-health',
+    operationId: 'getProviderHealth',
+    summary: 'Recent publishing health per platform',
+    description:
+      'Success rates over the last 24 hours, scoped to your own environment. A ' +
+      'platform-wide figure would report that a provider is fine while every one of *your* ' +
+      'posts fails on an expired token, which is worse than saying nothing.\n\n' +
+      '`no_recent_activity` is deliberately distinct from `operational`: an absence of ' +
+      'failures is not evidence of success. Derived from publish attempts, so it cannot go ' +
+      'stale the way a manually-updated status table does.',
+    tags: ['Operations'],
+    scopes: ['capabilities:read'],
+    successStatus: 200,
+    successDescription: 'Per-provider health over the window.',
+    response: ProviderHealthResponseSchema,
+    errors: AUTH_ERRORS,
+  },
+  {
     method: 'get',
     path: '/v1/platforms',
     operationId: 'listPlatforms',
@@ -952,6 +1055,72 @@ const ROUTES: RouteSpec[] = [
     successDescription: 'Environments you belong to.',
     response: EnvironmentListResponseSchema,
     errors: ['AUTHENTICATION_REQUIRED', 'INTERNAL_ERROR'],
+  },
+  {
+    method: 'get',
+    path: '/v1/provider-apps',
+    operationId: 'listProviderApps',
+    summary: 'List platform application credentials',
+    description:
+      '**Requires a signed-in dashboard session.** Shows which platforms have credentials ' +
+      'configured, and the redirect URI to register in each platform’s developer console.\n\n' +
+      'Never returns a client secret. The client id is public — it appears in every ' +
+      'authorization URL — but the secret is not read back by any endpoint. Where a project ' +
+      'has registered its own application, that one is shown in place of the shared default, ' +
+      'which matches the precedence applied when a connection is actually made.',
+    tags: ['Administration'],
+    scopes: [],
+    successStatus: 200,
+    successDescription: 'Configured platform applications.',
+    response: ProviderAppListResponseSchema,
+    errors: ['AUTHENTICATION_REQUIRED', 'TENANT_FORBIDDEN', 'INVALID_REQUEST', 'INTERNAL_ERROR'],
+  },
+  {
+    method: 'post',
+    path: '/v1/provider-apps',
+    operationId: 'upsertProviderApp',
+    summary: 'Store platform application credentials',
+    description:
+      '**Requires a signed-in dashboard session, and an owner or admin role.** This is how ' +
+      'a granted platform approval goes live: paste the client id and secret and that ' +
+      'platform starts working, with no deploy and no restart (plan §23).\n\n' +
+      'Upsert, because the common case is re-pasting a rotated secret. The secret is ' +
+      'encrypted on arrival exactly like a user token and is never returned — not even ' +
+      'immediately after being set, since it can always be re-read from the platform’s own ' +
+      'console.\n\n' +
+      '`ownership` defaults to `customer_managed`, which scopes the application to your ' +
+      'project and hides it from every other tenant. `platform_managed` writes the shared ' +
+      'application every customer connects through and is restricted to platform operators.',
+    tags: ['Administration'],
+    scopes: [],
+    requestBody: UpsertProviderAppRequestSchema,
+    successStatus: 201,
+    successDescription: 'The credentials were stored.',
+    response: ProviderAppSchema,
+    errors: ['AUTHENTICATION_REQUIRED', 'TENANT_FORBIDDEN', 'INVALID_REQUEST', 'INTERNAL_ERROR'],
+  },
+  {
+    method: 'delete',
+    path: '/v1/provider-apps/{providerAppId}',
+    operationId: 'deleteProviderApp',
+    summary: 'Remove platform application credentials',
+    description:
+      '**Requires a signed-in dashboard session, and an owner or admin role.** Existing ' +
+      'connections keep working until their tokens expire; new authorizations for that ' +
+      'platform stop immediately with `PROVIDER_NOT_CONFIGURED`.',
+    tags: ['Administration'],
+    scopes: [],
+    pathParams: [{ name: 'providerAppId', description: 'Public provider application id.' }],
+    successStatus: 200,
+    successDescription: 'The credentials were removed.',
+    response: DeleteProviderAppResponseSchema,
+    errors: [
+      'AUTHENTICATION_REQUIRED',
+      'TENANT_FORBIDDEN',
+      'INVALID_REQUEST',
+      'RESOURCE_NOT_FOUND',
+      'INTERNAL_ERROR',
+    ],
   },
   {
     method: 'post',

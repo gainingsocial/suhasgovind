@@ -79,6 +79,13 @@ export interface Env {
   PUBLIC_API_ORIGIN?: string;
 
   /**
+   * Comma-separated user ids permitted to write the shared platform application
+   * (plan §23). Authority over the platform itself, so it lives in the platform's own
+   * configuration — a database row granting it would be a row somebody could write.
+   */
+  PLATFORM_OPERATOR_USER_IDS?: string;
+
+  /**
    * Supabase project URL, used to fetch the public JWKS that verifies dashboard sessions
    * (plan §39). Not a secret — it is a public discovery endpoint.
    */

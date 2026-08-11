@@ -198,19 +198,46 @@ export const RetryPostResponseSchema = z.object({
   requeued_targets: z.number().int(),
 });
 
-/** Post timeline (plan §14 developer observability, §40). */
-export const PostTimelineEntrySchema = z.object({
+export const RetryTargetResponseSchema = z.object({
+  id: z.string(),
+  object: z.literal('post_target'),
+  status: PostTargetStatusSchema,
+  /** The post's rolled-up status after the target was requeued (plan §78). */
+  post_status: PostStatusSchema,
+  requeued: z.literal(true),
+});
+
+/**
+ * Post timeline (plan §40).
+ *
+ * Every state change for a post and its targets, in order, as one list. Plan §40 calls
+ * this "extremely valuable to developers" and it is: the alternative to a timeline is an
+ * integrator reading four tables through three endpoints and reconstructing the ordering
+ * themselves, which is precisely the work an observability surface exists to remove.
+ */
+export const TimelineEventSchema = z.object({
   at: z.iso.datetime(),
-  kind: z.enum(['post_status', 'target_status', 'attempt', 'webhook']),
+  /**
+   * `post.accepted`, `target.queued`, `target.publishing`, `target.published`,
+   * `target.failed`, `target.reconciliation_required`, `post.published`, … Stable strings,
+   * safe to branch on.
+   */
+  type: z.string(),
+  /** One line, written to be read by a human scanning for what went wrong. */
+  message: z.string(),
+  /** Present for target-scoped entries. */
   target_id: z.string().nullable(),
   provider: ProviderNameSchema.nullable(),
-  from: z.string().nullable(),
-  to: z.string(),
-  detail: z.string().nullable(),
+  /** Normalized failure code (plan §79) when this entry records a failure. */
+  error_code: z.string().nullable(),
+  /** Attempt number for entries produced by a publish attempt. */
+  attempt: z.number().int().nullable(),
+  duration_ms: z.number().int().nullable(),
 });
 
 export const PostTimelineResponseSchema = z.object({
-  object: z.literal('timeline'),
+  object: z.literal('post_timeline'),
   post_id: z.string(),
-  entries: z.array(PostTimelineEntrySchema),
+  status: PostStatusSchema,
+  events: z.array(TimelineEventSchema),
 });

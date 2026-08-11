@@ -3,9 +3,11 @@ import {
   CreatePostRequestSchema,
   ListPostsQuerySchema,
   PostListResponseSchema,
+  PostTimelineResponseSchema,
   PreflightRequestSchema,
   PreflightResponseSchema,
   RetryPostResponseSchema,
+  RetryTargetResponseSchema,
 } from '@gs/contracts/http';
 import { fromPublicId, toPublicId } from '@gs/contracts/ids';
 import { isProviderName } from '@gs/contracts/providers';
@@ -15,9 +17,11 @@ import {
   findDestinationOwnerships,
   findProfileById,
   getPostWithTargets,
+  listPostAttempts,
   listPosts,
   recalculatePostStatus,
   requeueFailedTargets,
+  requeueTarget,
   type DestinationOwnership,
 } from '@gs/db';
 import { buildFingerprintInput, canonicalizeForHashing } from '@gs/domain';
@@ -31,6 +35,7 @@ import { withDatabase } from '../middleware/database.js';
 import { providerCallContext } from '../lib/provider-context.js';
 import { idempotencyKey, parseBody, parseQuery, requirePathId } from '../lib/request.js';
 import { runPreflight, type PreflightTargetInput } from '../services/preflight.js';
+import { buildPostTimeline } from '../services/timeline.js';
 import { toPostResponse, toPostSummary } from './post-serializers.js';
 
 /**
@@ -489,6 +494,93 @@ posts.post('/:postId/retry', withDatabase(), authenticate(['posts:write']), asyn
       requeued_targets: requeued.length,
     }),
     202,
+  );
+});
+
+/**
+ * Retry one target (plan §14).
+ *
+ * Separate from retrying the whole post because a partially-published post is the normal
+ * case, not the exception (plan §26): four targets succeeded, LinkedIn failed, and the
+ * caller wants LinkedIn retried without touching anything that already went out. Retrying
+ * the post would be safe — published targets are not requeued — but it says the wrong
+ * thing, and it gives the caller no way to act on one destination.
+ */
+posts.post(
+  '/:postId/targets/:targetId/retry',
+  withDatabase(),
+  authenticate(['posts:write']),
+  async (c) => {
+    const postId = requirePathId(c, 'post', 'postId');
+    const targetId = requirePathId(c, 'postTarget', 'targetId');
+    const trace = c.get('trace');
+
+    const { targets } = await loadOwnedPost(c, postId);
+
+    // Ownership of the target follows from ownership of the post, but the target must
+    // still belong to *this* post — a valid target id from another post would otherwise
+    // requeue something the caller never named.
+    const target = targets.find((row) => row.id === targetId);
+    if (!target) throw new ApiError('TARGET_NOT_FOUND');
+
+    const requeued = await requeueTarget(c.get('db'), { postId, targetId });
+    if (!requeued) {
+      throw new ApiError('TARGET_NOT_RETRYABLE', {
+        message:
+          target.status === 'unknown_reconciliation_required'
+            ? 'This target is being reconciled. Retrying before the outcome is known could publish it twice.'
+            : `A target in state "${target.status}" cannot be retried.`,
+      });
+    }
+
+    await recalculatePostStatus(c.get('db'), postId);
+    const after = await getPostWithTargets(c.get('db'), postId);
+
+    if (c.env.PUBLISH_QUEUE) {
+      c.executionCtx.waitUntil(
+        c.env.PUBLISH_QUEUE.send({
+          type: 'publish.target',
+          postId,
+          postTargetId: targetId,
+          traceId: trace.traceId,
+        }),
+      );
+    }
+
+    return c.json(
+      RetryTargetResponseSchema.parse({
+        id: toPublicId('postTarget', targetId),
+        object: 'post_target',
+        status: requeued.status,
+        post_status: after?.post.status ?? 'queued',
+        requeued: true,
+      }),
+      202,
+    );
+  },
+);
+
+/**
+ * Post timeline (plan §40).
+ *
+ * Everything that happened to a post and its targets, in one ordered list. Plan §40 calls
+ * this "extremely valuable to developers", and the reason is that the alternative is
+ * reading three tables through two endpoints and reconstructing the ordering by hand.
+ */
+posts.get('/:postId/timeline', withDatabase(), authenticate(['posts:read']), async (c) => {
+  const postId = requirePathId(c, 'post', 'postId');
+  const { post, targets } = await loadOwnedPost(c, postId);
+
+  const attempts = await listPostAttempts(c.get('db'), postId);
+
+  return c.json(
+    PostTimelineResponseSchema.parse({
+      object: 'post_timeline',
+      post_id: toPublicId('post', post.id),
+      status: post.status,
+      events: buildPostTimeline(post, targets, attempts),
+    }),
+    200,
   );
 });
 

@@ -181,6 +181,33 @@ export async function listProviderApps(
     .orderBy(desc(providerApps.updatedAt));
 }
 
+/**
+ * One application by id, without its secret.
+ *
+ * Exists so an authority check can read what a row actually *is* — shared or a customer's
+ * own, and whose project it belongs to — rather than trusting a request to say. Deleting
+ * the shared application breaks connecting for every customer at once, so that decision
+ * cannot be made from caller-supplied input.
+ */
+export async function findProviderAppById(
+  db: Database,
+  providerAppId: string,
+): Promise<Pick<ProviderApp, 'id' | 'provider' | 'ownership' | 'projectId' | 'organizationId'> | null> {
+  const rows = await db
+    .select({
+      id: providerApps.id,
+      provider: providerApps.provider,
+      ownership: providerApps.ownership,
+      projectId: providerApps.projectId,
+      organizationId: providerApps.organizationId,
+    })
+    .from(providerApps)
+    .where(eq(providerApps.id, providerAppId))
+    .limit(1);
+
+  return rows[0] ?? null;
+}
+
 /** Record where a platform's review has got to (plan §63). */
 export async function setApprovalStatus(
   tx: Database | Transaction,

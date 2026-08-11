@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, inArray, isNull, lt, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, gte, inArray, isNotNull, isNull, lt, or, sql } from 'drizzle-orm';
 
 import { newUuidV7 } from '@gs/contracts/ids';
 import type { PostStatus, PostTargetStatus } from '@gs/domain';
@@ -6,7 +6,7 @@ import { reducePostStatus } from '@gs/domain';
 
 import type { Database, Transaction } from '../client.js';
 import { posts, postTargetAttempts, postTargets } from '../schema/posts.js';
-import type { Post, PostTarget } from '../schema/posts.js';
+import type { Post, PostTarget, PostTargetAttempt } from '../schema/posts.js';
 
 /**
  * Domain-shaped publishing repository (plan §76).
@@ -571,6 +571,122 @@ export async function getPostWithTargets(
     .orderBy(asc(postTargets.id));
 
   return { post, targets };
+}
+
+/**
+ * Every publish attempt for a post, oldest first.
+ *
+ * Powers the post timeline (plan §40). Ordered by start time rather than by target,
+ * because the thing an integrator is reading a timeline to understand is what happened
+ * *when* — grouping by target would hide that one provider stalled while another
+ * published in two seconds.
+ */
+export async function listPostAttempts(
+  db: Database,
+  postId: string,
+): Promise<PostTargetAttempt[]> {
+  return db
+    .select()
+    .from(postTargetAttempts)
+    .where(eq(postTargetAttempts.postId, postId))
+    .orderBy(asc(postTargetAttempts.startedAt), asc(postTargetAttempts.attemptNumber));
+}
+
+/**
+ * Rolling publish outcomes per provider, for `GET /v1/provider-health` (plan §41).
+ *
+ * Derived from attempts rather than read from a status table somebody has to remember to
+ * write. A derived answer cannot go stale, and "is Instagram working right now" is a
+ * question the attempt record already answers truthfully.
+ */
+export interface ProviderOutcomeCounts {
+  provider: string;
+  successes: number;
+  failures: number;
+  lastSuccessAt: Date | null;
+  lastFailureAt: Date | null;
+  lastErrorCode: string | null;
+}
+
+export async function summarizeProviderOutcomes(
+  db: Database,
+  input: { since: Date; projectEnvironmentId?: string },
+): Promise<ProviderOutcomeCounts[]> {
+  const conditions = [
+    gte(postTargetAttempts.startedAt, input.since),
+    isNotNull(postTargetAttempts.outcome),
+  ];
+
+  if (input.projectEnvironmentId) {
+    conditions.push(eq(posts.projectEnvironmentId, input.projectEnvironmentId));
+  }
+
+  const rows = await db
+    .select({
+      provider: postTargets.provider,
+      successes: sql<number>`count(*) filter (where ${postTargetAttempts.outcome} = 'published')::int`,
+      failures: sql<number>`count(*) filter (where ${postTargetAttempts.outcome} in ('retryable_failed','permanent_failed'))::int`,
+      lastSuccessAt: sql<Date | null>`max(${postTargetAttempts.startedAt}) filter (where ${postTargetAttempts.outcome} = 'published')`,
+      lastFailureAt: sql<Date | null>`max(${postTargetAttempts.startedAt}) filter (where ${postTargetAttempts.outcome} in ('retryable_failed','permanent_failed'))`,
+      // The most recent failure code, which is what a status page needs to say *why*.
+      lastErrorCode: sql<string | null>`(array_agg(${postTargetAttempts.errorCode} order by ${postTargetAttempts.startedAt} desc) filter (where ${postTargetAttempts.errorCode} is not null))[1]`,
+    })
+    .from(postTargetAttempts)
+    .innerJoin(postTargets, eq(postTargets.id, postTargetAttempts.postTargetId))
+    .innerJoin(posts, eq(posts.id, postTargetAttempts.postId))
+    .where(and(...conditions))
+    .groupBy(postTargets.provider);
+
+  return rows.map((row) => ({
+    provider: row.provider,
+    successes: row.successes,
+    failures: row.failures,
+    lastSuccessAt: row.lastSuccessAt ? new Date(row.lastSuccessAt) : null,
+    lastFailureAt: row.lastFailureAt ? new Date(row.lastFailureAt) : null,
+    lastErrorCode: row.lastErrorCode,
+  }));
+}
+
+/**
+ * Requeue one target by id.
+ *
+ * Separate from `requeueFailedTargets` because the per-target endpoint must be able to
+ * report why a specific target could not be retried — "not in a retryable state" is a
+ * different answer from "nothing to retry", and a caller acting on one target needs the
+ * distinction.
+ */
+export async function requeueTarget(
+  db: Database,
+  input: { postId: string; targetId: string; now?: Date },
+): Promise<PostTarget | null> {
+  const now = input.now ?? new Date();
+
+  const rows = await db
+    .update(postTargets)
+    .set({
+      status: 'queued',
+      nextAttemptAt: now,
+      attemptCount: 0,
+      errorCode: null,
+      errorMessage: null,
+      retryable: null,
+      leaseId: null,
+      leaseExpiresAt: null,
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(postTargets.id, input.targetId),
+        eq(postTargets.postId, input.postId),
+        // `permanent_failed` is deliberately absent: it fails the same way again, and
+        // `unknown_reconciliation_required` must be reconciled first or a retry could
+        // duplicate a post that did publish (ADR-006 Layer 4).
+        eq(postTargets.status, 'retryable_failed'),
+      ),
+    )
+    .returning();
+
+  return rows[0] ?? null;
 }
 
 /**

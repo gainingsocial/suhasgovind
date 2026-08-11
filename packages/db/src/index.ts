@@ -38,6 +38,7 @@ export type {
   RecalculateResult,
   ListPostsInput,
   PostListRow,
+  ProviderOutcomeCounts,
   RecordAttemptInput,
 } from './repositories/posts.js';
 export {
@@ -57,10 +58,13 @@ export {
   markTargetRetryableFailure,
   recalculatePostStatus,
   releaseTargetLease,
+  listPostAttempts,
   listPosts,
   requeueFailedTargets,
+  requeueTarget,
   resolveReconciliation,
   startPublishAttempt,
+  summarizeProviderOutcomes,
 } from './repositories/posts.js';
 
 export type {
@@ -188,6 +192,7 @@ export type {
 export {
   deleteProviderApp,
   findProviderApp,
+  findProviderAppById,
   listProviderApps,
   setApprovalStatus,
   upsertProviderApp,

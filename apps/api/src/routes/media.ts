@@ -4,6 +4,8 @@ import {
   CreateMediaUploadRequestSchema,
   CreateMediaUploadResponseSchema,
   DeleteMediaResponseSchema,
+  MediaPreflightRequestSchema,
+  MediaPreflightResponseSchema,
   MediaSchema,
   type Media as MediaResponse,
 } from '@gs/contracts/http';
@@ -11,6 +13,7 @@ import { fromPublicId, toPublicId } from '@gs/contracts/ids';
 import {
   createExternalMedia,
   createUploadIntent,
+  findDestinationOwnerships,
   findMediaById,
   findProfileById,
   markUploaded,
@@ -24,8 +27,10 @@ import type { AppEnv } from '../env.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { withDatabase } from '../middleware/database.js';
 import { mediaStorageKey, presign, type R2Credentials } from '@gs/storage';
+import { providerCallContext } from '../lib/provider-context.js';
 import { parseBody, requirePathId } from '../lib/request.js';
 import { assertSafeMediaUrl } from '../lib/ssrf.js';
+import { runPreflight } from '../services/preflight.js';
 
 /**
  * Media (plan §31).
@@ -297,6 +302,96 @@ media.delete('/:mediaId', withDatabase(), authenticate(['media:write']), async (
       id: toPublicId('media', mediaId),
       object: 'media',
       deleted: true,
+    }),
+    200,
+  );
+});
+
+/**
+ * Media preflight (plan §14, §18).
+ *
+ * Answers "will these assets be accepted on these destinations" without composing a post.
+ * The separation earns its place because media is the expensive half: an Instagram
+ * rejection on aspect ratio should surface before a 200 MB video is uploaded, not after a
+ * post has been composed around it.
+ *
+ * Runs the same engine `POST /v1/posts/preflight` runs, with no text and no schedule.
+ * Reusing it rather than writing a media-only validator is what keeps the two answers
+ * consistent — a separate implementation would eventually disagree with the one that
+ * decides whether a publish proceeds, and the disagreement would be discovered in
+ * production.
+ */
+media.post('/preflight', withDatabase(), authenticate(['media:read']), async (c) => {
+  const principal = c.get('principal');
+  const body = await parseBody(c, MediaPreflightRequestSchema);
+
+  const destinationIds: string[] = [];
+  for (const publicId of body.destination_ids) {
+    const internal = fromPublicId('destination', publicId);
+    if (!internal) {
+      throw new ApiError('INVALID_REQUEST', {
+        message: `\`${publicId}\` is not a valid destination id.`,
+        param: 'destination_ids',
+      });
+    }
+    destinationIds.push(internal);
+  }
+
+  const ownerships = await findDestinationOwnerships(c.get('db'), destinationIds);
+
+  // Every named destination must resolve and belong to this tenant. Silently dropping one
+  // would report "valid" for a set the caller never actually checked (P5).
+  for (const internalId of destinationIds) {
+    const ownership = ownerships.get(internalId);
+    if (!ownership) throw new ApiError('DESTINATION_NOT_FOUND');
+
+    if (
+      ownership.projectEnvironmentId !== principal.projectEnvironmentId ||
+      ownership.projectId !== principal.projectId ||
+      ownership.organizationId !== principal.organizationId
+    ) {
+      throw new ApiError('DESTINATION_NOT_FOUND');
+    }
+
+    if (
+      principal.restrictedToProfileId !== null &&
+      principal.restrictedToProfileId !== ownership.profileId
+    ) {
+      throw new ApiError('TENANT_FORBIDDEN', {
+        message: 'This API key is restricted to a different profile.',
+      });
+    }
+  }
+
+  // Every destination in one call must belong to one profile, because media does too —
+  // checking an asset against a destination in another profile is a question with no
+  // meaningful answer.
+  const profileId = ownerships.get(destinationIds[0]!)!.profileId;
+
+  const outcome = await runPreflight({
+    db: c.get('db'),
+    context: providerCallContext(c, { timeoutMs: 10_000 }),
+    projectEnvironmentId: principal.projectEnvironmentId,
+    profileId,
+    // Empty text is not "no text supplied" — it is the honest statement that this check is
+    // about the media alone. A platform that requires a caption reports that as a finding,
+    // which is correct: the caller has not written one yet.
+    content: { text: '', media_ids: body.media_ids, link_url: null },
+    targets: destinationIds.map((internalId, index) => ({
+      destinationId: internalId,
+      publicDestinationId: body.destination_ids[index]!,
+      overrides: null,
+      options: null,
+    })),
+    ownerships,
+    publishAt: null,
+  });
+
+  return c.json(
+    MediaPreflightResponseSchema.parse({
+      object: 'media_preflight',
+      valid: outcome.valid,
+      targets: outcome.targets,
     }),
     200,
   );

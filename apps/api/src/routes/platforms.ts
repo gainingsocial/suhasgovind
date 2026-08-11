@@ -2,6 +2,8 @@ import {
   CapabilitiesResponseSchema,
   PlatformListResponseSchema,
   PlatformSchema,
+  ProviderHealthResponseSchema,
+  ProviderHealthSchema,
 } from '@gs/contracts/http';
 import {
   isProviderName,
@@ -9,7 +11,7 @@ import {
   PROVIDER_NAMES,
   requiresProviderApp,
 } from '@gs/contracts/providers';
-import { findDestinationById } from '@gs/db';
+import { findDestinationById, summarizeProviderOutcomes } from '@gs/db';
 import { ApiError } from '@gs/errors';
 import { getAdapter, hasAdapter } from '@gs/providers';
 import { Hono } from 'hono';
@@ -35,6 +37,16 @@ import { requirePathId } from '../lib/request.js';
  */
 export const platforms = new Hono<AppEnv>();
 export const destinations = new Hono<AppEnv>();
+export const providerHealth = new Hono<AppEnv>();
+
+/**
+ * How far back provider health looks.
+ *
+ * A day rather than an hour: publishing is bursty, and an hour of no activity would leave
+ * most providers reporting nothing most of the time. A week would smooth over an outage
+ * that started this morning, which is the one an integrator is asking about.
+ */
+const PROVIDER_HEALTH_WINDOW_HOURS = 24;
 
 /**
  * Every provider the product intends to support, with `available` marking which have an
@@ -148,3 +160,67 @@ destinations.get(
     return c.json(CapabilitiesResponseSchema.parse(capabilities), 200);
   },
 );
+
+/**
+ * Provider health (plan §41).
+ *
+ * Scoped to the caller's own environment on purpose. A platform-wide figure would report
+ * that Instagram is fine while every one of *this* customer's posts fails on an expired
+ * token — technically true and completely useless. What an integrator needs to know is
+ * whether their publishing is working.
+ *
+ * `no_recent_activity` is a distinct status rather than being folded into `operational`.
+ * An absence of failures is not evidence of success, and a status page that says
+ * "healthy" because nothing was tried is the kind of reassurance that costs trust.
+ */
+providerHealth.get('/', withDatabase(), authenticate(['capabilities:read']), async (c) => {
+  const principal = c.get('principal');
+  const since = new Date(Date.now() - PROVIDER_HEALTH_WINDOW_HOURS * 3600 * 1000);
+
+  const summaries = await summarizeProviderOutcomes(c.get('db'), {
+    since,
+    projectEnvironmentId: principal.projectEnvironmentId,
+  });
+
+  const byProvider = new Map(summaries.map((row) => [row.provider, row]));
+
+  const data = PROVIDER_NAMES.filter(
+    (provider) => hasAdapter(provider) && (provider !== 'mock' || c.env.ENVIRONMENT === 'test'),
+  ).map((provider) => {
+    const summary = byProvider.get(provider);
+    const attempts = summary ? summary.successes + summary.failures : 0;
+    const successRate = attempts > 0 ? summary!.successes / attempts : null;
+
+    // Thresholds rather than a single rate, because the two failure modes read
+    // differently to somebody deciding whether to publish now: an occasional 429 is not
+    // the same event as a platform that has stopped accepting anything.
+    const status =
+      attempts === 0
+        ? 'no_recent_activity'
+        : successRate === 0
+          ? 'failing'
+          : successRate! < 0.9
+            ? 'degraded'
+            : 'operational';
+
+    return ProviderHealthSchema.parse({
+      provider,
+      object: 'provider_health',
+      status,
+      success_rate: successRate,
+      attempts,
+      last_success_at: summary?.lastSuccessAt?.toISOString() ?? null,
+      last_failure_at: summary?.lastFailureAt?.toISOString() ?? null,
+      last_error_code: summary?.lastErrorCode ?? null,
+    });
+  });
+
+  return c.json(
+    ProviderHealthResponseSchema.parse({
+      object: 'list',
+      window_hours: PROVIDER_HEALTH_WINDOW_HOURS,
+      data,
+    }),
+    200,
+  );
+});

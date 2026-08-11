@@ -11,9 +11,10 @@ import { connectRoutes, oauthCallbackRoutes } from './routes/connect.js';
 import { connectSessions, hostedConnect } from './routes/connect-sessions.js';
 import { connections } from './routes/connections.js';
 import { media } from './routes/media.js';
-import { destinations, platforms } from './routes/platforms.js';
+import { destinations, platforms, providerHealth } from './routes/platforms.js';
 import { posts } from './routes/posts.js';
 import { profiles } from './routes/profiles.js';
+import { providerApps } from './routes/provider-apps.js';
 import { webhookDeliveriesRoute, webhooks } from './routes/webhooks.js';
 
 /**
@@ -47,9 +48,11 @@ app.route('/v1/connect-sessions', connectSessions);
 app.route('/connect', hostedConnect);
 app.route('/v1/platforms', platforms);
 app.route('/v1/destinations', destinations);
+app.route('/v1/provider-health', providerHealth);
 app.route('/v1/media', media);
 app.route('/v1/posts', posts);
 app.route('/v1/api-keys', apiKeys);
+app.route('/v1/provider-apps', providerApps);
 app.route('/v1/environments', environments);
 app.route('/v1/webhooks', webhooks);
 app.route('/v1/webhook-deliveries', webhookDeliveriesRoute);
