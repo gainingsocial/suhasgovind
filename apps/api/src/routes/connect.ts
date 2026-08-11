@@ -114,7 +114,7 @@ connectRoutes.post('/authorize', withDatabase(), authenticate(['connections:writ
     AuthorizeConnectionResponseSchema.parse({
       object: 'authorization',
       authorization_url: started.authorizationUrl,
-      oauth_session_id: toPublicId('event', started.oauthSessionId),
+      oauth_session_id: toPublicId('oauthSession', started.oauthSessionId),
       state: started.state,
       completion: started.completion,
       required_credential_fields: started.requiredCredentialFields,
@@ -352,7 +352,7 @@ connectRoutes.post(
 
     await loadOwnedConnection(c, connectionId);
 
-    const internalIds: string[] = [];
+    const unique = new Set<string>();
     for (const publicId of body.destination_ids) {
       const internal = fromPublicId('destination', publicId);
       if (!internal) {
@@ -361,8 +361,12 @@ connectRoutes.post(
           param: 'destination_ids',
         });
       }
-      internalIds.push(internal);
+      // Deduplicated, because the count check below compares how many rows were selected
+      // against how many were asked for. The same id twice would select one row and then
+      // read as a missing destination.
+      unique.add(internal);
     }
+    const internalIds = [...unique];
 
     const rows = await selectConnectionDestinations(c.get('db'), {
       projectEnvironmentId: principal.projectEnvironmentId,

@@ -145,7 +145,7 @@ connectSessions.post('/', withDatabase(), authenticate(['connections:write']), a
   return c.json(
     ConnectSessionResponseSchema.parse({
       object: 'connect_session',
-      id: toPublicId('event', session.id),
+      id: toPublicId('connectSession', session.id),
       profile_id: toPublicId('profile', profile.id),
       providers: requested,
       url: `${origin}/connect/${token}`,

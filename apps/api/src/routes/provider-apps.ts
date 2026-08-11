@@ -120,7 +120,7 @@ providerApps.get('/', withDatabase(), authenticateHuman(), async (c) => {
     .filter((row) => isProviderName(row.provider))
     .map((row) =>
       ProviderAppSchema.parse({
-        id: toPublicId('event', row.id),
+        id: toPublicId('providerApp', row.id),
         object: 'provider_app',
         provider: row.provider,
         ownership: row.ownership,
@@ -197,7 +197,7 @@ providerApps.post('/', withDatabase(), authenticateHuman(), async (c) => {
   // always be re-read from the platform's own console.
   return c.json(
     ProviderAppSchema.parse({
-      id: toPublicId('event', saved.id),
+      id: toPublicId('providerApp', saved.id),
       object: 'provider_app',
       provider: body.provider,
       ownership: saved.ownership,
@@ -215,7 +215,7 @@ providerApps.post('/', withDatabase(), authenticateHuman(), async (c) => {
 providerApps.delete('/:providerAppId', withDatabase(), authenticateHuman(), async (c) => {
   const user = c.get('user');
   const environmentId = requireEnvironmentId(c.req.query('environment_id'));
-  const providerAppId = requirePathId(c, 'event', 'providerAppId');
+  const providerAppId = requirePathId(c, 'providerApp', 'providerAppId');
 
   const membership = await findMembershipForEnvironment(c.get('db'), user.userId, environmentId);
   if (!membership) throw new ApiError('TENANT_FORBIDDEN');
@@ -245,7 +245,7 @@ providerApps.delete('/:providerAppId', withDatabase(), authenticateHuman(), asyn
 
   return c.json(
     DeleteProviderAppResponseSchema.parse({
-      id: toPublicId('event', providerAppId),
+      id: toPublicId('providerApp', providerAppId),
       object: 'provider_app',
       deleted: true,
     }),
