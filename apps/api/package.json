@@ -16,6 +16,7 @@
     "@gs/contracts": "workspace:*",
     "@gs/db": "workspace:*",
     "@gs/errors": "workspace:*",
+    "@gs/events": "workspace:*",
     "@gs/observability": "workspace:*",
     "hono": "^4.10.3",
     "zod": "^4.4.3",

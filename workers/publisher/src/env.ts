@@ -29,6 +29,13 @@ export interface Env {
   /** Cross-isolate rate-limit coordination (plan §29). */
   RATE_LIMITER?: DurableObjectNamespace;
 
+  /**
+   * Public origin of the API, used to reconstruct the OAuth redirect URI when an adapter
+   * needs it during a token refresh. Providers validate it against what is registered, so
+   * a wrong value fails the refresh rather than being ignored.
+   */
+  PUBLIC_API_ORIGIN?: string;
+
   /** Signed reads for media the provider must fetch. */
   R2_ACCOUNT_ID?: string;
   R2_ACCESS_KEY_ID?: string;

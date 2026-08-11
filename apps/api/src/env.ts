@@ -57,6 +57,28 @@ export interface Env {
   WEBHOOK_SIGNING_ROOT?: string;
 
   /**
+   * Key-encryption keys for provider credentials (plan §7.1, ADR-007). Versioned from day
+   * one so a rotation reads the old version while writing the new. Worker Secrets.
+   */
+  CREDENTIAL_KEK_V1?: string;
+  CREDENTIAL_KEK_V2?: string;
+  CREDENTIAL_KEK_ACTIVE_VERSION?: string;
+
+  /**
+   * Signs hosted connect session tokens (plan §22). The token is handed to a customer's
+   * end user, who is not authenticated with us at all, so the signature is the only thing
+   * standing between a guessed URL and somebody else's connect flow.
+   */
+  CONNECT_SESSION_SIGNING_KEY?: string;
+
+  /**
+   * Public origin of this API, used to build the provider callback URL registered with
+   * each platform. Derived from the request when unset, which is correct in development
+   * and wrong the moment a proxy sits in front — so production sets it explicitly.
+   */
+  PUBLIC_API_ORIGIN?: string;
+
+  /**
    * Supabase project URL, used to fetch the public JWKS that verifies dashboard sessions
    * (plan §39). Not a secret — it is a public discovery endpoint.
    */

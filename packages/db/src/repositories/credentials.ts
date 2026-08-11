@@ -1,5 +1,5 @@
 import { newUuidV7 } from '@gs/contracts/ids';
-import { and, eq, inArray, lt, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNull, lt, or } from 'drizzle-orm';
 
 import type { Database, Transaction } from '../client.js';
 import {
@@ -20,6 +20,9 @@ import {
 export interface StoredCredential {
   id: string;
   connectionId: string;
+  /** Non-null when this credential belongs to one publishable surface, not the whole
+   *  connection — a Meta Page access token being the canonical case. */
+  destinationId: string | null;
   credentialType: SocialCredential['credentialType'];
   ciphertext: string;
   nonce: string;
@@ -39,12 +42,20 @@ export interface StoredCredential {
  * One query rather than three. This runs on the publish hot path for every target, and a
  * connection with an access token plus a refresh token is the common case, not the
  * exception.
+ *
+ * Pass `destinationId` when loading credentials for a publish. Where the provider issued
+ * a token for that specific surface it wins over the connection-level one, which is the
+ * whole point of storing it: a Meta Page token publishes to the Page, and the user token
+ * that discovered the Page does not. Connection-level credentials the destination does
+ * not override — a refresh token, typically — are still returned, so a refresh does not
+ * have to know which kind of connection it is looking at.
  */
 export async function findConnectionCredentials(
   db: Database,
   connectionId: string,
+  destinationId?: string | null,
 ): Promise<StoredCredential[]> {
-  const rows = await db
+  const all = await db
     .select({
       credential: socialCredentials,
       authStrategy: socialConnections.authStrategy,
@@ -53,6 +64,22 @@ export async function findConnectionCredentials(
     .from(socialCredentials)
     .innerJoin(socialConnections, eq(socialConnections.id, socialCredentials.connectionId))
     .where(eq(socialCredentials.connectionId, connectionId));
+
+  // Destination-scoped rows belonging to *other* destinations are never a candidate:
+  // returning a sibling Page's token would publish to the wrong Page.
+  const candidates = all.filter(
+    (row) => row.credential.destinationId === null || row.credential.destinationId === destinationId,
+  );
+
+  const overridden = new Set(
+    candidates
+      .filter((row) => row.credential.destinationId !== null)
+      .map((row) => row.credential.credentialType),
+  );
+
+  const rows = candidates.filter(
+    (row) => row.credential.destinationId !== null || !overridden.has(row.credential.credentialType),
+  );
 
   if (rows.length === 0) return [];
 
@@ -66,6 +93,7 @@ export async function findConnectionCredentials(
   return rows.map((row) => ({
     id: row.credential.id,
     connectionId: row.credential.connectionId,
+    destinationId: row.credential.destinationId,
     credentialType: row.credential.credentialType,
     ciphertext: row.credential.ciphertext,
     nonce: row.credential.nonce,
@@ -154,7 +182,10 @@ export async function acquireRefreshLock(
     .where(
       and(
         eq(socialConnections.id, connectionId),
-        sql`(${socialConnections.refreshLockedUntil} IS NULL OR ${socialConnections.refreshLockedUntil} < ${now})`,
+        // Typed helpers, not a raw `sql` template. A raw template binds a JS Date as its
+        // `toString()` — "Wed Aug 12 2026 … (India Standard Time)" — which Postgres
+        // cannot parse as a timestamptz, so the lock could never be taken at all.
+        or(isNull(socialConnections.refreshLockedUntil), lt(socialConnections.refreshLockedUntil, now)),
       ),
     )
     .returning({ id: socialConnections.id });

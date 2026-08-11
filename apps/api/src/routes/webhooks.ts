@@ -30,6 +30,7 @@ import {
   type EndpointWithSubscriptions,
 } from '@gs/db';
 import { ApiError } from '@gs/errors';
+import { CURRENT_WEBHOOK_API_VERSION } from '@gs/events';
 import { Hono, type Context } from 'hono';
 
 import type { AppEnv } from '../env.js';
@@ -47,9 +48,6 @@ import { parseBody, parseQuery, requirePathId } from '../lib/request.js';
  */
 export const webhooks = new Hono<AppEnv>();
 export const webhookDeliveriesRoute = new Hono<AppEnv>();
-
-/** Pinned onto every endpoint at creation, so a payload change cannot break it silently. */
-const CURRENT_WEBHOOK_API_VERSION = '2026-08-01';
 
 function toEndpointResponse(row: EndpointWithSubscriptions) {
   return WebhookEndpointSchema.parse({

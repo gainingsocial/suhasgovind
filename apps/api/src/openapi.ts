@@ -31,11 +31,19 @@ import {
   WebhookDeliveryListResponseSchema,
   WebhookEndpointListResponseSchema,
   WebhookEndpointSchema,
+  AuthorizeConnectionRequestSchema,
+  AuthorizeConnectionResponseSchema,
+  CompleteConnectionRequestSchema,
+  CompleteConnectionResponseSchema,
+  ConnectSessionResponseSchema,
   ConnectionSchema,
+  CreateConnectSessionRequestSchema,
   CreateProfileRequestSchema,
   DeleteProfileResponseSchema,
   DestinationListResponseSchema,
   DisconnectConnectionResponseSchema,
+  RefreshConnectionResponseSchema,
+  SelectDestinationsRequestSchema,
   ErrorEnvelopeSchema,
   HealthResponseSchema,
   ListConnectionsQuerySchema,
@@ -320,6 +328,134 @@ const ROUTES: RouteSpec[] = [
     successDescription: 'The profile was deleted.',
     response: DeleteProfileResponseSchema,
     errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'PROFILE_NOT_FOUND'],
+  },
+  {
+    method: 'post',
+    path: '/v1/connections/authorize',
+    operationId: 'authorizeConnection',
+    summary: 'Start connecting a social account',
+    description:
+      'Begins an authorization and returns where to send the end user. Branch on ' +
+      '`completion`, not on the provider name: `redirect` means send the user to ' +
+      '`authorization_url` and wait for the callback; `credential` means the platform has no ' +
+      'consent screen, so collect the fields listed in `required_credential_fields` and post ' +
+      'them to `/v1/connections/complete` with the returned `state`.\n\n' +
+      '`redirect_url` must be absolute HTTPS (HTTP is permitted only on localhost). It is ' +
+      'stored with the authorization and used verbatim afterwards — nothing from the ' +
+      'provider’s callback is ever redirected to.',
+    tags: ['Connections'],
+    scopes: ['connections:write'],
+    requestBody: AuthorizeConnectionRequestSchema,
+    successStatus: 201,
+    successDescription: 'The authorization was started.',
+    response: AuthorizeConnectionResponseSchema,
+    errors: [
+      ...AUTH_ERRORS,
+      'INVALID_REQUEST',
+      'PROFILE_NOT_FOUND',
+      'PROVIDER_NOT_SUPPORTED',
+      'PROVIDER_NOT_CONFIGURED',
+      'REDIRECT_URL_NOT_ALLOWED',
+      'CONFLICTING_STATE',
+    ],
+  },
+  {
+    method: 'post',
+    path: '/v1/connections/complete',
+    operationId: 'completeConnection',
+    summary: 'Finish connecting a platform with no consent screen',
+    description:
+      'For platforms where the user supplies a credential directly — a Bluesky app password, ' +
+      'a Telegram bot token. The credential is verified against the provider before anything ' +
+      'is stored, so a typo fails here rather than at publish time, and it is encrypted on ' +
+      'arrival and never returned by any endpoint.\n\n' +
+      '`setup_complete: false` in the response means the account authorized more than one ' +
+      'publishable destination and one must be selected before publishing.',
+    tags: ['Connections'],
+    scopes: ['connections:write'],
+    requestBody: CompleteConnectionRequestSchema,
+    successStatus: 201,
+    successDescription: 'The account is connected.',
+    response: CompleteConnectionResponseSchema,
+    errors: [
+      ...AUTH_ERRORS,
+      'INVALID_REQUEST',
+      'AUTHORIZATION_SESSION_INVALID',
+      'AUTHORIZATION_CREDENTIAL_REJECTED',
+      'AUTHORIZATION_FAILED',
+      'PROVIDER_NOT_SUPPORTED',
+      'PROVIDER_NOT_CONFIGURED',
+    ],
+  },
+  {
+    method: 'post',
+    path: '/v1/connections/{connectionId}/destinations/select',
+    operationId: 'selectConnectionDestinations',
+    summary: 'Choose which destinations publish',
+    description:
+      'Completes setup for a connection that authorized several destinations (plan §21.3). ' +
+      'Selection is absolute, not additive: destinations omitted from the list are ' +
+      'deselected. Selecting none leaves the connection deliberately unable to publish, ' +
+      'which is the honest reading of “publish nowhere”.',
+    tags: ['Connections'],
+    scopes: ['connections:write'],
+    pathParams: [{ name: 'connectionId', description: 'Public connection id, `con_…`.' }],
+    requestBody: SelectDestinationsRequestSchema,
+    successStatus: 200,
+    successDescription: 'The connection’s destinations, with the new selection applied.',
+    response: DestinationListResponseSchema,
+    errors: [
+      ...AUTH_ERRORS,
+      'INVALID_REQUEST',
+      'CONNECTION_NOT_FOUND',
+      'DESTINATION_NOT_FOUND',
+    ],
+  },
+  {
+    method: 'post',
+    path: '/v1/connections/{connectionId}/refresh',
+    operationId: 'refreshConnection',
+    summary: 'Refresh a connection’s credentials',
+    description:
+      'Rotates the stored credential and re-checks health. Tokens are refreshed proactively ' +
+      'in the background, so this is for confirming a fix rather than routine maintenance.\n\n' +
+      'Returns `rotated: false` when the existing credential was still valid and nothing ' +
+      'changed. A failure sets the connection to `reauth_required` and records why, because ' +
+      'that is the moment we learn access was revoked.',
+    tags: ['Connections'],
+    scopes: ['connections:write'],
+    pathParams: [{ name: 'connectionId', description: 'Public connection id, `con_…`.' }],
+    successStatus: 200,
+    successDescription: 'The connection was refreshed.',
+    response: RefreshConnectionResponseSchema,
+    errors: [
+      ...AUTH_ERRORS,
+      'INVALID_REQUEST',
+      'CONNECTION_NOT_FOUND',
+      'CONNECTION_DISCONNECTED',
+      'CONNECTION_REAUTH_REQUIRED',
+      'CONFLICTING_STATE',
+      'PROVIDER_NOT_CONFIGURED',
+    ],
+  },
+  {
+    method: 'post',
+    path: '/v1/connect-sessions',
+    operationId: 'createConnectSession',
+    summary: 'Create a hosted connect session',
+    description:
+      'Returns a short-lived, signed URL you hand to your own end user (plan §22). They see ' +
+      'your branding, connect their accounts, and return to `return_url` — without an account ' +
+      'here and without seeing this dashboard.\n\n' +
+      'The URL is a bearer credential: anyone holding it can attach an account to the named ' +
+      'profile, so keep `expires_in` short and deliver it over a channel you trust.',
+    tags: ['Connections'],
+    scopes: ['connections:write'],
+    requestBody: CreateConnectSessionRequestSchema,
+    successStatus: 201,
+    successDescription: 'The connect session was created.',
+    response: ConnectSessionResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'PROFILE_NOT_FOUND', 'REDIRECT_URL_NOT_ALLOWED'],
   },
   {
     method: 'get',

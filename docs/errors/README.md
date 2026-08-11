@@ -58,6 +58,28 @@ exactly what it needs.
 id exists), and a distinct code lets a genuine cross-project mistake be understood instead
 of sending someone hunting a phantom 404.
 
+## Connecting an account
+
+Returned by `/v1/connections/authorize`, `/v1/connections/complete`, the provider callback
+and the hosted connect flow.
+
+| Code | Status | Meaning | What to do |
+| --- | --- | --- | --- |
+| `PROVIDER_NOT_CONFIGURED` | 503 | The adapter exists but no platform application credentials are configured for it. | Nothing on your side. The platform is awaiting its client id and secret; `GET /v1/platforms` shows what is connectable now. |
+| `AUTHORIZATION_SESSION_INVALID` | 400 | The `state` is unknown, already used, or expired. | Start again at `/v1/connections/authorize`. States are single-use and expire in 15 minutes. |
+| `AUTHORIZATION_FAILED` | 400 | The provider declined, the user cancelled, or the account authorized nothing publishable. | The `error_detail` on the callback redirect carries the provider's own reason. |
+| `AUTHORIZATION_CREDENTIAL_REJECTED` | 400 | The provider rejected the supplied credential. | Almost always a mistyped app password or bot token. Nothing is stored when this happens. |
+| `REDIRECT_URL_NOT_ALLOWED` | 400 | `redirect_url` is not absolute HTTPS, or embeds credentials. | Use an absolute `https://` URL. Plain HTTP is permitted only for `localhost`. |
+| `CONNECT_SESSION_INVALID` | 400 | The hosted connect link is expired, completed, or its signature does not verify. | Create a new session. Links are bearer credentials and are deliberately short-lived. |
+
+`AUTHORIZATION_SESSION_INVALID` covers three distinct situations on purpose — unknown,
+already-consumed and expired. The callback is an unauthenticated endpoint, and confirming
+that a state *existed* tells whoever replayed it that they hold a real handshake.
+
+A connection can exist and still not publish. `setup_complete: false` means the account
+authorized more than one destination and one has yet to be chosen; publishing to it before
+then fails with `CONNECTION_INCOMPLETE_SETUP` rather than guessing which Page was meant.
+
 ## Server
 
 | Code | Status | Meaning | What to do |

@@ -80,9 +80,14 @@ export {
 } from './repositories/profiles.js';
 
 export type {
+  ConnectionIdPlan,
   ConnectionWithScopes,
   DestinationOwnership,
+  EncryptedCredentialInput,
   ListConnectionsInput,
+  SaveConnectionInput,
+  SaveConnectionResult,
+  SaveDestinationInput,
 } from './repositories/connections.js';
 export {
   countConnections,
@@ -93,9 +98,31 @@ export {
   findDestinationOwnerships,
   listConnections,
   listDestinationsForConnection,
+  planConnectionIds,
+  saveConnection,
+  selectConnectionDestinations,
   setConnectionHealth,
   storeDestinationCapabilities,
 } from './repositories/connections.js';
+
+export type { CreateOAuthSessionInput } from './repositories/oauth-sessions.js';
+export {
+  consumeOAuthSession,
+  createOAuthSession,
+  expireStaleOAuthSessions,
+  failOAuthSession,
+  findPendingOAuthSession,
+} from './repositories/oauth-sessions.js';
+
+export type {
+  ConnectSessionWithProfile,
+  CreateConnectSessionInput,
+} from './repositories/connect-sessions.js';
+export {
+  completeConnectSession,
+  createConnectSession,
+  findConnectSessionById,
+} from './repositories/connect-sessions.js';
 
 export type { CreateUploadIntentInput, ProbeResult } from './repositories/media.js';
 export {

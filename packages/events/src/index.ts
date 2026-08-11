@@ -8,6 +8,7 @@ export type {
   WebhookEventType,
 } from './webhook-events.js';
 export {
+  CURRENT_WEBHOOK_API_VERSION,
   WEBHOOK_EVENT_TYPES,
   WEBHOOK_MAX_ATTEMPTS,
   WEBHOOK_RETRY_DELAYS_SECONDS,

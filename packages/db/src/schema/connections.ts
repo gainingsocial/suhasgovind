@@ -249,6 +249,16 @@ export const socialCredentials = pgTable(
       .references(() => projects.id, { onDelete: 'cascade' }),
     credentialType: credentialTypeEnum('credential_type').notNull(),
 
+    /**
+     * Set when the provider issues a credential per publishable surface rather than per
+     * authorization. A Meta Page access token is the canonical case: the user token that
+     * enumerated the Pages cannot publish to any of them, so the token that can must be
+     * stored against the Page. NULL means the credential belongs to the connection.
+     */
+    destinationId: uuid('destination_id').references(() => socialDestinations.id, {
+      onDelete: 'cascade',
+    }),
+
     ciphertext: text('ciphertext').notNull(),
     nonce: text('nonce').notNull(),
     algorithm: text('algorithm').notNull().default('AES-256-GCM'),
@@ -260,7 +270,22 @@ export const socialCredentials = pgTable(
     ...timestamps,
   },
   (table) => [
-    uniqueIndex('social_credentials_connection_type_key').on(table.connectionId, table.credentialType),
+    /**
+     * Two partial indexes rather than one composite over three columns. Postgres treats
+     * NULLs as distinct, so a composite index including `destination_id` would not
+     * constrain connection-level rows at all — two access tokens for one connection would
+     * be accepted, which is the "which one is current?" ambiguity this constraint exists
+     * to prevent.
+     */
+    uniqueIndex('social_credentials_connection_type_key')
+      .on(table.connectionId, table.credentialType)
+      .where(sql`${table.destinationId} IS NULL`),
+    uniqueIndex('social_credentials_destination_type_key')
+      .on(table.destinationId, table.credentialType)
+      .where(sql`${table.destinationId} IS NOT NULL`),
+    index('social_credentials_destination_idx')
+      .on(table.destinationId)
+      .where(sql`${table.destinationId} IS NOT NULL`),
     // Drives the proactive token-refresh sweep before anything expires mid-publish.
     index('social_credentials_expiry_idx').on(table.expiresAt).where(sql`${table.expiresAt} IS NOT NULL`),
   ],

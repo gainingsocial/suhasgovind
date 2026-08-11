@@ -1,9 +1,11 @@
 import { fromPublicId } from '@gs/contracts/ids';
+import { requiresProviderApp } from '@gs/contracts/providers';
 import { CredentialCipher, Keyring, type CREDENTIAL_ALGORITHM } from '@gs/crypto';
 import {
   findConnectionCredentials,
   findDestinationOwnership,
   findMediaByIds,
+  findProviderApp,
   getPostWithTargets,
   type Database,
   type MediaAsset,
@@ -103,7 +105,11 @@ export async function loadPublishContext(
     } as PublishContext;
   }
 
-  const stored = await findConnectionCredentials(db, ownership.connectionId);
+  // Destination-scoped, so a provider that issues a token per surface publishes with the
+  // right one. A Meta Page token is the case that makes this mandatory: the user token
+  // that discovered the Page cannot post to it, and handing it over produces a permissions
+  // error naming nothing useful.
+  const stored = await findConnectionCredentials(db, ownership.connectionId, ownership.destinationId);
   if (!stored || stored.length === 0) {
     return {
       blocked: {
@@ -137,11 +143,13 @@ export async function loadPublishContext(
         // Associated data binds the ciphertext to its tenant, its connection AND its
         // credential type: a record moved between any of those fails to decrypt rather
         // than silently working. Including the type is what stops a refresh token being
-        // swapped into the access-token slot.
+        // swapped into the access-token slot, and including the destination is what stops
+        // one Page's token being used to publish to another.
         organizationId: ownership.organizationId,
         projectId: ownership.projectId,
         connectionId: ownership.connectionId,
         credentialType: record.credentialType,
+        destinationId: record.destinationId,
       },
     );
   }
@@ -204,11 +212,55 @@ export async function loadPublishContext(
     });
   }
 
+  // Resolved per publish rather than cached, because the whole point of storing platform
+  // credentials in a table is that a rotated secret or a newly approved platform takes
+  // effect without a deploy (plan §23). A cache would reintroduce the restart it removes.
+  let app: ProviderAppCredentials | null = null;
+  const strategy = stored[0]!.authStrategy;
+
+  if (requiresProviderApp(strategy)) {
+    const row = await findProviderApp(db, ownership.provider, ownership.projectId);
+
+    if (!row || row.disabledAt || !row.clientId || !row.encryptedClientSecret) {
+      // Blocked rather than thrown: a missing platform application is not this post's
+      // fault and will not be fixed by retrying it. Blocking records a precise reason on
+      // the target, which is what the dashboard shows and what a support reply quotes.
+      return {
+        blocked: {
+          code: 'PROVIDER_NOT_CONFIGURED',
+          message: `No application credentials are configured for ${ownership.provider}.`,
+        },
+      } as PublishContext;
+    }
+
+    const clientSecret = await cipher.decrypt(
+      {
+        ciphertext: row.encryptedClientSecret.ciphertext,
+        nonce: row.encryptedClientSecret.nonce,
+        algorithm: row.encryptedClientSecret.algorithm as typeof CREDENTIAL_ALGORITHM,
+        keyVersion: row.encryptedClientSecret.keyVersion,
+      },
+      {
+        // Matches how the API encrypted it: a platform-managed app belongs to no tenant,
+        // so those slots carry a constant rather than being dropped from the AAD.
+        organizationId: row.organizationId ?? 'platform',
+        projectId: row.projectId ?? 'platform',
+        connectionId: row.id,
+        credentialType: 'client_secret',
+      },
+    );
+
+    app = {
+      clientId: row.clientId,
+      clientSecret,
+      redirectUri: `${env.PUBLIC_API_ORIGIN ?? ''}/v1/oauth/${ownership.provider}/callback`,
+      metadata: (row.callbackConfig ?? {}) as Record<string, unknown>,
+    };
+  }
+
   return {
     credentials,
-    // Platform-managed provider apps land with the connect flow; strategies that need
-    // none (Bluesky app passwords, Telegram bot tokens) work with null today.
-    app: null,
+    app,
     destinationExternalId: ownership.providerDestinationId,
     content: {
       text: resolved.text ?? '',

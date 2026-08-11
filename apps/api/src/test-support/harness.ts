@@ -29,6 +29,13 @@ export async function createHarness(
       LOG_LEVEL: 'silent',
       API_KEY_HASH_PEPPER: harness.pepper,
       DATABASE_URL: harness.connectionString,
+      // Fixed test key material. Real KEKs are Worker Secrets; this one exists so the
+      // connect and credential paths can be exercised, and it is deliberately obvious
+      // that it is not a production value.
+      CREDENTIAL_KEK_V1: 'dGVzdC1vbmx5LWtleS1tYXRlcmlhbC0zMi1ieXRlcyE=',
+      CREDENTIAL_KEK_ACTIVE_VERSION: '1',
+      CONNECT_SESSION_SIGNING_KEY: 'dGVzdC1vbmx5LWNvbm5lY3Qtc2Vzc2lvbi1zaWduaW5nLWtleQ==',
+      PUBLIC_API_ORIGIN: 'https://api.test.invalid',
     },
   };
 }

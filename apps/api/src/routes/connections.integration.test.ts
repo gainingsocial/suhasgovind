@@ -1,3 +1,4 @@
+import { PROVIDER_NAMES } from '@gs/contracts/providers';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import app from '../index.js';
@@ -205,10 +206,21 @@ describeIntegration('connections and capabilities', () => {
 
       const byProvider = new Map(body.data.map((p) => [p.provider, p]));
       expect(byProvider.get('mock')?.available).toBe(true);
-      // Listed but unbuilt, so a dashboard renders "coming soon" from the API rather than
-      // a hard-coded list that drifts.
-      expect(byProvider.get('linkedin')?.available).toBe(false);
-      expect(byProvider.get('linkedin')?.auth_strategy ?? null).toBeNull();
+
+      // Every provider the product intends to support is listed, built or not, so a
+      // dashboard renders "coming soon" from the API rather than from a hard-coded list
+      // that drifts.
+      expect(body.data.length).toBe(PROVIDER_NAMES.length);
+
+      // The unbuilt example is picked dynamically. Naming a specific provider means this
+      // test breaks the day that adapter ships — a green-to-red change caused by progress
+      // rather than by a regression, which is exactly what happened when LinkedIn landed.
+      const unbuilt = body.data.find((platform) => !platform.available);
+      if (unbuilt) {
+        // An unbuilt platform must not advertise an auth strategy: offering a connect
+        // button that cannot complete is worse than showing nothing.
+        expect(unbuilt.auth_strategy ?? null).toBeNull();
+      }
     });
   });
 

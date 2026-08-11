@@ -63,6 +63,25 @@ export const ERROR_CODES = [
   'CONNECTION_INCOMPLETE_SETUP',
   'CONNECTION_RATE_LIMITED',
 
+  // ---- connecting an account (plan §21, §22, §23) --------------------------
+  /**
+   * The provider has no usable platform application configured. Separate from
+   * `PROVIDER_NOT_SUPPORTED`, which means no adapter exists: here the adapter is built
+   * and waiting on a client id and secret, which is a platform setup step the caller
+   * cannot resolve and should not be told to debug.
+   */
+  'PROVIDER_NOT_CONFIGURED',
+  /** The `state` on a callback is unknown, already used, or expired (plan §21.2). */
+  'AUTHORIZATION_SESSION_INVALID',
+  /** The provider redirected back with an error, or the user declined consent. */
+  'AUTHORIZATION_FAILED',
+  /** The supplied credential was rejected by the provider (a bad app password or token). */
+  'AUTHORIZATION_CREDENTIAL_REJECTED',
+  /** `redirect_url` is not on the environment's allow-list (plan §21.1, §67). */
+  'REDIRECT_URL_NOT_ALLOWED',
+  /** The hosted connect session is expired, completed or unknown (plan §22). */
+  'CONNECT_SESSION_INVALID',
+
   // ---- capability / preflight (plan §17, §18) ------------------------------
   'CAPABILITY_NOT_SUPPORTED',
   'POST_TYPE_NOT_SUPPORTED',

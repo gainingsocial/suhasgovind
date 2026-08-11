@@ -9,6 +9,16 @@ import type { DomainEvent, DomainEventType } from './domain-events.js';
  * Not every domain event becomes a webhook. Internal events like `post.target.leased`
  * exist for observability and would only be noise in a customer's endpoint.
  */
+/**
+ * The payload version pinned onto an endpoint when it is created, and stamped on every
+ * event emitted against it.
+ *
+ * It lives here rather than beside one route because more than one thing emits: the
+ * publishing workers, the connect flow, the media pipeline. A per-emitter constant is how
+ * two of them end up disagreeing about what version a customer is receiving.
+ */
+export const CURRENT_WEBHOOK_API_VERSION = '2026-08-01';
+
 export const WEBHOOK_EVENT_TYPES = [
   'connection.connected',
   'connection.reauth_required',

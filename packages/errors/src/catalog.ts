@@ -215,6 +215,52 @@ export const ERROR_CODE_METADATA: Record<ErrorCode, ErrorCodeMetadata> = {
     'retry_after_delay',
   ),
 
+  // ---- connecting an account ------------------------------------------------
+  PROVIDER_NOT_CONFIGURED: m(
+    'connection_error',
+    // 503 rather than 400: nothing about the request was wrong, and the condition is
+    // expected to clear once the platform application is configured.
+    503,
+    true,
+    'This platform is not yet available for connecting. Its application credentials are not configured.',
+    'check_platform_availability',
+  ),
+  AUTHORIZATION_SESSION_INVALID: m(
+    'connection_error',
+    400,
+    false,
+    'This authorization link is invalid, already used, or expired.',
+    'start_authorization_again',
+  ),
+  AUTHORIZATION_FAILED: m(
+    'connection_error',
+    400,
+    false,
+    'The provider did not complete the authorization.',
+    'start_authorization_again',
+  ),
+  AUTHORIZATION_CREDENTIAL_REJECTED: m(
+    'connection_error',
+    400,
+    false,
+    'The provider rejected the supplied credential.',
+    'check_credential_and_try_again',
+  ),
+  REDIRECT_URL_NOT_ALLOWED: m(
+    'validation_error',
+    400,
+    false,
+    'That redirect URL is not permitted. It must be absolute HTTPS.',
+    'use_an_allowed_https_redirect_url',
+  ),
+  CONNECT_SESSION_INVALID: m(
+    'connection_error',
+    400,
+    false,
+    'This connect session is expired, already completed, or unknown.',
+    'create_connect_session',
+  ),
+
   // ---- capability / preflight ----------------------------------------------
   CAPABILITY_NOT_SUPPORTED: m(
     'validation_error',

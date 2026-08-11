@@ -68,6 +68,9 @@ importers:
       '@gs/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@gs/events':
+        specifier: workspace:*
+        version: link:../../packages/events
       '@gs/observability':
         specifier: workspace:*
         version: link:../../packages/observability

@@ -111,7 +111,111 @@ export const AuthorizeConnectionResponseSchema = z.object({
   authorization_url: z.url(),
   /** Opaque handle for the pending authorization. Expires. */
   oauth_session_id: z.string(),
+  /**
+   * Round-trip this on `POST /v1/connections/complete` for providers with no consent
+   * screen. For OAuth providers it travels through the provider instead and is not needed
+   * by the caller — but it is returned either way so one client can handle both.
+   */
+  state: z.string(),
+  /**
+   * `redirect` — send the user to `authorization_url` and wait for the callback.
+   * `credential` — the platform has no consent screen; collect the fields named in
+   * `required_credential_fields` and submit them to `/v1/connections/complete`.
+   * Branching on this rather than on the provider name is what stops a client needing a
+   * hard-coded list of which platforms use OAuth.
+   */
+  completion: z.enum(['redirect', 'credential']),
+  /** Field names to collect when `completion` is `credential`. Empty otherwise. */
+  required_credential_fields: z.array(
+    z.object({
+      name: z.string(),
+      label: z.string(),
+      /** `password` fields must never be echoed back or logged by the collecting client. */
+      type: z.enum(['text', 'password']),
+      help: z.string().nullable(),
+    }),
+  ),
   expires_at: z.iso.datetime(),
+});
+
+/**
+ * Finish an authorization that has no consent screen (plan §20, §21.2).
+ *
+ * Bluesky app passwords and Telegram bot tokens arrive this way. The credential is
+ * validated against the provider before anything is stored, so a typo fails here rather
+ * than at publish time.
+ */
+export const CompleteConnectionRequestSchema = z.object({
+  /** The `state` returned by `POST /v1/connections/authorize`. */
+  state: z.string().min(16),
+  /**
+   * Provider-specific credential fields, exactly as named in `required_credential_fields`.
+   * These are secrets: they are encrypted on arrival and never returned by any endpoint.
+   */
+  credentials: z.record(z.string().max(64), z.string().min(1).max(4096)),
+});
+
+export const CompleteConnectionResponseSchema = z.object({
+  object: z.literal('connection'),
+  id: z.string(),
+  provider: ProviderNameSchema,
+  provider_account_name: z.string(),
+  /** False when this re-authorized a connection that already existed. */
+  created: z.boolean(),
+  /**
+   * True when the connection can publish now. False means a destination still has to be
+   * chosen — the account authorized several Pages and picking for the user would be a
+   * guess that publishes to the wrong place.
+   */
+  setup_complete: z.boolean(),
+  destination_count: z.number().int().nonnegative(),
+  granted_scopes: z.array(z.string()),
+});
+
+/** Choose which destinations a connection publishes to (plan §21.3). */
+export const SelectDestinationsRequestSchema = z.object({
+  /** Destination ids to enable. An empty array disables every destination. */
+  destination_ids: z.array(z.string()).max(100),
+});
+
+/**
+ * Create a hosted white-label connect session (plan §22).
+ *
+ * The returned URL is handed to the customer's own end user, who has no account with us.
+ * It carries its own signed authorization and expires quickly.
+ */
+export const CreateConnectSessionRequestSchema = z.object({
+  profile_id: z.string(),
+  /** Platforms to offer. Defaults to every platform with a working adapter. */
+  providers: z.array(ProviderNameSchema).min(1).max(20).optional(),
+  branding: z
+    .object({
+      logo_url: z.url().optional(),
+      /** Hex colour used for primary actions on the hosted page. */
+      accent: z
+        .string()
+        .regex(/^#[0-9a-fA-F]{6}$/, 'accent must be a 6-digit hex colour, e.g. #FFCC00')
+        .optional(),
+      company_name: z.string().max(120).optional(),
+    })
+    .default({}),
+  /** Where to send the user when they are finished. Must be absolute HTTPS. */
+  return_url: z.url().optional(),
+  /** Seconds until the link stops working. Short by default: it is a bearer credential. */
+  expires_in: z.number().int().min(60).max(86_400).default(900),
+});
+
+export const ConnectSessionResponseSchema = z.object({
+  object: z.literal('connect_session'),
+  id: z.string(),
+  profile_id: z.string(),
+  providers: z.array(ProviderNameSchema),
+  /** Send the end user here. Signed, single-purpose, and expiring. */
+  url: z.url(),
+  return_url: z.url().nullable(),
+  expires_at: z.iso.datetime(),
+  completed_at: z.iso.datetime().nullable(),
+  created_at: z.iso.datetime(),
 });
 
 export const ListConnectionsQuerySchema = PaginationQuerySchema.extend({

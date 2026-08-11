@@ -7,6 +7,8 @@ import { buildOpenApiDocument } from './openapi.js';
 import { health } from './routes/health.js';
 import { me } from './routes/me.js';
 import { apiKeys, environments } from './routes/api-keys.js';
+import { connectRoutes, oauthCallbackRoutes } from './routes/connect.js';
+import { connectSessions, hostedConnect } from './routes/connect-sessions.js';
 import { connections } from './routes/connections.js';
 import { media } from './routes/media.js';
 import { destinations, platforms } from './routes/platforms.js';
@@ -30,7 +32,19 @@ app.route('/health', health);
 app.route('/v1/health', health);
 app.route('/v1/me', me);
 app.route('/v1/profiles', profiles);
+// Mounted before the read routes so `/authorize` and `/complete` are matched as literal
+// paths rather than being swallowed by `/:connectionId`.
+app.route('/v1/connections', connectRoutes);
 app.route('/v1/connections', connections);
+/** Where every provider redirects back to. Unauthenticated by necessity (plan §21.2). */
+app.route('/v1/oauth', oauthCallbackRoutes);
+app.route('/v1/connect-sessions', connectSessions);
+/**
+ * The hosted white-label connect page (plan §22). Unversioned, because the URL is handed
+ * to a customer's end user and may sit in an email for a day — pinning it to `/v1` would
+ * make an API version bump break links that are already out in the world.
+ */
+app.route('/connect', hostedConnect);
 app.route('/v1/platforms', platforms);
 app.route('/v1/destinations', destinations);
 app.route('/v1/media', media);

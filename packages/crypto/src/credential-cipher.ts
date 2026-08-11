@@ -38,6 +38,15 @@ export interface CredentialContext {
   projectId: string;
   connectionId: string;
   credentialType: string;
+  /**
+   * Set only for a credential belonging to one publishable surface (a Meta Page token).
+   * Without it, two Pages under the same connection would share an AAD and their tokens
+   * could be swapped undetected — publishing to the wrong Page with a valid signature.
+   *
+   * Appended rather than inserted, so a connection-level record produces byte-identical
+   * AAD to what it was written with before this field existed.
+   */
+  destinationId?: string | null;
 }
 
 export interface KeyringEntry {
@@ -66,15 +75,19 @@ export class CredentialDecryptionError extends Error {
  * reordered without a re-encryption migration.
  */
 function canonicalAad(context: CredentialContext): Uint8Array {
-  return utf8ToBytes(
-    [
-      'gs.credential.v1',
-      context.organizationId,
-      context.projectId,
-      context.connectionId,
-      context.credentialType,
-    ].join('|'),
-  );
+  const parts = [
+    'gs.credential.v1',
+    context.organizationId,
+    context.projectId,
+    context.connectionId,
+    context.credentialType,
+  ];
+
+  // Appended only when present. A connection-level credential therefore hashes exactly as
+  // it did before destination-scoped credentials existed, so no re-encryption is needed.
+  if (context.destinationId) parts.push(context.destinationId);
+
+  return utf8ToBytes(parts.join('|'));
 }
 
 /**
