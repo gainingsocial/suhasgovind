@@ -5,13 +5,13 @@ import type { Database, Transaction } from '../client.js';
 import {
   connectionScopes,
   socialConnections,
-  socialCredentials,
   socialDestinations,
   type SocialConnection,
   type SocialCredential,
   type SocialDestination,
 } from '../schema/connections.js';
 import { profiles } from '../schema/tenancy.js';
+import { storeCredential } from './credentials.js';
 
 /**
  * Connection and destination repository (plan §76).
@@ -657,9 +657,10 @@ export async function saveConnection(
 /**
  * Insert or replace one credential.
  *
- * Split out because the connection-level and destination-level cases differ only in which
- * partial unique index they collide against, and Drizzle needs the matching `targetWhere`
- * for `ON CONFLICT` to find it at all.
+ * Delegates to `storeCredential` rather than repeating the upsert. The two partial unique
+ * indexes mean `ON CONFLICT` needs a matching predicate, and a second copy of that detail
+ * is exactly how one of them ends up without it — which is not a subtle failure, but it is
+ * one that only appears against a real database.
  */
 async function upsertCredential(
   tx: Transaction,
@@ -671,53 +672,19 @@ async function upsertCredential(
     credential: EncryptedCredentialInput;
   },
 ): Promise<void> {
-  const { credential } = input;
-
-  const values = {
-    id: newUuidV7(),
+  await storeCredential(tx, {
     connectionId: input.connectionId,
     destinationId: input.destinationId,
     organizationId: input.organizationId,
     projectId: input.projectId,
-    credentialType: credential.credentialType,
-    ciphertext: credential.ciphertext,
-    nonce: credential.nonce,
-    algorithm: credential.algorithm,
-    keyVersion: credential.keyVersion,
-    expiresAt: credential.expiresAt,
-    refreshExpiresAt: credential.refreshExpiresAt,
-  };
-
-  const set = {
-    ciphertext: credential.ciphertext,
-    nonce: credential.nonce,
-    algorithm: credential.algorithm,
-    keyVersion: credential.keyVersion,
-    expiresAt: credential.expiresAt,
-    refreshExpiresAt: credential.refreshExpiresAt,
-    updatedAt: new Date(),
-  };
-
-  if (input.destinationId === null) {
-    await tx
-      .insert(socialCredentials)
-      .values(values)
-      .onConflictDoUpdate({
-        target: [socialCredentials.connectionId, socialCredentials.credentialType],
-        targetWhere: isNull(socialCredentials.destinationId),
-        set,
-      });
-    return;
-  }
-
-  await tx
-    .insert(socialCredentials)
-    .values(values)
-    .onConflictDoUpdate({
-      target: [socialCredentials.destinationId, socialCredentials.credentialType],
-      targetWhere: sql`${socialCredentials.destinationId} IS NOT NULL`,
-      set,
-    });
+    credentialType: input.credential.credentialType,
+    ciphertext: input.credential.ciphertext,
+    nonce: input.credential.nonce,
+    algorithm: input.credential.algorithm,
+    keyVersion: input.credential.keyVersion,
+    expiresAt: input.credential.expiresAt,
+    refreshExpiresAt: input.credential.refreshExpiresAt,
+  });
 }
 
 /**

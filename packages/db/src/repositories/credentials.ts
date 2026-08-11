@@ -1,5 +1,5 @@
 import { newUuidV7 } from '@gs/contracts/ids';
-import { and, eq, inArray, isNull, lt, or } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, isNull, lt, or } from 'drizzle-orm';
 
 import type { Database, Transaction } from '../client.js';
 import {
@@ -111,6 +111,8 @@ export interface StoreCredentialInput {
   connectionId: string;
   organizationId: string;
   projectId: string;
+  /** Set only for a credential belonging to one publishable surface (a Meta Page token). */
+  destinationId?: string | null;
   credentialType: SocialCredential['credentialType'];
   ciphertext: string;
   nonce: string;
@@ -126,11 +128,19 @@ export interface StoreCredentialInput {
  * Upsert on `(connection, type)` because re-authorizing the same connection must replace
  * the token rather than accumulate a second one — two access tokens for one connection
  * would leave which is current undefined.
+ *
+ * The uniqueness rule is enforced by two *partial* indexes rather than one plain one, so
+ * `ON CONFLICT` has to carry the matching predicate. Without it Postgres cannot infer
+ * which index to arbitrate on and rejects the statement outright — which is louder than
+ * it sounds, and better than the alternative: a composite index over a nullable column
+ * would silently permit two access tokens for one connection.
  */
 export async function storeCredential(
   tx: Database | Transaction,
   input: StoreCredentialInput,
 ): Promise<void> {
+  const destinationId = input.destinationId ?? null;
+
   await tx
     .insert(socialCredentials)
     .values({
@@ -138,6 +148,7 @@ export async function storeCredential(
       connectionId: input.connectionId,
       organizationId: input.organizationId,
       projectId: input.projectId,
+      destinationId,
       credentialType: input.credentialType,
       ciphertext: input.ciphertext,
       nonce: input.nonce,
@@ -147,7 +158,14 @@ export async function storeCredential(
       refreshExpiresAt: input.refreshExpiresAt ?? null,
     })
     .onConflictDoUpdate({
-      target: [socialCredentials.connectionId, socialCredentials.credentialType],
+      target:
+        destinationId === null
+          ? [socialCredentials.connectionId, socialCredentials.credentialType]
+          : [socialCredentials.destinationId, socialCredentials.credentialType],
+      targetWhere:
+        destinationId === null
+          ? isNull(socialCredentials.destinationId)
+          : isNotNull(socialCredentials.destinationId),
       set: {
         ciphertext: input.ciphertext,
         nonce: input.nonce,
