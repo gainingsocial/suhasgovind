@@ -35,7 +35,13 @@ packages/
   providers/
     registry/           getAdapter(provider) — the only way the core reaches an adapter
     mock/               Reference adapter; proves the engine with zero network
-    bluesky/            First real provider (AT Protocol)
+    bluesky/            AT Protocol — app password, no approval gate
+    telegram/           Bot API — bot token, no approval gate
+    linkedin/           Posts API — OAuth, two-tier review
+    meta-core/          Graph API plumbing shared by the Meta family
+    facebook/           Facebook Pages
+    instagram/          Instagram professional accounts
+    threads/            Threads (separate app registration from the other two)
   sdk-js/               Generated TypeScript SDK
 
 infra/
@@ -80,8 +86,40 @@ What a developer can do end to end today:
 ```
 create API key → create profile → connect a provider → upload media
   → preflight → POST /v1/posts → receive 202 → watch target status
-  → receive signed webhook → view request/post timeline
+  → receive signed webhook → view the post timeline
 ```
+
+## Connecting an account
+
+Two shapes, one flow. `POST /v1/connections/authorize` returns a `completion` field, and
+a client branches on that rather than on a list of which platforms use OAuth:
+
+```
+completion: "redirect"     send the user to authorization_url; the provider calls back to
+                           /v1/oauth/{provider}/callback and we redirect to your redirect_url
+
+completion: "credential"   the platform has no consent screen (a Bluesky app password, a
+                           Telegram bot token). Collect required_credential_fields and POST
+                           them to /v1/connections/complete with the returned state
+```
+
+For a customer's own end users there is a hosted white-label page: `POST /v1/connect-sessions`
+returns a signed, short-lived URL carrying your branding. They connect their accounts without
+an account here and without seeing this dashboard.
+
+## Turning a platform on
+
+Every adapter reads its client id and secret from the `provider_apps` table at call time, so
+an approval is a data change, not a deploy:
+
+```
+Dashboard → Platforms → paste client id + secret        (or POST /v1/provider-apps)
+```
+
+The page shows the exact redirect URI to register in the platform's developer console.
+Bluesky and Telegram need none of this — they have no application to register, which is why
+they are the reference providers. Progress on each application is tracked in
+[`PLATFORM_APPROVALS.md`](./PLATFORM_APPROVALS.md).
 
 ## Commands
 

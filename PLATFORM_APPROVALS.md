@@ -10,6 +10,17 @@ Adapter code does **not** wait on approval. Every adapter is built against the o
 documented behaviour (Rule 2) with credentials resolved from `provider_apps` at runtime
 (plan §23), so a granted client ID/secret is a database row, never a code change.
 
+**How to switch a platform on once approved.** Sign in to the dashboard, open
+**Platforms**, and paste the client id and secret. That page also shows the exact redirect
+URI to register in the platform's developer console — copy it from there rather than
+retyping it, since reviewers check the string character for character. The equivalent API
+call is `POST /v1/provider-apps`. Nothing is deployed and nothing restarts; the next
+authorization uses the new credentials.
+
+Until credentials exist, `POST /v1/connections/authorize` for that platform returns
+`PROVIDER_NOT_CONFIGURED` — a 503 that says the platform is not yet available rather than
+a 400 implying the caller did something wrong.
+
 **Legend** — `not started` · `preparing` · `submitted` · `in review` · `changes requested` ·
 `approved` · `rejected`
 
@@ -24,11 +35,11 @@ product described actually exists.
 | --- | --- | --- |
 | Legal entity (registered name + address) | ☐ not started | LinkedIn rejects personal-email applicants outright |
 | Business email on the company domain | ☐ not started | `@gainingsocial.com`, not Gmail |
-| Public marketing site | ☐ not started | `gainingsocial.com` — zone active in Cloudflare |
-| Privacy policy | ☐ not started | `/privacy` — required by Meta, LinkedIn, TikTok, Google |
-| Terms of service | ☐ not started | `/terms` |
+| Public marketing site | ☑ built | `gainingsocial.com` — pages live, zone active in Cloudflare |
+| Privacy policy | ☑ built | `/privacy` — required by Meta, LinkedIn, TikTok, Google |
+| Terms of service | ☑ built | `/terms` |
 | Data deletion instructions + callback | ☐ not started | `/data-deletion` — Meta hard requirement |
-| Demo screencast of the publish flow | ☐ not started | Reused across Meta, TikTok, LinkedIn Standard Tier |
+| Demo screencast of the publish flow | ☐ blocked on credentials | Reused across Meta, TikTok, LinkedIn Standard Tier. The flow it records is now buildable end to end — connect, compose, publish, watch the timeline — but a recording needs a real account on the platform being reviewed, which needs that platform's credentials first. Bluesky or Telegram can be recorded today |
 | Support contact | ☐ not started | |
 
 Domains already owned: `gainingsocial.com`, `gainingsocial.in` (both in Cloudflare).

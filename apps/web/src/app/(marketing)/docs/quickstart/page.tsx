@@ -3,8 +3,9 @@ import { breadcrumbSchema, howToSchema, jsonLd, pageSeo } from '@/lib/seo';
 export const metadata = pageSeo({
   title: 'Quickstart — publish your first post',
   description:
-    'Publish to a social network through the API in four steps: create a key, add a profile, ' +
-    'connect an account, publish. Includes copyable curl examples.',
+    'Publish to a social network through the API in seven steps: create a key, add a profile, ' +
+    'connect an account, choose destinations, preflight, publish, watch it land. Includes ' +
+    'copyable curl examples.',
   path: '/docs/quickstart',
 });
 
@@ -33,9 +34,26 @@ const STEPS = [
   },
   {
     name: 'Connect a social account',
-    text: 'Connect an account through the dashboard, then list its destinations. One connection often yields several destinations — a Meta login returns every page you manage.',
-    code: `curl https://api.gainingsocial.com/v1/connections \\
-  -H "Authorization: Bearer sk_test_your_key"`,
+    text: 'Start an authorization and branch on what comes back. `completion: "redirect"` means send the person to authorization_url and wait for the callback. `completion: "credential"` means the platform has no consent screen — collect the fields it names and post them back. Branching on this rather than on the platform name means your code does not need a list of which platforms use OAuth.',
+    code: `curl -X POST https://api.gainingsocial.com/v1/connections/authorize \\
+  -H "Authorization: Bearer sk_test_your_key" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "profile_id": "pro_...",
+    "provider": "bluesky",
+    "redirect_url": "https://yourapp.com/social/done"
+  }'`,
+  },
+  {
+    name: 'Choose where it publishes',
+    text: 'One connection often yields several destinations — a Meta login returns every Page you manage. When it returns more than one, the connection stays deliberately unusable until you choose: publishing to every Page somebody happens to administer is not a mistake you can take back.',
+    code: `curl https://api.gainingsocial.com/v1/connections/con_.../destinations \\
+  -H "Authorization: Bearer sk_test_your_key"
+
+curl -X POST https://api.gainingsocial.com/v1/connections/con_.../destinations/select \\
+  -H "Authorization: Bearer sk_test_your_key" \\
+  -H "Content-Type: application/json" \\
+  -d '{"destination_ids":["dst_..."]}'`,
   },
   {
     name: 'Check the post before publishing',
@@ -64,8 +82,11 @@ const STEPS = [
   },
   {
     name: 'Watch it go live',
-    text: 'Fetch the post to see each destination independently, or register a webhook to be told the moment one publishes or fails.',
+    text: 'Fetch the post to see each destination independently, or register a webhook to be told the moment one publishes or fails. The timeline shows every attempt in the order it happened — which provider, on which try, after how long, and with what error.',
     code: `curl https://api.gainingsocial.com/v1/posts/pst_... \\
+  -H "Authorization: Bearer sk_test_your_key"
+
+curl https://api.gainingsocial.com/v1/posts/pst_.../timeline \\
   -H "Authorization: Bearer sk_test_your_key"`,
   },
 ];
@@ -100,8 +121,8 @@ export default function QuickstartPage() {
           Publish your first post
         </h1>
         <p className="mt-4 text-base text-pretty text-[var(--text-muted)]">
-          Six steps from nothing to a published post. Bluesky needs no approval from anyone, so you
-          can complete this today and the same code reaches every other network as its approval
+          Seven steps from nothing to a published post. Bluesky needs no approval from anyone, so
+          you can complete this today and the same code reaches every other network as its approval
           lands.
         </p>
 

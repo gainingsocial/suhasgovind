@@ -385,10 +385,15 @@ export interface CompleteAuthorizationResult {
 /**
  * Exchange a callback for a stored connection (plan §21.2 steps 3–9).
  *
- * Order matters and is not arbitrary. Destinations are discovered *before* anything is
- * written, so a provider that authenticates but returns no publishable surface — the
- * classic personal-Instagram-account case — fails as an authorization problem the user
- * can act on, rather than producing a healthy-looking connection that cannot publish.
+ * Destinations are discovered before anything is written, so a *failure* to list them
+ * surfaces as an authorization problem rather than as a healthy-looking connection that
+ * cannot publish.
+ *
+ * An empty list is not a failure, though, and must not be treated as one: Telegram
+ * legitimately returns none until the customer names the chats their bot posts to. The
+ * connection is stored with `setup_completed_at` null, which is the honest state — it
+ * exists, it authenticated, and it has nowhere to publish yet. Preflight reports that as
+ * CONNECTION_INCOMPLETE_SETUP rather than letting it fail at publish time.
  */
 export async function completeAuthorization(
   input: CompleteAuthorizationInput,
