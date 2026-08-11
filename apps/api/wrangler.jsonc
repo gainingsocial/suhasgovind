@@ -17,7 +17,12 @@
     "LOG_LEVEL": "info",
     // Public discovery endpoint for the JWKS that verifies dashboard sessions (§39).
     // Not a secret, so a var rather than a Worker Secret.
-    "SUPABASE_URL": "https://miemfmjjnsqhukxlvcmp.supabase.co"
+    "SUPABASE_URL": "https://miemfmjjnsqhukxlvcmp.supabase.co",
+    // The origin providers redirect back to, and the base of every hosted connect link
+    // (§21.2, §22). Derived from the request when unset, which is right in development
+    // and wrong the moment a proxy sits in front — so it is stated explicitly. It must
+    // match what is registered in each platform's developer console exactly.
+    "PUBLIC_API_ORIGIN": "http://127.0.0.1:8787"
   },
   "kv_namespaces": [
     {
@@ -59,7 +64,11 @@
       "vars": {
         "ENVIRONMENT": "live",
         "SERVICE_VERSION": "0.1.0",
-        "LOG_LEVEL": "info"
+        "LOG_LEVEL": "info",
+        "SUPABASE_URL": "https://miemfmjjnsqhukxlvcmp.supabase.co",
+        // Registered with every platform. Changing it invalidates every OAuth
+        // registration at once, so it is pinned here rather than inferred per request.
+        "PUBLIC_API_ORIGIN": "https://api.gainingsocial.com"
       },
       "kv_namespaces": [
         {

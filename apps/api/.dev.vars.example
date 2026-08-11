@@ -22,3 +22,11 @@ WEBHOOK_SIGNING_ROOT="REPLACE_ME_base64_32_bytes"
 
 # Hosted connect session signing (plan §22).
 CONNECT_SESSION_SIGNING_KEY="REPLACE_ME_base64_32_bytes"
+
+# Who may write the *shared* platform application (plan §23).
+#
+# Comma-separated Supabase user ids. A platform-managed app authorizes every connection
+# every customer makes through it, so organization membership is nowhere near sufficient
+# authority — an admin of any customer org could otherwise replace the credential the whole
+# system runs on. Leave empty and nobody can write it, which is the safe default.
+PLATFORM_OPERATOR_USER_IDS=""
