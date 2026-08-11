@@ -1,12 +1,15 @@
-import { createBrowserClient, createServerClient } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 /**
- * Supabase Auth clients (plan §39).
+ * Supabase Auth, server side (plan §39).
  *
  * Humans sign in here; machines use API keys. The dashboard never holds a database
  * credential — the anon key is a public, RLS-constrained identity, and everything the
  * dashboard actually reads comes from the API using the session token (P11/P15).
+ *
+ * Server-only. `next/headers` cannot be bundled into a Client Component, so the browser
+ * client lives in `supabase-browser.ts` — see the note there.
  */
 
 function requireConfig(): { url: string; anonKey: string } {
@@ -21,12 +24,6 @@ function requireConfig(): { url: string; anonKey: string } {
   }
 
   return { url, anonKey };
-}
-
-/** Browser client. Used only by the sign-in form. */
-export function browserClient() {
-  const { url, anonKey } = requireConfig();
-  return createBrowserClient(url, anonKey);
 }
 
 /**

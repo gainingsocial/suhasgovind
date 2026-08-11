@@ -52,7 +52,18 @@ export interface ListResponse<T> {
  */
 export async function apiFetch<T>(
   path: string,
-  options: { apiKey: string; method?: string; body?: unknown; idempotencyKey?: string } ,
+  options: {
+    apiKey: string;
+    method?: string;
+    body?: unknown;
+    idempotencyKey?: string;
+    /**
+     * Required when authenticating with a dashboard session rather than an API key. A
+     * person can belong to several environments, so which one a request acts on has to be
+     * stated; an API key already names exactly one.
+     */
+    environmentId?: string;
+  },
 ): Promise<T> {
   const response = await fetch(`${BASE}${path}`, {
     method: options.method ?? 'GET',
@@ -60,6 +71,7 @@ export async function apiFetch<T>(
       authorization: `Bearer ${options.apiKey}`,
       ...(options.body !== undefined ? { 'content-type': 'application/json' } : {}),
       ...(options.idempotencyKey ? { 'idempotency-key': options.idempotencyKey } : {}),
+      ...(options.environmentId ? { 'x-gs-environment': options.environmentId } : {}),
     },
     ...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
     // Publishing state changes constantly; a cached list would show a post as queued

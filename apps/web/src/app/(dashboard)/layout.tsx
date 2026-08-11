@@ -14,6 +14,15 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false, nocache: true },
 };
 
+/**
+ * Never prerendered, and never cached between people.
+ *
+ * Every page in this group renders one person's tenant data, read with their session at
+ * request time. A static build has no session to render with, and — far worse — a cached
+ * render would be one customer's connections served to the next visitor.
+ */
+export const dynamic = 'force-dynamic';
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
