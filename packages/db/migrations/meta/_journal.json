@@ -71,6 +71,13 @@
       "when": 1787101200000,
       "tag": "0009_engagement",
       "breakpoints": false
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1787104800000,
+      "tag": "0010_content_intelligence",
+      "breakpoints": false
     }
   ]
 }

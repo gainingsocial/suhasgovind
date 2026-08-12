@@ -100,6 +100,41 @@ export {
   planFreshness,
 } from './analytics/freshness.js';
 
+export type {
+  ClaimKind,
+  GroundedClaim,
+  GroundingFailure,
+  GroundingResult,
+  SourceSpan,
+} from './content/spans.js';
+export {
+  isPublishableAsGrounded,
+  splitIntoSpans,
+  verifyGrounding,
+} from './content/spans.js';
+
+export type {
+  ModelErrorCode,
+  ModelGateway,
+  ModelRequest,
+  ModelResponse,
+} from './content/model-gateway.js';
+export {
+  ModelGatewayError,
+  UNCONFIGURED_GATEWAY,
+  extractionCacheKey,
+} from './content/model-gateway.js';
+
+export type { InjectionScan, ModelCallPolicy } from './content/untrusted-source.js';
+export {
+  EXTRACTION_POLICY,
+  GENERATION_POLICY,
+  fitToPolicy,
+  htmlToText,
+  scanForInjection,
+  wrapUntrustedSource,
+} from './content/untrusted-source.js';
+
 export type { ConnectionHealth } from './connections/connection-health.js';
 export {
   CONNECTION_HEALTH_STATES,
