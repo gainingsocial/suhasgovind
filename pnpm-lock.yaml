@@ -295,6 +295,25 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@22.20.1)(@vitest/coverage-v8@4.1.10)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(tsx@4.23.10)(yaml@2.9.0))
 
+  packages/providers/discord:
+    dependencies:
+      '@gs/contracts':
+        specifier: workspace:*
+        version: link:../../contracts
+      '@gs/errors':
+        specifier: workspace:*
+        version: link:../../errors
+      '@gs/provider-kit':
+        specifier: workspace:*
+        version: link:../../provider-kit
+    devDependencies:
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@22.20.1)(@vitest/coverage-v8@4.1.10)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(tsx@4.23.10)(yaml@2.9.0))
+
   packages/providers/facebook:
     dependencies:
       '@gs/contracts':
@@ -309,6 +328,25 @@ importers:
       '@gs/provider-meta-core':
         specifier: workspace:*
         version: link:../meta-core
+    devDependencies:
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@22.20.1)(@vitest/coverage-v8@4.1.10)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(tsx@4.23.10)(yaml@2.9.0))
+
+  packages/providers/google-business-profile:
+    dependencies:
+      '@gs/contracts':
+        specifier: workspace:*
+        version: link:../../contracts
+      '@gs/errors':
+        specifier: workspace:*
+        version: link:../../errors
+      '@gs/provider-kit':
+        specifier: workspace:*
+        version: link:../../provider-kit
     devDependencies:
       typescript:
         specifier: ^6.0.3
@@ -396,6 +434,25 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@22.20.1)(@vitest/coverage-v8@4.1.10)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(tsx@4.23.10)(yaml@2.9.0))
 
+  packages/providers/pinterest:
+    dependencies:
+      '@gs/contracts':
+        specifier: workspace:*
+        version: link:../../contracts
+      '@gs/errors':
+        specifier: workspace:*
+        version: link:../../errors
+      '@gs/provider-kit':
+        specifier: workspace:*
+        version: link:../../provider-kit
+    devDependencies:
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@22.20.1)(@vitest/coverage-v8@4.1.10)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(tsx@4.23.10)(yaml@2.9.0))
+
   packages/providers/registry:
     dependencies:
       '@gs/contracts':
@@ -407,9 +464,15 @@ importers:
       '@gs/provider-bluesky':
         specifier: workspace:*
         version: link:../bluesky
+      '@gs/provider-discord':
+        specifier: workspace:*
+        version: link:../discord
       '@gs/provider-facebook':
         specifier: workspace:*
         version: link:../facebook
+      '@gs/provider-google-business-profile':
+        specifier: workspace:*
+        version: link:../google-business-profile
       '@gs/provider-instagram':
         specifier: workspace:*
         version: link:../instagram
@@ -422,12 +485,24 @@ importers:
       '@gs/provider-mock':
         specifier: workspace:*
         version: link:../mock
+      '@gs/provider-pinterest':
+        specifier: workspace:*
+        version: link:../pinterest
       '@gs/provider-telegram':
         specifier: workspace:*
         version: link:../telegram
       '@gs/provider-threads':
         specifier: workspace:*
         version: link:../threads
+      '@gs/provider-tiktok':
+        specifier: workspace:*
+        version: link:../tiktok
+      '@gs/provider-x':
+        specifier: workspace:*
+        version: link:../x
+      '@gs/provider-youtube':
+        specifier: workspace:*
+        version: link:../youtube
     devDependencies:
       typescript:
         specifier: ^6.0.3
@@ -469,6 +544,63 @@ importers:
       '@gs/provider-meta-core':
         specifier: workspace:*
         version: link:../meta-core
+    devDependencies:
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@22.20.1)(@vitest/coverage-v8@4.1.10)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(tsx@4.23.10)(yaml@2.9.0))
+
+  packages/providers/tiktok:
+    dependencies:
+      '@gs/contracts':
+        specifier: workspace:*
+        version: link:../../contracts
+      '@gs/errors':
+        specifier: workspace:*
+        version: link:../../errors
+      '@gs/provider-kit':
+        specifier: workspace:*
+        version: link:../../provider-kit
+    devDependencies:
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@22.20.1)(@vitest/coverage-v8@4.1.10)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(tsx@4.23.10)(yaml@2.9.0))
+
+  packages/providers/x:
+    dependencies:
+      '@gs/contracts':
+        specifier: workspace:*
+        version: link:../../contracts
+      '@gs/errors':
+        specifier: workspace:*
+        version: link:../../errors
+      '@gs/provider-kit':
+        specifier: workspace:*
+        version: link:../../provider-kit
+    devDependencies:
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@22.20.1)(@vitest/coverage-v8@4.1.10)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(tsx@4.23.10)(yaml@2.9.0))
+
+  packages/providers/youtube:
+    dependencies:
+      '@gs/contracts':
+        specifier: workspace:*
+        version: link:../../contracts
+      '@gs/errors':
+        specifier: workspace:*
+        version: link:../../errors
+      '@gs/provider-kit':
+        specifier: workspace:*
+        version: link:../../provider-kit
     devDependencies:
       typescript:
         specifier: ^6.0.3

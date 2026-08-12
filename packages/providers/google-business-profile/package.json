@@ -1,0 +1,22 @@
+{
+  "name": "@gs/provider-google-business-profile",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@gs/contracts": "workspace:*",
+    "@gs/errors": "workspace:*",
+    "@gs/provider-kit": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  }
+}

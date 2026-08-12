@@ -42,6 +42,12 @@ packages/
     facebook/           Facebook Pages
     instagram/          Instagram professional accounts
     threads/            Threads (separate app registration from the other two)
+    x/                  X API v2 — OAuth 2.0 with PKCE, chunked media upload
+    tiktok/             Content Posting API — audit gates public posting
+    youtube/            Data API v3 — resumable upload, audit gates public uploads
+    pinterest/          Pins API — boards are the destinations
+    discord/            Bot token, no approval gate; channels are the destinations
+    google-business-profile/  Local Posts — three API hosts, one adapter
   sdk-js/               Generated TypeScript SDK
 
 infra/
@@ -117,9 +123,15 @@ Dashboard → Platforms → paste client id + secret        (or POST /v1/provide
 ```
 
 The page shows the exact redirect URI to register in the platform's developer console.
-Bluesky and Telegram need none of this — they have no application to register, which is why
-they are the reference providers. Progress on each application is tracked in
+Bluesky, Telegram and Discord need none of this — they have no application to register,
+which is why they are the reference providers. Progress on each application is tracked in
 [`PLATFORM_APPROVALS.md`](./PLATFORM_APPROVALS.md).
+
+TikTok and YouTube add a second step. Both restrict an unaudited client to private posting
+*without failing the request*, so both adapters refuse to publish anything public until the
+audit is recorded as `audited: true` on the provider app. Until then they report the limit
+through capabilities, so a caller learns about it before publishing rather than by hunting
+for a post nobody can see.
 
 ## Commands
 

@@ -39,7 +39,7 @@ product described actually exists.
 | Privacy policy | ☑ built | `/privacy` — required by Meta, LinkedIn, TikTok, Google |
 | Terms of service | ☑ built | `/terms` |
 | Data deletion instructions + callback | ☐ not started | `/data-deletion` — Meta hard requirement |
-| Demo screencast of the publish flow | ☐ blocked on credentials | Reused across Meta, TikTok, LinkedIn Standard Tier. The flow it records is now buildable end to end — connect, compose, publish, watch the timeline — but a recording needs a real account on the platform being reviewed, which needs that platform's credentials first. Bluesky or Telegram can be recorded today |
+| Demo screencast of the publish flow | ☐ blocked on credentials | Reused across Meta, TikTok, LinkedIn Standard Tier. The flow it records is now buildable end to end — connect, compose, publish, watch the timeline — but a recording needs a real account on the platform being reviewed, which needs that platform's credentials first. Bluesky, Telegram or Discord can be recorded today |
 | Support contact | ☐ not started | |
 
 Domains already owned: `gainingsocial.com`, `gainingsocial.in` (both in Cloudflare).
@@ -136,6 +136,25 @@ recording does not show each permission actually being used, so these have to ex
 
 ## Phase 5 — expansion providers
 
+**All six adapters are built and certified.** Every one resolves its credentials from
+`provider_apps` at runtime, so each entry below is a portal task, not an engineering task.
+
+### Two adapters gate on an audit that changes *what may be published*
+
+TikTok and YouTube are the two cases plan §63 is about. Neither fails an unaudited post —
+both quietly restrict it to private — so both adapters refuse to publish anything but a
+private post until the audit is recorded, rather than letting a customer believe a public
+post exists that nobody can see.
+
+**Recording an audit.** Set `audited: true` in the `metadata` of that provider's
+`provider_apps` row. Until then:
+
+- `capabilities()` reports `allowed_privacy_levels` as private-only, with a
+  `provider_approval_pending` restriction explaining why.
+- Preflight rejects a public post with `PRIVACY_LEVEL_NOT_PERMITTED`.
+
+Nothing is deployed and nothing restarts.
+
 ### TikTok
 
 Content Posting API requires an audit **separate from** developer signup. Until it passes,
@@ -144,33 +163,125 @@ every direct post is forced to `SELF_ONLY` (visible to the creator alone).
 | Field | Value |
 | --- | --- |
 | Status | ☐ not started |
+| Adapter | ☑ built — `@gs/provider-tiktok` |
 | Portal | https://developers.tiktok.com |
 | Product | Content Posting API |
-| Scopes | `video.publish` (direct live post) vs `video.upload` (lands in creator inbox) |
+| Scopes | `user.info.basic`, `video.publish` (direct live post) vs `video.upload` (lands in creator inbox) |
+| Optional scope | `video.list` — Display API. Without it, reconciliation after a timeout can only return *indeterminate*, so an ambiguous publish escalates to a human instead of resolving itself. Worth requesting |
 | Audit | 2–4 weeks, multiple feedback rounds typical |
 | Audit submission | Recorded demo of full posting flow + privacy policy URL + proof of finished product |
 | **Required UI** | Creator username and avatar shown before every post; commercial-content disclosure toggle. Verified during review — not optional |
 | Client key / secret | Not yet issued |
+| Redirect URI | `https://api.gainingsocial.com/v1/oauth/tiktok/callback` |
+
+**Second blocker, easy to miss.** The adapter hands TikTok a media URL to pull from
+(`PULL_FROM_URL`), and TikTok refuses any URL whose host has not been verified as ours.
+Register the media host under **URL properties** in the developer portal — by DNS record or
+a `tiktok-developers-site-verification` meta tag — or every post fails with
+`url_ownership_unverified` before a byte moves. This is independent of the audit and can be
+done immediately.
+
+| Item | Status |
+| --- | --- |
+| Media host verified in TikTok URL properties | ☐ not started |
 
 ### YouTube
 
 | Field | Value |
 | --- | --- |
 | Status | ☐ not started |
+| Adapter | ☑ built — `@gs/provider-youtube` |
 | Portal | Google Cloud Console + YouTube API compliance audit |
 | Prerequisite | Google Cloud project, OAuth consent screen, verified domain |
 | Restriction | Uploads from unverified API projects are restricted to private until audit passes |
-| Scopes | `youtube.upload`, `youtube.readonly` |
+| Scopes | `youtube.upload` (publish only), `youtube` (also delete, edit, read the channel) |
+| Redirect URI | `https://api.gainingsocial.com/v1/oauth/youtube/callback` |
 
-### Remaining
+**Request a quota increase at the same time as the audit.** `videos.insert` costs 1,600
+units against a default allowance of 10,000 per day — six uploads, across every customer on
+the project, before everything returns `quotaExceeded`. The adapter classifies that as
+`DAILY_QUOTA_EXCEEDED` and waits for the window rather than retrying, so the failure is
+graceful, but six a day is not a product.
 
-| Provider | Status | Notes |
-| --- | --- | --- |
-| Pinterest | ☐ not started | Standard app review |
-| X | ☐ not started | Paid API tier; confirm current write-access pricing before committing |
-| Discord | ☐ not started | Bot token + OAuth2; lightest review of the set |
-| Google Business Profile | ☐ not started | Requires GCP project + separate API access request |
-| Reddit | ☐ evaluate first | Plan §62.2 — assess current commercial/developer terms before committing engineering time |
+| Item | Status |
+| --- | --- |
+| Quota increase requested | ☐ not started |
+
+### Pinterest
+
+| Field | Value |
+| --- | --- |
+| Status | ☐ not started |
+| Adapter | ☑ built — `@gs/provider-pinterest` |
+| Portal | https://developers.pinterest.com |
+| App review | Standard trial → standard access review |
+| Scopes | `user_accounts:read`, `boards:read`, `pins:read`, `pins:write` |
+| Redirect URI | `https://api.gainingsocial.com/v1/oauth/pinterest/callback` |
+
+Destinations here are **boards**, not the account — one connection commonly yields dozens.
+A test account needs at least one board before the connect flow shows anything.
+
+### X
+
+| Field | Value |
+| --- | --- |
+| Status | ☐ not started |
+| Adapter | ☑ built — `@gs/provider-x` |
+| Portal | https://developer.x.com |
+| Access tier | **Paid.** Confirm current write-access pricing before committing — this is a recurring cost, not a review |
+| App type | Must be a **confidential** client; the adapter authenticates the token endpoint with HTTP Basic |
+| Scopes | `tweet.read`, `tweet.write`, `users.read`, `media.write`, `offline.access` |
+| Redirect URI | `https://api.gainingsocial.com/v1/oauth/x/callback` |
+
+Two settings that cause silent failures if missed:
+
+- **`offline.access` must be requested**, or X issues no refresh token and the connection
+  dies when the access token expires with no way to recover it.
+- **`media.write` is granted separately from `tweet.write`.** A connection can post text and
+  fail on images. The adapter reports this through effective capability rather than at
+  publish time, but the scope still has to be requested.
+
+### Discord
+
+| Field | Value |
+| --- | --- |
+| Status | ☐ not started — **nothing blocks this one** |
+| Adapter | ☑ built — `@gs/provider-discord` |
+| Portal | https://discord.com/developers/applications |
+| Review | None. A bot token is the entire onboarding |
+| Credential model | Bot token, pasted by the customer — no `provider_apps` row needed |
+| Bot permissions | Send Messages, Attach Files, Read Message History, View Channel |
+
+Alongside Bluesky and Telegram, this is a provider that works the day the code lands.
+Destinations are the text channels of servers the bot has been invited to, and Discord will
+enumerate them — so unlike Telegram, the customer does not have to type in chat ids.
+
+### Google Business Profile
+
+| Field | Value |
+| --- | --- |
+| Status | ☐ not started |
+| Adapter | ☑ built — `@gs/provider-google-business-profile` |
+| Portal | Google Cloud Console + Business Profile API access request form |
+| Prerequisite | Google Cloud project, OAuth consent screen, verified domain |
+| Scopes | `https://www.googleapis.com/auth/business.manage` — one scope, all or nothing |
+| Redirect URI | `https://api.gainingsocial.com/v1/oauth/google-business-profile/callback` |
+
+**The access request is the whole blocker.** Google grants Business Profile API access per
+project, by application, and until it is approved every call returns `PERMISSION_DENIED` —
+including listing accounts, so the connect flow cannot complete either. The adapter's
+normalized error says so explicitly rather than reporting a generic permission problem,
+because the fix is a form rather than a scope.
+
+### Reddit
+
+| Field | Value |
+| --- | --- |
+| Status | ☐ evaluate first |
+| Adapter | ☐ not built |
+
+Plan §62.2 — assess current commercial/developer terms before committing engineering time.
+Deliberately the one provider on the board without an adapter.
 
 ---
 

@@ -14,13 +14,19 @@
     "@gs/contracts": "workspace:*",
     "@gs/errors": "workspace:*",
     "@gs/provider-bluesky": "workspace:*",
+    "@gs/provider-discord": "workspace:*",
     "@gs/provider-facebook": "workspace:*",
+    "@gs/provider-google-business-profile": "workspace:*",
     "@gs/provider-instagram": "workspace:*",
     "@gs/provider-kit": "workspace:*",
     "@gs/provider-linkedin": "workspace:*",
     "@gs/provider-mock": "workspace:*",
+    "@gs/provider-pinterest": "workspace:*",
     "@gs/provider-telegram": "workspace:*",
-    "@gs/provider-threads": "workspace:*"
+    "@gs/provider-threads": "workspace:*",
+    "@gs/provider-tiktok": "workspace:*",
+    "@gs/provider-x": "workspace:*",
+    "@gs/provider-youtube": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^6.0.3",
