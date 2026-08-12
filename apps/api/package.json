@@ -9,7 +9,8 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "openapi:emit": "tsx scripts/emit-openapi.ts",
-    "openapi:check": "tsx scripts/emit-openapi.ts --check"
+    "openapi:check": "tsx scripts/emit-openapi.ts --check",
+    "docs:check": "tsx scripts/check-error-docs.ts"
   },
   "dependencies": {
     "@gs/auth": "workspace:*",

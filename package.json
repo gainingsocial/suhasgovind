@@ -23,7 +23,8 @@
     "db:migrate": "pnpm --filter @gs/db db:migrate",
     "openapi:emit": "pnpm --filter @gs/api openapi:emit",
     "openapi:check": "pnpm --filter @gs/api openapi:check",
-    "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm boundaries && pnpm openapi:check && pnpm build",
+    "docs:check": "pnpm --filter @gs/api docs:check",
+    "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm boundaries && pnpm openapi:check && pnpm docs:check && pnpm build",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "ci:full": "pnpm run ci && pnpm test:integration",
     "setup:github": "node scripts/setup-github-actions.mjs"

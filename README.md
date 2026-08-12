@@ -48,7 +48,7 @@ packages/
     pinterest/          Pins API — boards are the destinations
     discord/            Bot token, no approval gate; channels are the destinations
     google-business-profile/  Local Posts — three API hosts, one adapter
-  sdk-js/               Generated TypeScript SDK
+  sdk-js/               TypeScript SDK — typed client, auto-retry, cursor pagination
 
 infra/
   cloudflare/           Queue, Workflow, DO, R2, Hyperdrive provisioning notes
@@ -144,6 +144,7 @@ for a post nobody can see.
 | `pnpm db:generate`  | Generate a migration from the Drizzle schema                   |
 | `pnpm db:migrate`   | Apply pending migrations                                       |
 | `pnpm openapi:emit` | Regenerate `packages/contracts/openapi/openapi.json`           |
+| `pnpm docs:check`   | Verify `docs/errors/` documents every code the API can return  |
 | `pnpm --filter @gs/api dev`        | Run the API Worker locally via wrangler         |
 | `pnpm --filter @gs/api run deploy` | Deploy the API Worker. `run` required — pnpm reserves bare `deploy` |
 | `pnpm format`       | Prettier                                                       |
