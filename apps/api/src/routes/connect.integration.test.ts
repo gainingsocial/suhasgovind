@@ -1,3 +1,5 @@
+import { PROVIDER_NAMES, requiresProviderApp } from '@gs/contracts/providers';
+import { getAdapter, hasAdapter } from '@gs/providers';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import app from '../index.js';
@@ -117,17 +119,36 @@ describeIntegration('connect flow', () => {
       expect(await code(response)).toBe('REDIRECT_URL_NOT_ALLOWED');
     });
 
-    it('rejects a provider with no adapter', async () => {
+    it('reports a platform whose application credentials are missing as unavailable', async () => {
+      // Every declared provider now has an adapter, so "no adapter" is unreachable from
+      // this route. What remains — and what PLATFORM_APPROVALS.md documents — is a built
+      // adapter whose platform application has not been configured yet.
+      //
+      // Picked dynamically, for the reason the registry test spells out: naming a
+      // provider means this breaks the day its credentials land, which is a green-to-red
+      // change caused by progress rather than by a regression. Hard-coding `pinterest`
+      // here is exactly how it broke when the Pinterest adapter shipped.
+      const unconfigured = PROVIDER_NAMES.find(
+        (provider) =>
+          provider !== 'mock' &&
+          hasAdapter(provider) &&
+          requiresProviderApp(getAdapter(provider).authStrategy),
+      );
+      if (!unconfigured) return; // Every OAuth platform is configured; nothing to assert.
+
       const response = await call('/v1/connections/authorize', {
         method: 'POST',
         body: JSON.stringify({
           profile_id: h.tenantA.publicProfileId,
-          provider: 'pinterest',
+          provider: unconfigured,
           redirect_url: 'https://customer.example.com/callback',
         }),
       });
 
-      expect(await code(response)).toBe('PROVIDER_NOT_SUPPORTED');
+      // A 503 saying the platform is not yet available, rather than a 400 implying the
+      // caller did something wrong.
+      expect(response.status).toBe(503);
+      expect(await code(response)).toBe('PROVIDER_NOT_CONFIGURED');
     });
   });
 
