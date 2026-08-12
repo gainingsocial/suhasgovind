@@ -1,6 +1,8 @@
 import {
   ApiKeyListResponseSchema,
   CapabilitiesResponseSchema,
+  ComposeRequestSchema,
+  ComposeResponseSchema,
   CreateApiKeyRequestSchema,
   CreateApiKeyResponseSchema,
   EnvironmentListResponseSchema,
@@ -804,6 +806,29 @@ const ROUTES: RouteSpec[] = [
     successDescription: 'Per-target validation results.',
     response: PreflightResponseSchema,
     errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'PROFILE_NOT_FOUND', 'DUPLICATE_DESTINATION'],
+  },
+  {
+    method: 'post',
+    path: '/v1/compose',
+    operationId: 'composePost',
+    summary: 'Prepare one post for every selected network',
+    description:
+      'Write once, select networks, and get back exactly what each one would publish ' +
+      '(plan §63C). Reports per-network readiness in plain language, the text and media ' +
+      'adaptations applied to get there, and a `publish_override` that reproduces the ' +
+      'preview exactly when passed to POST /v1/posts.\n\n' +
+      '`mode: optimize` applies the mechanical fixes — moving a trailing hashtag block, ' +
+      'shortening at a sentence boundary, converting a media format. `mode: exact` changes ' +
+      'nothing and reports every problem instead. Neither rewrites or rephrases: that is a ' +
+      'model call an author reviews, not something a publish does quietly.\n\n' +
+      'Composing never publishes and performs no provider side effect.',
+    tags: ['Publishing'],
+    scopes: ['posts:read'],
+    requestBody: ComposeRequestSchema,
+    successStatus: 200,
+    successDescription: 'A preview and readiness report per destination.',
+    response: ComposeResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'PROFILE_NOT_FOUND'],
   },
   {
     method: 'post',

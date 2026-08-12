@@ -142,6 +142,25 @@ audit is recorded as `audited: true` on the provider app. Until then they report
 through capabilities, so a caller learns about it before publishing rather than by hunting
 for a post nobody can see.
 
+## Write once, publish everywhere
+
+`POST /v1/compose` takes one piece of writing plus a set of destinations and returns what
+each network would actually publish — the adapted text, the media transforms, a
+plain-language readiness line, and an override that reproduces the preview exactly when
+passed to `POST /v1/posts`:
+
+```
+All 4 networks ready to publish.
+  Instagram  adapted     Ready — 3 hashtags moved to a first comment.
+  LinkedIn   ready       Ready to publish to Acme Corp.
+  TikTok     needs_review  Nearly ready — a centred crop would lose 44% of the frame.
+  YouTube    blocked     Cannot publish — this platform requires at least 3s of video.
+```
+
+`mode: optimize` applies the mechanical fixes and reports every one; `mode: exact` changes
+nothing and reports the problems instead. Neither rewrites or rephrases — that is a model
+call an author reviews, not something a publish does quietly. Composing never publishes.
+
 ## Rehearsing without publishing
 
 An environment is `live` or `simulate`. In `simulate` the entire pipeline runs — preflight,

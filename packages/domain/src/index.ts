@@ -30,6 +30,20 @@ export {
   resolveTargetContent,
 } from './posts/content-resolution.js';
 
+export type {
+  TextAdaptation,
+  TextAdaptationKind,
+  TextFitInput,
+  TextFitResult,
+} from './posts/text-fit.js';
+export {
+  extractHashtags,
+  graphemeLength,
+  planTextFit,
+  stripTrailingHashtags,
+  truncateAtBoundary,
+} from './posts/text-fit.js';
+
 export type { AspectRatio } from './media/aspect-ratio.js';
 export {
   ASPECT_RATIO_TOLERANCE,
