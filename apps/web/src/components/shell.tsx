@@ -86,6 +86,16 @@ const NAV: NavItem[] = [
     icon: icon(<><circle cx="7.5" cy="15.5" r="3.5" /><path d="m10 13 8-8 3 3-2 2-2-2-2 2" /></>),
   },
   {
+    href: '/app/logs',
+    label: 'Logs',
+    icon: icon(<><path d="M4 5h16" /><path d="M4 12h16" /><path d="M4 19h10" /></>),
+  },
+  {
+    href: '/app/playground',
+    label: 'Playground',
+    icon: icon(<><polygon points="5 3 19 12 5 21 5 3" /></>),
+  },
+  {
     href: '/app/platforms',
     label: 'Platforms',
     icon: icon(<><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 9h6v6H9z" /></>),
