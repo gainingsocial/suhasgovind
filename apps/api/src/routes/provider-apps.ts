@@ -131,7 +131,12 @@ async function webhookRegistration(
           )
         : null;
 
-  return { webhook_url: webhookUrlFor(origin, row.provider), webhook_verify_token: token };
+  return {
+    // Deliberately not `origin`: the ingress is a separate Worker on its own hostname, so
+    // deriving this from the API origin would print a URL that 404s.
+    webhook_url: webhookUrlFor(env.PUBLIC_WEBHOOK_ORIGIN ?? 'https://webhooks.gainingsocial.com', row.provider),
+    webhook_verify_token: token,
+  };
 }
 
 providerApps.get('/', withDatabase(), authenticateHuman(), async (c) => {

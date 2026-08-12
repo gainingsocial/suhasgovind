@@ -34,7 +34,11 @@
     // It was previously localhost here, which silently made every OAuth redirect URI
     // `http://127.0.0.1:8787/...` in production — a value no platform will accept, so
     // connecting any account would have failed at the last step.
-    "PUBLIC_API_ORIGIN": "https://api.gainingsocial.com"
+    "PUBLIC_API_ORIGIN": "https://api.gainingsocial.com",
+    // The webhook ingress runs as its own Worker on its own hostname (see
+    // workers/provider-webhooks). Shown on the Platforms page for an operator to paste
+    // into a developer console.
+    "PUBLIC_WEBHOOK_ORIGIN": "https://webhooks.gainingsocial.com"
   },
   "kv_namespaces": [
     {

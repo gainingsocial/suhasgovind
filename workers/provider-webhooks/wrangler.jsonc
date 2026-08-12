@@ -8,6 +8,20 @@
   // but a route on our own domain is what a developer console can keep pointing at across
   // account changes.
   "workers_dev": false,
+  /**
+   * Its own hostname, not a path under the API.
+   *
+   * `api.gainingsocial.com` is a Custom Domain bound to `gs-api`, and a Custom Domain
+   * claims the whole hostname — a path route for a second Worker on it is not possible.
+   * That constraint pushes toward the better answer anyway: ingress is the one path with
+   * a hard acknowledgment deadline (plan §34), and giving it a separate Worker on a
+   * separate hostname means API traffic and webhook traffic cannot contend for the same
+   * isolate.
+   *
+   * Registered in a developer console once and effectively permanent, so it is deliberately
+   * boring and unversioned.
+   */
+  "routes": [{ "pattern": "webhooks.gainingsocial.com", "custom_domain": true }],
   "observability": { "enabled": true, "head_sampling_rate": 1 },
   "vars": {
     "ENVIRONMENT": "live",

@@ -56,21 +56,23 @@ never to rotate one worker in isolation.
 
 ---
 
-## 3. A route for the webhook ingress
+## 3. The webhook hostname — done, no action needed
 
-**Blocks:** providers being able to reach us at all.
+The ingress lives at **`webhooks.gainingsocial.com`**, not under the API.
 
-`gs-provider-webhooks` is configured with `workers_dev: false`, so it needs a route on the
-real domain. A platform's developer console will not accept a `workers.dev` URL for a
-production integration, and changing the URL later means re-registering with every platform.
+`api.gainingsocial.com` is a Cloudflare *Custom Domain* bound to `gs-api`, and a Custom
+Domain claims the entire hostname — a second Worker cannot be routed to a subpath of it.
+That constraint pushes toward the better arrangement anyway: ingress is the one path with a
+hard acknowledgment deadline, so keeping it off the API's isolate means webhook traffic and
+API traffic cannot contend.
 
-```
-api.gainingsocial.com/webhooks/providers/*  →  gs-provider-webhooks
-```
+The hostname is declared as a Custom Domain in the worker's own config, so `wrangler deploy`
+creates it and its DNS record. Nothing to do by hand.
 
-**How to know it worked:** `GET https://api.gainingsocial.com/webhooks/providers/facebook`
-returns 404 rather than a Cloudflare error page. (404 is correct for a GET without the
-handshake parameters — it proves the worker is reachable.)
+**How to know it worked:** `GET https://webhooks.gainingsocial.com/webhooks/providers/facebook`
+returns a bare 404 rather than a Cloudflare error page or a JSON error envelope. A bare 404
+is correct for a GET without handshake parameters and proves the ingress Worker is answering;
+a JSON envelope would mean the API Worker is answering instead.
 
 ---
 

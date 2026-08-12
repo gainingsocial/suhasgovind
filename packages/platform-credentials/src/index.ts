@@ -152,10 +152,15 @@ export function callbackUrlFor(origin: string, provider: ProviderName | string):
 /**
  * The webhook URL this deployment registers with a provider.
  *
+ * Takes its own origin rather than reusing the API's. The ingress runs as a separate
+ * Worker on a separate hostname — `api.gainingsocial.com` is a Custom Domain, which claims
+ * an entire hostname and leaves no room for a second Worker on a subpath — so deriving
+ * this from the API origin would print a URL that resolves to the API and 404s.
+ *
  * Unversioned on purpose: the URL is typed into a developer console and stays there for
  * years, so pinning it to `/v1` would mean an API version bump silently stops a provider
- * from reaching us — and a webhook that stops arriving reports no error anywhere.
+ * from reaching us, and a webhook that stops arriving reports no error anywhere.
  */
-export function webhookUrlFor(origin: string, provider: ProviderName | string): string {
-  return `${origin}/webhooks/providers/${provider}`;
+export function webhookUrlFor(webhookOrigin: string, provider: ProviderName | string): string {
+  return `${webhookOrigin}/webhooks/providers/${provider}`;
 }

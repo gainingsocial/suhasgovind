@@ -79,6 +79,15 @@ export interface Env {
   PUBLIC_API_ORIGIN?: string;
 
   /**
+   * Where providers deliver webhooks (plan §34).
+   *
+   * A separate hostname from the API, because `api.gainingsocial.com` is a Custom Domain
+   * and a Custom Domain claims the whole hostname — the ingress Worker cannot live on a
+   * subpath of it. Shown on the Platforms page for an operator to register.
+   */
+  PUBLIC_WEBHOOK_ORIGIN?: string;
+
+  /**
    * Comma-separated user ids permitted to write the shared platform application
    * (plan §23). Authority over the platform itself, so it lives in the platform's own
    * configuration — a database row granting it would be a row somebody could write.
