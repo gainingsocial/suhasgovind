@@ -53,6 +53,8 @@ packages/
   sdk-js/               TypeScript SDK — typed client, auto-retry, cursor pagination
   cli/                  `gs` — publish, preflight and inspect from a terminal or CI
 
+apps/api/src/mcp/       MCP server — the same routes, reachable as agent tools
+
 infra/
   cloudflare/           Queue, Workflow, DO, R2, Hyperdrive provisioning notes
   supabase/             Project setup, roles, RLS policies
@@ -62,6 +64,19 @@ docs/
   architecture/         Deep dives on the parts whose ordering is load-bearing
   errors/               Every error code the API can return, and what to do about it
 ```
+
+## Architecture deep dives
+
+The parts where the *ordering* or the *default* is the design, rather than the code:
+
+| Document | The decision it explains |
+| --- | --- |
+| [Inbound provider webhooks](./docs/architecture/inbound-provider-webhooks.md) | Why nothing heavy runs before the 200 |
+| [Simulation and feature flags](./docs/architecture/simulation-and-flags.md) | Why a rollout defaults off and a kill switch defaults on |
+| [Connection health](./docs/architecture/connection-health.md) | Why two workers must never refresh one token |
+| [Media auto-fit](./docs/architecture/media-auto-fit.md) | Where the line between "fix it" and "ask first" sits |
+| [Agent governance](./docs/architecture/agent-governance.md) | Why an unconfigured agent can draft but not publish |
+| [The MCP layer](./docs/architecture/mcp.md) | Why a tool call re-enters the API through its own front door |
 
 ## Prerequisites
 
