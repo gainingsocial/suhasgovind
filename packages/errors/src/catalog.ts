@@ -225,6 +225,15 @@ export const ERROR_CODE_METADATA: Record<ErrorCode, ErrorCodeMetadata> = {
     'This platform is not yet available for connecting. Its application credentials are not configured.',
     'check_platform_availability',
   ),
+  PROVIDER_TEMPORARILY_DISABLED: m(
+    'connection_error',
+    // 503 and retryable: the request was correct and will work once the switch is flipped
+    // back. A 4xx would send an integrator hunting for a fault in their own payload.
+    503,
+    true,
+    'Publishing to this platform is temporarily switched off.',
+    'retry_later_or_publish_to_another_destination',
+  ),
   AUTHORIZATION_SESSION_INVALID: m(
     'connection_error',
     400,

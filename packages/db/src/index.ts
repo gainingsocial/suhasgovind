@@ -112,6 +112,24 @@ export {
 } from './repositories/connections.js';
 
 export type {
+  EnvironmentExecutionSettings,
+  FlagBlock,
+  FlagScope,
+  ResolvedFlag,
+  UpsertFlagInput,
+} from './repositories/environment-settings.js';
+export {
+  evaluateFlag,
+  findEnvironmentSettings,
+  isFlagEnabled,
+  providerBlockedBy,
+  providerFlagKey,
+  resolveFlags,
+  setSimulationMode,
+  upsertFeatureFlag,
+} from './repositories/environment-settings.js';
+
+export type {
   RecordProviderEventInput,
   RecordedProviderEvent,
 } from './repositories/provider-events.js';

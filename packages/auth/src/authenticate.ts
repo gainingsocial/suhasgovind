@@ -102,6 +102,7 @@ export async function authenticateApiKey(
     projectId: record.projectId,
     projectEnvironmentId: record.projectEnvironmentId,
     environment: record.environment,
+    simulationMode: record.simulationMode,
     scopes: record.scopes,
     restrictedToProfileId: record.restrictedToProfileId,
   };

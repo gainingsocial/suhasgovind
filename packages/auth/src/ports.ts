@@ -14,6 +14,8 @@ export interface ApiKeyRecord {
   projectId: string;
   projectEnvironmentId: string;
   environment: 'test' | 'live';
+  /** Environment execution mode (plan §49), carried on the key's own environment join. */
+  simulationMode: boolean;
   keyHash: string;
   status: 'active' | 'revoked' | 'expired';
   scopes: readonly ApiScope[];

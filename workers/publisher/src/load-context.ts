@@ -3,8 +3,11 @@ import { CredentialCipher, Keyring, type CREDENTIAL_ALGORITHM } from '@gs/crypto
 import {
   findConnectionCredentials,
   findDestinationOwnership,
+  findEnvironmentSettings,
   findMediaByIds,
   getPostWithTargets,
+  providerBlockedBy,
+  resolveFlags,
   type Database,
   type MediaAsset,
   type PostTarget,
@@ -32,10 +35,24 @@ import { mediaStorageKey, presign } from '@gs/storage';
 export interface BlockedReason {
   code: string;
   message: string;
+  /**
+   * True when the block is expected to clear on its own — a provider kill switch being
+   * the case. Defaults to permanent, because most blocks (a deleted destination, a revoked
+   * connection) will not fix themselves and retrying them forever wastes attempts a real
+   * failure will need.
+   */
+  retryable?: boolean;
 }
 
 export interface PublishContext {
   blocked?: BlockedReason;
+  /**
+   * Plan §49 — run the whole pipeline and call no provider.
+   *
+   * Carried on the context rather than read again in `executeTarget`, so the decision to
+   * simulate and the credentials that were (not) loaded for it can never disagree.
+   */
+  simulate: boolean;
   credentials: ProviderCredentials;
   app: ProviderAppCredentials | null;
   destinationExternalId: string;
@@ -104,12 +121,61 @@ export async function loadPublishContext(
     } as PublishContext;
   }
 
+  /**
+   * Simulation (plan §49).
+   *
+   * Read here, per publish, rather than carried on the queue message. A scheduled post's
+   * message can be days old, and simulation switched on after it was enqueued must still
+   * be honoured — otherwise the switch does not actually stop anything already in flight,
+   * which is exactly when it gets reached for.
+   */
+  const environment = await findEnvironmentSettings(db, ownership.projectEnvironmentId);
+  const simulate = environment?.simulationMode ?? false;
+
+  /**
+   * Provider kill switch (plan §45).
+   *
+   * Re-checked here and not only in preflight, because preflight ran when the post was
+   * created and a scheduled post may have been sitting for weeks. Switching a failing
+   * provider off has to stop work already in the queue — a switch that only affects new
+   * posts is not a switch, it is a preference.
+   */
+  const flags = await resolveFlags(db, {
+    organizationId: ownership.organizationId,
+    projectId: ownership.projectId,
+    projectEnvironmentId: ownership.projectEnvironmentId,
+  });
+
+  const flagBlock = providerBlockedBy(flags, ownership.provider);
+  if (flagBlock) {
+    return {
+      blocked: {
+        code: 'PROVIDER_TEMPORARILY_DISABLED',
+        message: `Publishing to ${ownership.provider} is switched off (${flagBlock.key}).`,
+        // Retryable: the target goes back on the queue rather than failing permanently.
+        // A kill switch is by definition temporary, and permanently failing every post in
+        // flight would turn a five-minute mitigation into a day of customer support.
+        retryable: true,
+      },
+    } as PublishContext;
+  }
+
   // Destination-scoped, so a provider that issues a token per surface publishes with the
   // right one. A Meta Page token is the case that makes this mandatory: the user token
   // that discovered the Page cannot post to it, and handing it over produces a permissions
   // error naming nothing useful.
   const stored = await findConnectionCredentials(db, ownership.connectionId, ownership.destinationId);
-  if (!stored || stored.length === 0) {
+
+  /**
+   * A simulated publish needs no credential, and deliberately decrypts none.
+   *
+   * That is not an optimization — it is what makes simulation useful. A developer
+   * rehearsing a launch, or an agent dry-running a plan, must get a real answer about
+   * whether the *content* is publishable even when the connection's token has since
+   * expired. Requiring a working credential to simulate would make the mode useless in
+   * precisely the situation it exists for.
+   */
+  if (!simulate && (!stored || stored.length === 0)) {
     return {
       blocked: {
         code: 'CONNECTION_REAUTH_REQUIRED',
@@ -128,7 +194,7 @@ export async function loadPublishContext(
   const cipher = new CredentialCipher(keyring);
 
   const decrypted: Record<string, string> = {};
-  for (const record of stored) {
+  for (const record of simulate ? [] : (stored ?? [])) {
     decrypted[record.credentialType] = await cipher.decrypt(
       {
         ciphertext: record.ciphertext,
@@ -154,14 +220,14 @@ export async function loadPublishContext(
   }
 
   const credentials: ProviderCredentials = {
-    strategy: stored[0]!.authStrategy,
+    strategy: stored?.[0]?.authStrategy ?? 'custom',
     accessToken: decrypted.access_token,
     refreshToken: decrypted.refresh_token,
     secret: decrypted.app_password ?? decrypted.bot_token ?? decrypted.api_key,
     tokenSecret: decrypted.oauth1_token_secret,
     externalAccountId: ownership.providerDestinationId,
-    grantedScopes: stored[0]!.grantedScopes,
-    metadata: stored[0]!.connectionMetadata,
+    grantedScopes: stored?.[0]?.grantedScopes ?? [],
+    metadata: stored?.[0]?.connectionMetadata ?? {},
   };
 
   // Content: canonical post, target overrides, provider options (plan §11.2). The exact
@@ -214,27 +280,34 @@ export async function loadPublishContext(
   // Resolved per publish rather than cached, because the whole point of storing platform
   // credentials in a table is that a rotated secret or a newly approved platform takes
   // effect without a deploy (plan §23). A cache would reintroduce the restart it removes.
-  const resolution = await resolveProviderApp(db, {
-    provider: ownership.provider,
-    authStrategy: stored[0]!.authStrategy,
-    projectId: ownership.projectId,
-    redirectUri: callbackUrlFor(env.PUBLIC_API_ORIGIN ?? '', ownership.provider),
-    env,
-  });
+  //
+  // Skipped when simulating, for the same reason the credential is: a rehearsal must not
+  // require an approval that has not landed yet.
+  let app: ProviderAppCredentials | null = null;
 
-  if (resolution.kind === 'unavailable') {
-    // Blocked rather than thrown: a missing platform application is not this post's fault
-    // and will not be fixed by retrying it. Blocking records a precise reason on the
-    // target, which is what the dashboard shows and what a support reply quotes.
-    return {
-      blocked: { code: 'PROVIDER_NOT_CONFIGURED', message: resolution.message },
-    } as PublishContext;
+  if (!simulate) {
+    const resolution = await resolveProviderApp(db, {
+      provider: ownership.provider,
+      authStrategy: stored![0]!.authStrategy,
+      projectId: ownership.projectId,
+      redirectUri: callbackUrlFor(env.PUBLIC_API_ORIGIN ?? '', ownership.provider),
+      env,
+    });
+
+    if (resolution.kind === 'unavailable') {
+      // Blocked rather than thrown: a missing platform application is not this post's
+      // fault and will not be fixed by retrying it. Blocking records a precise reason on
+      // the target, which is what the dashboard shows and what a support reply quotes.
+      return {
+        blocked: { code: 'PROVIDER_NOT_CONFIGURED', message: resolution.message },
+      } as PublishContext;
+    }
+
+    app = resolution.kind === 'resolved' ? resolution.credentials : null;
   }
 
-  const app: ProviderAppCredentials | null =
-    resolution.kind === 'resolved' ? resolution.credentials : null;
-
   return {
+    simulate,
     credentials,
     app,
     destinationExternalId: ownership.providerDestinationId,

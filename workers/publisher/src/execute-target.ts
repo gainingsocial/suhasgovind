@@ -214,6 +214,48 @@ export async function executeTarget(
   }
 
   if (context.blocked) {
+    /**
+     * A block expected to clear — a provider kill switch (plan §45) — goes back on the
+     * queue rather than failing. Permanently failing every post in flight would turn a
+     * five-minute mitigation into a day of support tickets and manual retries.
+     *
+     * Handled here rather than through `fail`, because `fail` speaks the normalized
+     * *provider* taxonomy (plan §79) and this is not a provider failure. Nothing was
+     * attempted and no provider was contacted; putting our own kill switch into that
+     * taxonomy would corrupt the provider error rates the health engine reads.
+     */
+    if (context.blocked.retryable) {
+      const retryAt = new Date(Date.now() + nextAttemptDelayMs(attemptNumber));
+
+      await markTargetRetryableFailure(db, {
+        targetId: target.id,
+        leaseId,
+        errorCode: context.blocked.code,
+        errorMessage: context.blocked.message,
+        nextAttemptAt: retryAt,
+      });
+
+      if (env.PUBLISH_QUEUE) {
+        await env.PUBLISH_QUEUE.send(
+          {
+            type: 'publish.target',
+            postId: target.postId,
+            postTargetId: target.id,
+            traceId: message.traceId,
+          },
+          { delaySeconds: Math.max(1, Math.ceil((retryAt.getTime() - Date.now()) / 1000)) },
+        );
+      }
+
+      await recalculatePostStatus(db, target.postId);
+      logger.warn('target.blocked_retryable', {
+        postTargetId: target.id,
+        code: context.blocked.code,
+        retryAt: retryAt.toISOString(),
+      });
+      return { outcome: 'retryable_failed', reason: context.blocked.code };
+    }
+
     await markTargetPermanentFailure(db, {
       targetId: target.id,
       leaseId,
@@ -222,6 +264,57 @@ export async function executeTarget(
     });
     await recalculatePostStatus(db, target.postId);
     return { outcome: 'permanent_failed', reason: context.blocked.code };
+  }
+
+  // ---- 2b. simulation ------------------------------------------------------
+  /**
+   * Plan §49. Everything up to here has run: the lease, ownership, connection health,
+   * content and override resolution, media resolution and signing. What does not run is
+   * the provider call itself.
+   *
+   * The target still ends `published`, and the post still ends `published`, and the
+   * customer webhook still fires. That is deliberate. A test mode whose state machine
+   * differs from production forces every customer to write a branch in order to test
+   * themselves, which defeats the point of having one. What marks it as a rehearsal is the
+   * synthetic external id and the `simulated` flag on the attempt — not a different shape.
+   *
+   * No rate-limit permit is taken. Nothing is going to reach the provider, so consuming
+   * from a budget shared with real publishes would let a simulation throttle production.
+   */
+  if (context.simulate) {
+    const { attemptId: simulatedAttemptId } = await startPublishAttempt(db, {
+      postTargetId: target.id,
+      postId: target.postId,
+      attemptNumber,
+      leaseId,
+      traceId: message.traceId ?? null,
+    });
+
+    const externalPostId = `sim_${toPublicId('postTarget', target.id)}`;
+
+    await markTargetPublished(db, {
+      targetId: target.id,
+      leaseId,
+      providerPostId: externalPostId,
+      // No URL, ever. A link that 404s is worse than no link, and it is the one field a
+      // reader would use to check whether a simulated post is real.
+      providerPostUrl: null,
+      now: new Date(),
+      simulated: true,
+    });
+
+    await finishPublishAttempt(db, {
+      attemptId: simulatedAttemptId,
+      outcome: 'published',
+      providerPostId: externalPostId,
+      durationMs: Date.now() - startedAt,
+      simulated: true,
+    });
+
+    await recalculatePostStatus(db, target.postId);
+
+    logger.info('target.simulated', { postTargetId: target.id, provider: target.provider });
+    return { outcome: 'published', reason: 'simulated' };
   }
 
   // ---- 3. rate-limit permit ------------------------------------------------

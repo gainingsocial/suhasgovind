@@ -372,6 +372,8 @@ media.post('/preflight', withDatabase(), authenticate(['media:read']), async (c)
     db: c.get('db'),
     context: providerCallContext(c, { timeoutMs: 10_000 }),
     projectEnvironmentId: principal.projectEnvironmentId,
+    organizationId: principal.organizationId,
+    projectId: principal.projectId,
     profileId,
     // Empty text is not "no text supplied" — it is the honest statement that this check is
     // about the media alone. A platform that requires a caption reports that as a finding,

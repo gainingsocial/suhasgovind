@@ -141,6 +141,22 @@ audit is recorded as `audited: true` on the provider app. Until then they report
 through capabilities, so a caller learns about it before publishing rather than by hunting
 for a post nobody can see.
 
+## Rehearsing without publishing
+
+An environment is `live` or `simulate`. In `simulate` the entire pipeline runs — preflight,
+the target lease, content and media resolution, the state machine, your webhooks — and the
+provider call is the only step that does not happen:
+
+```
+PATCH /v1/environments/{id}   { "mode": "simulate" }
+```
+
+A simulated target still reaches `published`, on purpose: a test mode whose states differ
+from production would force you to write a branch in order to test yourself. What marks it
+is `simulated: true`, a `sim_` external id and a null external URL. It needs no working
+credential, so a launch can be rehearsed before a platform approval lands. See
+[simulation mode and feature flags](./docs/architecture/simulation-and-flags.md).
+
 ## Commands
 
 | Command             | What it does                                                  |

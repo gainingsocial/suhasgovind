@@ -267,6 +267,8 @@ export interface FinishAttemptInput {
   responseSummary?: Record<string, unknown> | null;
   durationMs?: number;
   finishedAt?: Date;
+  /** No provider was contacted (plan §49). */
+  simulated?: boolean;
 }
 
 export async function finishPublishAttempt(db: Database, input: FinishAttemptInput): Promise<void> {
@@ -274,6 +276,7 @@ export async function finishPublishAttempt(db: Database, input: FinishAttemptInp
     .update(postTargetAttempts)
     .set({
       outcome: input.outcome,
+      simulated: input.simulated ?? false,
       providerPostId: input.providerPostId ?? null,
       errorCode: input.errorCode ?? null,
       errorMessage: input.errorMessage ?? null,
@@ -306,6 +309,8 @@ export async function markTargetPublished(
     providerPostUrl?: string | null;
     resolvedContent?: Record<string, unknown> | null;
     now?: Date;
+    /** No provider was contacted (plan §49). */
+    simulated?: boolean;
   },
 ): Promise<boolean> {
   const now = input.now ?? new Date();
@@ -314,6 +319,7 @@ export async function markTargetPublished(
     .update(postTargets)
     .set({
       status: 'published',
+      simulated: input.simulated ?? false,
       providerPostId: input.providerPostId,
       providerPostUrl: input.providerPostUrl ?? null,
       resolvedContent: input.resolvedContent ?? null,

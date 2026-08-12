@@ -171,7 +171,18 @@ export async function createTenantHarness(
       projectId: t.projectId,
       organizationId: t.organizationId,
       kind: 'test' as const,
-      simulationMode: true,
+      /**
+       * Live, not simulated (plan §49).
+       *
+       * `test` and `simulate` are different things, and the integration suite needs the
+       * first without the second: its whole purpose is to drive the real publishing engine
+       * end to end, and simulation short-circuits precisely the step it is verifying. The
+       * `mock` adapter is what keeps a test environment free of real side effects.
+       *
+       * Tests that want simulation switch it on themselves, which also documents at the
+       * point of use that they are testing the short circuit rather than the engine.
+       */
+      simulationMode: false,
     })),
   );
 

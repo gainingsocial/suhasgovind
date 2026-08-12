@@ -71,6 +71,15 @@ export const ERROR_CODES = [
    * cannot resolve and should not be told to debug.
    */
   'PROVIDER_NOT_CONFIGURED',
+  /**
+   * A provider, or one of its features, has been switched off by a feature flag
+   * (plan §45).
+   *
+   * Distinct from `PROVIDER_NOT_CONFIGURED` — the platform is fully set up and normally
+   * works — and from `PROVIDER_UNAVAILABLE`, which means the provider itself is failing.
+   * This one is our own deliberate kill switch, and it is expected to clear.
+   */
+  'PROVIDER_TEMPORARILY_DISABLED',
   /** The `state` on a callback is unknown, already used, or expired (plan §21.2). */
   'AUTHORIZATION_SESSION_INVALID',
   /** The provider redirected back with an error, or the user declined consent. */

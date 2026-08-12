@@ -17,6 +17,15 @@ export interface AuthenticatedPrincipal {
    * a test key can never reach live data even if it names a live resource.
    */
   environment: 'test' | 'live';
+  /**
+   * `simulate` runs the whole publishing pipeline and contacts no provider (plan §49).
+   *
+   * A property of the environment, resolved at authentication from the join the key lookup
+   * already performs, and never accepted from a request. A caller who could ask for
+   * `mode: live` could escalate themselves out of a sandbox, which is the one thing a
+   * sandbox exists to prevent.
+   */
+  simulationMode: boolean;
   scopes: readonly ApiScope[];
   /**
    * Set when the key is restricted to a single profile (plan §38). `null` means the key

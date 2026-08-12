@@ -52,6 +52,17 @@ export const posts = new Hono<AppEnv>();
 /** Preflight is cheap and callers are encouraged to hit it; it still needs a deadline. */
 const PREFLIGHT_TIMEOUT_MS = 10_000;
 
+/**
+ * How this environment executes (plan §49).
+ *
+ * Read from the authenticated principal, which carries it from the environment join the
+ * key lookup already performs — never from the request. A caller who could ask for
+ * `mode: live` could escalate out of a sandbox, which is the one thing a sandbox is for.
+ */
+function environmentMode(c: Context<AppEnv>): 'live' | 'simulate' {
+  return c.get('principal').simulationMode ? 'simulate' : 'live';
+}
+
 interface ResolvedTargets {
   ownerships: Map<string, DestinationOwnership>;
   targets: PreflightTargetInput[];
@@ -160,6 +171,8 @@ posts.post('/preflight', withDatabase(), authenticate(['posts:read']), async (c)
     db: c.get('db'),
     context: providerCallContext(c, { timeoutMs: PREFLIGHT_TIMEOUT_MS }),
     projectEnvironmentId: principal.projectEnvironmentId,
+    organizationId: principal.organizationId,
+    projectId: principal.projectId,
     profileId,
     content: body.content,
     targets,
@@ -179,6 +192,7 @@ posts.post('/preflight', withDatabase(), authenticate(['posts:read']), async (c)
 posts.post('/', withDatabase(), authenticate(['posts:write']), async (c) => {
   const principal = c.get('principal');
   const trace = c.get('trace');
+  const mode = environmentMode(c);
   const body = await parseBody(c, CreatePostRequestSchema);
 
   // Plan §25 Layer 1. Required, not optional: a duplicate published post cannot be
@@ -200,6 +214,8 @@ posts.post('/', withDatabase(), authenticate(['posts:write']), async (c) => {
     db: c.get('db'),
     context: providerCallContext(c, { timeoutMs: PREFLIGHT_TIMEOUT_MS }),
     projectEnvironmentId: principal.projectEnvironmentId,
+    organizationId: principal.organizationId,
+    projectId: principal.projectId,
     profileId,
     content: body.content,
     targets,
@@ -314,7 +330,7 @@ posts.post('/', withDatabase(), authenticate(['posts:write']), async (c) => {
 
     // The snapshot is the response body itself, so a replay is byte-identical to the
     // original rather than a re-derivation that could drift as the serializer changes.
-    const snapshot = toPostResponse(result.post, result.targets, trace);
+    const snapshot = toPostResponse(result.post, result.targets, trace, mode);
 
     await completeReservation(tx, {
       reservationId: reservation.reservationId,
@@ -389,7 +405,8 @@ posts.get('/', withDatabase(), authenticate(['posts:read']), async (c) => {
     restrictedToProfileId: principal.restrictedToProfileId,
   });
 
-  const data = rows.map(toPostSummary);
+  const mode = environmentMode(c);
+  const data = rows.map((row) => toPostSummary(row, mode));
 
   return c.json(
     PostListResponseSchema.parse({
@@ -431,7 +448,10 @@ async function loadOwnedPost(c: Context<AppEnv>, postId: string) {
 posts.get('/:postId', withDatabase(), authenticate(['posts:read']), async (c) => {
   const postId = requirePathId(c, 'post', 'postId');
   const { post, targets } = await loadOwnedPost(c, postId);
-  return c.json(toPostResponse(post, targets, c.get('trace')), 200);
+  return c.json(
+    toPostResponse(post, targets, c.get('trace'), environmentMode(c)),
+    200,
+  );
 });
 
 posts.post('/:postId/cancel', withDatabase(), authenticate(['posts:write']), async (c) => {

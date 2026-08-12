@@ -44,6 +44,7 @@ async function seed(
     id: 'key-1',
     ...TENANT,
     environment,
+    simulationMode: false,
     keyHash: generated.hash,
     status: 'active',
     scopes: ['posts:read', 'posts:write'],
@@ -105,6 +106,7 @@ describe('authenticateApiKey', () => {
       apiKeyId: 'key-1',
       ...TENANT,
       environment: 'live',
+      simulationMode: false,
       restrictedToProfileId: null,
     });
     expect(principal.scopes).toEqual(['posts:read', 'posts:write']);
@@ -132,6 +134,7 @@ describe('authenticateApiKey', () => {
       id: 'key-1',
       ...TENANT,
       environment: 'live',
+      simulationMode: false,
       keyHash: generated.hash,
       status: 'active',
       scopes: [],
@@ -203,6 +206,7 @@ describe('requireScopes', () => {
     apiKeyId: 'key-1',
     ...TENANT,
     environment: 'live',
+    simulationMode: false,
     scopes: ['posts:read', 'media:write'],
     restrictedToProfileId: null,
   };
@@ -237,6 +241,7 @@ describe('assertOwnership', () => {
     apiKeyId: 'key-1',
     ...TENANT,
     environment: 'live',
+    simulationMode: false,
     scopes: ['posts:write'],
     restrictedToProfileId: null,
   };

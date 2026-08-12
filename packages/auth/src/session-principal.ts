@@ -58,6 +58,8 @@ export interface SessionPrincipalInput {
   projectId: string;
   projectEnvironmentId: string;
   environment: 'test' | 'live';
+  /** Environment execution mode (plan §49). Defaults to live for callers that omit it. */
+  simulationMode?: boolean;
   role: string;
 }
 
@@ -75,6 +77,7 @@ export function principalFromSession(input: SessionPrincipalInput): Authenticate
     projectId: input.projectId,
     projectEnvironmentId: input.projectEnvironmentId,
     environment: input.environment,
+    simulationMode: input.simulationMode ?? false,
     scopes: scopesForRole(input.role),
     // A human is never profile-restricted; that constraint belongs to issued keys.
     restrictedToProfileId: null,

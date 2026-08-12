@@ -71,8 +71,24 @@ export const EnvironmentSchema = z.object({
   organization_id: z.string(),
   project_id: z.string(),
   kind: z.enum(['test', 'live']),
+  /**
+   * How this environment executes (plan §49).
+   *
+   * `simulate` runs the entire publishing pipeline — validation, content resolution, media
+   * signing, the state machine and the customer webhooks — and contacts no provider.
+   *
+   * Deliberately separate from `kind`: a test environment may publish to a real sandbox
+   * account, and a live environment can be switched to `simulate` during an incident to
+   * stop outbound posting without taking the API down.
+   */
+  mode: z.enum(['live', 'simulate']),
   /** The signed-in person's role in the owning organization. */
   role: z.string(),
+});
+
+export const UpdateEnvironmentRequestSchema = z.object({
+  /** The only setting a customer may change here. See `EnvironmentSchema.mode`. */
+  mode: z.enum(['live', 'simulate']),
 });
 
 export const EnvironmentListResponseSchema = z.object({

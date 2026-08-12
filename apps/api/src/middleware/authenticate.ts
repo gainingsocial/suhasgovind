@@ -157,6 +157,7 @@ async function authenticateWithSession(
     projectId: membership.projectId,
     projectEnvironmentId: membership.projectEnvironmentId,
     environment: membership.environment,
+    simulationMode: membership.simulationMode,
     role: membership.role,
   });
 }

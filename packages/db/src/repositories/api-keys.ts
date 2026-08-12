@@ -22,6 +22,7 @@ export async function findApiKeyByHash(db: Database, keyHash: string): Promise<A
       projectId: apiKeys.projectId,
       projectEnvironmentId: apiKeys.projectEnvironmentId,
       environmentKind: projectEnvironments.kind,
+      simulationMode: projectEnvironments.simulationMode,
       keyHash: apiKeys.keyHash,
       status: apiKeys.status,
       restrictedToProfileId: apiKeys.restrictedToProfileId,
@@ -49,6 +50,7 @@ export async function findApiKeyByHash(db: Database, keyHash: string): Promise<A
     projectId: row.projectId,
     projectEnvironmentId: row.projectEnvironmentId,
     environment: row.environmentKind,
+    simulationMode: row.simulationMode,
     keyHash: row.keyHash,
     status: row.status,
     // Scopes are stored as free text so a grant survives a rename; anything the current

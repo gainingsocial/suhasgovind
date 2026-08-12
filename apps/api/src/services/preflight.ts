@@ -3,6 +3,8 @@ import { fromPublicId, toPublicId } from '@gs/contracts/ids';
 import { isProviderName, type ProviderName } from '@gs/contracts/providers';
 import {
   findMediaByIds,
+  providerBlockedBy,
+  resolveFlags,
   type DestinationOwnership,
   type Database,
   type MediaAsset,
@@ -37,6 +39,9 @@ export interface PreflightInput {
   db: Database;
   context: ProviderCallContext;
   projectEnvironmentId: string;
+  /** Broader scopes, so a provider kill switch can be set above the environment (§45). */
+  organizationId: string;
+  projectId: string;
   profileId: string;
   content: { text: string; media_ids: string[]; link_url?: string | null };
   targets: readonly PreflightTargetInput[];
@@ -217,6 +222,23 @@ function coreFindings(
 export async function runPreflight(input: PreflightInput): Promise<PreflightOutcome> {
   const now = new Date();
 
+  /**
+   * Provider kill switches (plan §45).
+   *
+   * Resolved once for the whole post rather than per target — a post fanning out to ten
+   * destinations would otherwise repeat the same flag query ten times.
+   *
+   * Reported here, in preflight, rather than only at publish time. A provider we have
+   * switched off is not a transient failure a caller should discover from a queued post
+   * failing minutes later; it is a fact about right now, and preflight is where facts
+   * about right now belong (P7).
+   */
+  const flags = await resolveFlags(input.db, {
+    organizationId: input.organizationId,
+    projectId: input.projectId,
+    projectEnvironmentId: input.projectEnvironmentId,
+  });
+
   // All media for the whole post in one query, including per-target overrides. A
   // ten-image carousel across five targets would otherwise be fifty lookups.
   const publicMediaIds = new Set(input.content.media_ids);
@@ -252,6 +274,20 @@ export async function runPreflight(input: PreflightInput): Promise<PreflightOutc
 
     const provider: ProviderName | null =
       ownership && isProviderName(ownership.provider) ? ownership.provider : null;
+
+    const blocked = provider ? providerBlockedBy(flags, provider) : null;
+    if (blocked) {
+      findings.push(
+        finding(
+          'error',
+          'PROVIDER_TEMPORARILY_DISABLED',
+          `Publishing to ${provider} is currently switched off. This is a platform-side ` +
+            `control, not a problem with the request.`,
+          'retry_later_or_publish_to_another_destination',
+          'targets.destination_id',
+        ),
+      );
+    }
 
     const resolved = resolveTargetContent({
       canonical: {

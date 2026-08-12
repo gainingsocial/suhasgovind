@@ -133,6 +133,15 @@ export const PostTargetSchema = z.object({
   error_message: z.string().nullable(),
   /** UTC ISO-8601. Set when a retry is scheduled. */
   next_attempt_at: z.iso.datetime().nullable(),
+  /**
+   * True when this target reached `published` without any provider being contacted
+   * (plan §49).
+   *
+   * The state machine of a simulated publish is deliberately identical to a real one, so
+   * that a customer can exercise their own integration without writing a branch. This
+   * flag, and the `sim_` prefix on `external_post_id`, are how you tell them apart.
+   */
+  simulated: z.boolean(),
 });
 
 export const PostSchema = z.object({
@@ -146,6 +155,12 @@ export const PostSchema = z.object({
   metadata: z.record(z.string(), z.unknown()),
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime(),
+  /**
+   * `live` publishes to the platform. `simulate` runs the entire pipeline and contacts no
+   * provider (plan §49) — set per environment, not per request, so a key cannot escalate
+   * itself out of a sandbox.
+   */
+  mode: z.enum(['live', 'simulate']),
   /** Echoed so a caller can correlate a 202 with their logs without parsing headers. */
   request_id: z.string(),
   trace_id: z.string(),

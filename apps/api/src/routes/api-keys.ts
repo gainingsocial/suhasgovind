@@ -6,6 +6,7 @@ import {
   EnvironmentListResponseSchema,
   EnvironmentSchema,
   RevokeApiKeyResponseSchema,
+  UpdateEnvironmentRequestSchema,
 } from '@gs/contracts/http';
 import { fromPublicId, toPublicId } from '@gs/contracts/ids';
 import { isApiScope } from '@gs/contracts/scopes';
@@ -16,6 +17,7 @@ import {
   listApiKeys,
   listEnvironmentsForUser,
   revokeApiKey,
+  setSimulationMode,
   type ApiKeySummary,
 } from '@gs/db';
 import { ApiError } from '@gs/errors';
@@ -36,6 +38,15 @@ import { parseBody, requirePathId } from '../lib/request.js';
  */
 export const apiKeys = new Hono<AppEnv>();
 export const environments = new Hono<AppEnv>();
+
+/**
+ * Roles permitted to switch an environment between live and simulate.
+ *
+ * Narrower than key management: a developer may issue themselves a key, but flipping an
+ * environment to `simulate` stops every scheduled post in it from reaching a platform, and
+ * flipping it back starts them all publishing for real.
+ */
+const MODE_MANAGING_ROLES = new Set(['owner', 'admin']);
 
 /** Roles permitted to mint credentials. A viewer or analyst may look, not issue. */
 const KEY_MANAGING_ROLES = new Set(['owner', 'admin', 'developer']);
@@ -75,11 +86,55 @@ environments.get('/', withDatabase(), authenticateHuman(), async (c) => {
           organization_id: toPublicId('organization', row.organizationId),
           project_id: toPublicId('project', row.projectId),
           kind: row.environment,
+          mode: row.simulationMode ? 'simulate' : 'live',
           role: row.role,
         }),
       ),
       has_more: false,
       next_cursor: null,
+    }),
+    200,
+  );
+});
+
+/**
+ * Switch an environment between live and simulate (plan §49).
+ *
+ * A human session, and an owner or admin, because it is a blast-radius control in both
+ * directions: switching to `simulate` silently stops every scheduled post from reaching a
+ * platform, and switching back to `live` starts a queue's worth of them publishing for
+ * real. Neither belongs behind an API key that an integration holds.
+ *
+ * The switch takes effect on work already in flight. The publisher reads the mode per
+ * publish rather than trusting what was true when a message was enqueued — a scheduled
+ * post's message can be days old, and a switch that only affected future posts would not
+ * actually stop anything at the moment someone reaches for it.
+ */
+environments.patch('/:environmentId', withDatabase(), authenticateHuman(), async (c) => {
+  const user = c.get('user');
+  const environmentId = requirePathId(c, 'environment', 'environmentId');
+  const body = await parseBody(c, UpdateEnvironmentRequestSchema);
+
+  const membership = await findMembershipForEnvironment(c.get('db'), user.userId, environmentId);
+  if (!membership) throw new ApiError('TENANT_FORBIDDEN');
+
+  if (!MODE_MANAGING_ROLES.has(membership.role)) {
+    throw new ApiError('TENANT_FORBIDDEN', {
+      message: `Your role (${membership.role}) cannot change the execution mode of an environment.`,
+    });
+  }
+
+  await setSimulationMode(c.get('db'), environmentId, body.mode === 'simulate');
+
+  return c.json(
+    EnvironmentSchema.parse({
+      id: toPublicId('environment', environmentId),
+      object: 'environment',
+      organization_id: toPublicId('organization', membership.organizationId),
+      project_id: toPublicId('project', membership.projectId),
+      kind: membership.environment,
+      mode: body.mode,
+      role: membership.role,
     }),
     200,
   );

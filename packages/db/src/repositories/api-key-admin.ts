@@ -24,6 +24,8 @@ export interface MembershipContext {
   projectId: string;
   projectEnvironmentId: string;
   environment: 'test' | 'live';
+  /** Environment execution mode (plan §49), so a dashboard session sees the same mode. */
+  simulationMode: boolean;
   role: string;
 }
 
@@ -45,6 +47,7 @@ export async function findMembershipForEnvironment(
       projectId: projectEnvironments.projectId,
       projectEnvironmentId: projectEnvironments.id,
       environment: projectEnvironments.kind,
+      simulationMode: projectEnvironments.simulationMode,
       role: organizationMembers.role,
     })
     .from(projectEnvironments)
@@ -76,6 +79,7 @@ export async function listEnvironmentsForUser(
       projectId: projectEnvironments.projectId,
       projectEnvironmentId: projectEnvironments.id,
       environment: projectEnvironments.kind,
+      simulationMode: projectEnvironments.simulationMode,
       role: organizationMembers.role,
     })
     .from(projectEnvironments)

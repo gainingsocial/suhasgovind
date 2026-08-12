@@ -36,6 +36,20 @@
       "when": 1786838400000,
       "tag": "0004_destination_credentials",
       "breakpoints": false
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786924800000,
+      "tag": "0005_simulated_attempts",
+      "breakpoints": false
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786928400000,
+      "tag": "0006_feature_flag_scope_uniqueness",
+      "breakpoints": false
     }
   ]
 }

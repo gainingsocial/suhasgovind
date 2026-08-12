@@ -4,8 +4,12 @@ import {
   createDatabaseHandle,
   createPostWithTargets,
   getPostWithTargets,
+  listPostAttempts,
+  providerFlagKey,
   schema,
+  setSimulationMode,
   storeCredential,
+  upsertFeatureFlag,
   type Database,
   type DatabaseHandle,
 } from '@gs/db';
@@ -320,6 +324,107 @@ describeIntegration('publisher: executeTarget', () => {
     expect(outcomes.filter((o) => o === 'retryable_failed')).toHaveLength(5);
     // Once the budget is gone the lease refuses, so no further provider calls happen.
     expect(outcomes.filter((o) => o === 'skipped')).toHaveLength(2);
+  });
+
+  it('runs the whole pipeline and contacts no provider when simulating', async () => {
+    // Plan §49. The valuable property is that the *state machine is identical* — a test
+    // mode that ends in a different status would force every customer to write a branch
+    // in order to test themselves.
+    const { postId, targetId } = await seedQueuedPost();
+    await setSimulationMode(db, h.tenantA.projectEnvironmentId, true);
+
+    try {
+      const result = await executeTarget(db, env, message(postId, targetId), logger);
+      expect(result).toMatchObject({ outcome: 'published', reason: 'simulated' });
+
+      const after = await getPostWithTargets(db, postId);
+      expect(after?.post.status).toBe('published');
+      expect(after?.targets[0]?.status).toBe('published');
+
+      // What differs: no provider was touched, the id is synthetic, and there is no URL
+      // for a reader to follow to a post that does not exist.
+      expect(mockStore.all()).toHaveLength(0);
+      expect(after?.targets[0]?.providerPostId).toMatch(/^sim_ptg_/);
+      expect(after?.targets[0]?.providerPostUrl).toBeNull();
+      expect(after?.targets[0]?.simulated).toBe(true);
+    } finally {
+      await setSimulationMode(db, h.tenantA.projectEnvironmentId, false);
+    }
+  });
+
+  it('records a simulated attempt as simulated, so success rates stay honest', async () => {
+    const { postId, targetId } = await seedQueuedPost();
+    await setSimulationMode(db, h.tenantA.projectEnvironmentId, true);
+
+    try {
+      await executeTarget(db, env, message(postId, targetId), logger);
+
+      const attempts = await listPostAttempts(db, postId);
+      expect(attempts).toHaveLength(1);
+      expect(attempts[0]).toMatchObject({ outcome: 'published', simulated: true });
+    } finally {
+      await setSimulationMode(db, h.tenantA.projectEnvironmentId, false);
+    }
+  });
+
+  it('simulates without a usable credential, which is the point of a rehearsal', async () => {
+    // A developer rehearsing a launch must get a real answer about whether the content is
+    // publishable even when the connection's token has expired. Requiring a working
+    // credential would make the mode useless in exactly the case it exists for.
+    const { postId, targetId } = await seedQueuedPost();
+    await setSimulationMode(db, h.tenantA.projectEnvironmentId, true);
+
+    const stored = await db
+      .delete(schema.socialCredentials)
+      .where(eq(schema.socialCredentials.connectionId, h.tenantA.connectionId))
+      .returning();
+
+    try {
+      const result = await executeTarget(db, env, message(postId, targetId), logger);
+      expect(result.outcome).toBe('published');
+    } finally {
+      await setSimulationMode(db, h.tenantA.projectEnvironmentId, false);
+      if (stored.length > 0) await db.insert(schema.socialCredentials).values(stored);
+    }
+  });
+
+  it('retries rather than fails when a provider kill switch is on', async () => {
+    // Plan §45. A kill switch is temporary by definition, so permanently failing every
+    // post in flight would turn a five-minute mitigation into a day of support tickets.
+    const { postId, targetId } = await seedQueuedPost();
+    await upsertFeatureFlag(db, {
+      key: providerFlagKey('mock'),
+      enabled: false,
+      projectEnvironmentId: h.tenantA.projectEnvironmentId,
+    });
+
+    try {
+      const result = await executeTarget(db, env, message(postId, targetId), logger);
+
+      expect(result).toMatchObject({
+        outcome: 'retryable_failed',
+        reason: 'PROVIDER_TEMPORARILY_DISABLED',
+      });
+      expect(mockStore.all()).toHaveLength(0);
+
+      const after = await getPostWithTargets(db, postId);
+      expect(after?.targets[0]?.status).toBe('retryable_failed');
+      expect(after?.targets[0]?.nextAttemptAt).not.toBeNull();
+    } finally {
+      await upsertFeatureFlag(db, {
+        key: providerFlagKey('mock'),
+        enabled: true,
+        projectEnvironmentId: h.tenantA.projectEnvironmentId,
+      });
+    }
+  });
+
+  it('publishes normally once the kill switch is off again', async () => {
+    const { postId, targetId } = await seedQueuedPost();
+
+    const result = await executeTarget(db, env, message(postId, targetId), logger);
+    expect(result.outcome).toBe('published');
+    expect(mockStore.all()).toHaveLength(1);
   });
 
   it('blocks publishing when the connection is disconnected', async () => {

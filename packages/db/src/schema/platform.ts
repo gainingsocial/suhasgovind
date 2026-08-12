@@ -101,6 +101,22 @@ export const featureFlags = pgTable(
   },
   (table) => [
     index('feature_flags_key_idx').on(table.key),
+    /**
+     * One row per (key, scope).
+     *
+     * The live index carries `NULLS NOT DISTINCT`, added in migration
+     * `0006_feature_flag_scope_uniqueness`. Drizzle 0.45 cannot express that clause, so
+     * this declaration is deliberately weaker than the database — treat the migration as
+     * authoritative here and review `db:generate` output rather than applying it, or the
+     * generated diff will quietly drop the clause.
+     *
+     * The clause is load-bearing, not a detail: three of these four columns are NULL for a
+     * global flag, and Postgres treats NULLs as distinct by default. Without it, upserting
+     * a global flag inserts a second row rather than updating the first, and resolution
+     * then picks an arbitrary winner between two rows that disagree. A kill switch that
+     * sometimes reads as off is worse than no kill switch, because it will be trusted
+     * during an incident.
+     */
     uniqueIndex('feature_flags_scope_key').on(
       table.key,
       table.organizationId,

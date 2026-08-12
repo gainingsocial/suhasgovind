@@ -30,6 +30,14 @@ export function toPostResponse(
   post: Post,
   targets: readonly PostTarget[],
   trace: TraceContext,
+  /**
+   * How the environment executes (plan §49).
+   *
+   * Passed in rather than derived from the targets, because a post that has not been
+   * executed yet has no simulated targets to derive it from — and `mode` is exactly what
+   * a caller reads on the 202 to know whether anything is about to leave the building.
+   */
+  mode: 'live' | 'simulate' = 'live',
 ): PostResponse {
   return PostSchema.parse({
     id: toPublicId('post', post.id),
@@ -54,8 +62,10 @@ export function toPostResponse(
       error_code: target.errorCode,
       error_message: target.errorMessage,
       next_attempt_at: target.nextAttemptAt?.toISOString() ?? null,
+      simulated: target.simulated,
     })),
     metadata: post.metadata,
+    mode,
     created_at: post.createdAt.toISOString(),
     updated_at: post.updatedAt.toISOString(),
     request_id: trace.requestId,
@@ -76,8 +86,9 @@ export interface PostListRow {
  * rolled-up counts are enough for a list view to show progress, and the detail endpoint
  * has the rest.
  */
-export function toPostSummary(row: PostListRow): PostSummary {
+export function toPostSummary(row: PostListRow, mode: 'live' | 'simulate' = 'live'): PostSummary {
   return {
+    mode,
     id: toPublicId('post', row.post.id),
     object: 'post' as const,
     status: row.post.status,

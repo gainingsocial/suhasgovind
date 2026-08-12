@@ -195,6 +195,16 @@ export const postTargets = pgTable(
     reconciliationRequiredAt: timestamp('reconciliation_required_at', { withTimezone: true }),
     reconciledAt: timestamp('reconciled_at', { withTimezone: true }),
 
+    /**
+     * This target reached `published` without any provider being contacted (plan §49).
+     *
+     * Denormalized from the attempt on purpose. The alternative is inferring it from the
+     * `sim_` prefix on `provider_post_id`, and a truth that important should not be
+     * recovered by parsing a string. It also stays correct after an environment is
+     * switched back to live, which a lookup of the environment's current mode would not.
+     */
+    simulated: boolean('simulated').notNull().default(false),
+
     cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
     ...timestamps,
   },
@@ -245,6 +255,16 @@ export const postTargetAttempts = pgTable(
     errorMessage: text('error_message'),
     providerErrorSubcode: text('provider_error_subcode'),
     providerStatus: integer('provider_status'),
+
+    /**
+     * True when no provider was contacted (plan §49).
+     *
+     * A column rather than a distinct outcome, because the state machine of a simulated
+     * publish is deliberately identical to a real one — that identity is what lets a
+     * customer exercise their own integration. This is the field that keeps the record
+     * honest about which attempts actually left the building.
+     */
+    simulated: boolean('simulated').notNull().default(false),
 
     /** Which lease authorized this attempt. Ties an attempt to the worker that ran it. */
     leaseId: uuid('lease_id'),

@@ -192,11 +192,20 @@ and the hosted connect flow.
 | Code | Status | Meaning | What to do |
 | --- | --- | --- | --- |
 | `PROVIDER_NOT_CONFIGURED` | 503 | The adapter exists but no platform application credentials are configured for it. | Nothing on your side. The platform is awaiting its client id and secret; `GET /v1/platforms` shows what is connectable now. |
+| `PROVIDER_TEMPORARILY_DISABLED` | 503 | We have deliberately switched this platform, or one of its features, off. | Nothing on your side, and the request was correct. Retry later, or publish to another destination. A queued post is retried automatically rather than failed. |
 | `AUTHORIZATION_SESSION_INVALID` | 400 | The `state` is unknown, already used, or expired. | Start again at `/v1/connections/authorize`. States are single-use and expire in 15 minutes. |
 | `AUTHORIZATION_FAILED` | 400 | The provider declined, the user cancelled, or the account authorized nothing publishable. | The `error_detail` on the callback redirect carries the provider's own reason. |
 | `AUTHORIZATION_CREDENTIAL_REJECTED` | 400 | The provider rejected the supplied credential. | Almost always a mistyped app password or bot token. Nothing is stored when this happens. |
 | `REDIRECT_URL_NOT_ALLOWED` | 400 | `redirect_url` is not absolute HTTPS, or embeds credentials. | Use an absolute `https://` URL. Plain HTTP is permitted only for `localhost`. |
 | `CONNECT_SESSION_INVALID` | 400 | The hosted connect link is expired, completed, or its signature does not verify. | Create a new session. Links are bearer credentials and are deliberately short-lived. |
+
+Three different 503s mean three different things, and the distinction is what tells you
+whether to wait, to check the status page, or to do nothing at all.
+`PROVIDER_NOT_CONFIGURED` means the platform has never been switched on here.
+`PROVIDER_TEMPORARILY_DISABLED` means it normally works and we have turned it off on
+purpose — usually because the platform is misbehaving and we would rather queue your posts
+than burn them against a broken API. `PROVIDER_UNAVAILABLE` means the platform itself is
+failing right now.
 
 `AUTHORIZATION_SESSION_INVALID` covers three distinct situations on purpose — unknown,
 already-consumed and expired. The callback is an unauthenticated endpoint, and confirming
