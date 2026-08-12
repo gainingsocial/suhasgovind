@@ -23,6 +23,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: '/platforms', priority: 0.8, changeFrequency: 'weekly' },
     { path: '/docs', priority: 0.8, changeFrequency: 'weekly' },
     { path: '/docs/quickstart', priority: 0.8, changeFrequency: 'monthly' },
+    // Guides. `/docs/retries` ranks the argument the product is built on, so it sits level
+    // with the quickstart rather than below the rest.
+    { path: '/docs/retries', priority: 0.8, changeFrequency: 'monthly' },
+    { path: '/docs/webhooks', priority: 0.7, changeFrequency: 'monthly' },
+    { path: '/docs/media', priority: 0.7, changeFrequency: 'monthly' },
+    { path: '/docs/multi-tenant', priority: 0.7, changeFrequency: 'monthly' },
     { path: '/faq', priority: 0.7, changeFrequency: 'monthly' },
     { path: '/privacy', priority: 0.3, changeFrequency: 'yearly' },
     { path: '/terms', priority: 0.3, changeFrequency: 'yearly' },

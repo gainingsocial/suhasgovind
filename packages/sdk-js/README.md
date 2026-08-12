@@ -109,8 +109,9 @@ straight to storage and never through the API.
 
 ```ts
 const media = await gs.media.upload(file, {
+  profile_id: 'pro_...',
   filename: 'launch.jpg',
-  content_type: 'image/jpeg',
+  mime_type: 'image/jpeg',
   alt_text: 'The new dashboard',
 });
 

@@ -10,6 +10,7 @@ import type {
   Profile,
   UpdateProfileRequest,
   WebhookEndpoint,
+  WebhookEventType,
 } from '@gs/contracts/http';
 import type { ProviderName } from '@gs/contracts/providers';
 
@@ -93,13 +94,31 @@ export class ConnectionsResource extends Resource {
    * cannot connect Bluesky, Telegram or Discord.
    */
   async authorize(
-    body: { profile_id: string; provider: ProviderName; redirect_url?: string; scopes?: string[] },
+    body: {
+      profile_id: string;
+      provider: ProviderName;
+      /** Required. Where the user lands after the provider redirects back. Absolute HTTPS. */
+      redirect_url: string;
+      /** Beyond the adapter's defaults. Asking for more makes consent scarier, so opt in. */
+      scopes?: string[];
+      /** Echoed back on the callback, to correlate with your own flow. */
+      state_metadata?: Record<string, string>;
+    },
     options: RequestOptions = {},
   ): Promise<{
-    connection_id: string;
+    object: 'authorization';
+    authorization_url: string;
+    oauth_session_id: string;
+    /** Round-trip this to `complete` when `completion` is `credential`. */
+    state: string;
     completion: 'redirect' | 'credential';
-    authorization_url?: string;
-    required_credential_fields?: { name: string; label: string; secret: boolean }[];
+    required_credential_fields: {
+      name: string;
+      label: string;
+      type: 'text' | 'password';
+      help: string | null;
+    }[];
+    expires_at: string;
   }> {
     return this.http.request({
       method: 'POST',
@@ -109,12 +128,28 @@ export class ConnectionsResource extends Resource {
     });
   }
 
-  /** Finish a `completion: "credential"` connection by supplying the collected fields. */
+  /**
+   * Finish an authorization that has no consent screen.
+   *
+   * Bluesky app passwords, Telegram and Discord bot tokens arrive this way. Keyed by the
+   * `state` from `authorize`, not by a connection id — the connection does not exist yet.
+   */
   async complete(
-    body: { connection_id: string; credentials: Record<string, string> },
+    body: { state: string; credentials: Record<string, string> },
     options: RequestOptions = {},
-  ): Promise<Connection> {
-    return this.http.request<Connection>({
+  ): Promise<{
+    object: 'connection';
+    id: string;
+    provider: ProviderName;
+    provider_account_name: string;
+    /** False when this re-authorized a connection that already existed. */
+    created: boolean;
+    /** False means a destination still has to be chosen before this can publish. */
+    setup_complete: boolean;
+    destination_count: number;
+    granted_scopes: string[];
+  }> {
+    return this.http.request({
       method: 'POST',
       path: 'v1/connections/complete',
       body,
@@ -163,10 +198,14 @@ export class ConnectionsResource extends Resource {
     });
   }
 
-  /** Choose which destinations to publish to, when a connection exposes several. */
+  /**
+   * Choose which destinations to publish to, when a connection exposes several.
+   *
+   * An empty array disables every destination rather than being a no-op.
+   */
   async selectDestinations(
     connectionId: string,
-    body: { destination_external_ids: string[] },
+    body: { destination_ids: string[] },
     options: RequestOptions = {},
   ): Promise<ListResponse<Destination>> {
     return this.http.request<ListResponse<Destination>>({
@@ -177,15 +216,33 @@ export class ConnectionsResource extends Resource {
     });
   }
 
-  async refresh(connectionId: string, options: RequestOptions = {}): Promise<Connection> {
-    return this.http.request<Connection>({
+  async refresh(
+    connectionId: string,
+    options: RequestOptions = {},
+  ): Promise<{
+    id: string;
+    object: 'connection';
+    health: string;
+    /** False when the existing credential was still valid and nothing was rotated. */
+    rotated: boolean;
+  }> {
+    return this.http.request({
       method: 'POST',
       path: `v1/connections/${connectionId}/refresh`,
       ...options,
     });
   }
 
-  async disconnect(connectionId: string, options: RequestOptions = {}): Promise<{ disconnected: boolean }> {
+  async disconnect(
+    connectionId: string,
+    options: RequestOptions = {},
+  ): Promise<{
+    id: string;
+    object: 'connection';
+    disconnected: true;
+    /** False when the provider offers no revocation endpoint, or the call failed. */
+    revoked_at_provider: boolean;
+  }> {
     return this.http.request({
       method: 'POST',
       path: `v1/connections/${connectionId}/disconnect`,
@@ -201,13 +258,26 @@ export class ConnectionsResource extends Resource {
   async createSession(
     body: {
       profile_id: string;
+      /** Defaults to every platform with a working adapter. */
       providers?: ProviderName[];
-      redirect_url?: string;
-      branding?: Record<string, unknown>;
-      expires_in_seconds?: number;
+      /** Where the end user lands when they are finished. Absolute HTTPS. */
+      return_url?: string;
+      branding?: { company_name?: string; logo_url?: string; accent?: string };
+      /** Seconds until the link stops working. Short by default — it is a bearer credential. */
+      expires_in?: number;
     },
     options: RequestOptions = {},
-  ): Promise<{ url: string; expires_at: string; connect_session_id: string }> {
+  ): Promise<{
+    object: 'connect_session';
+    id: string;
+    profile_id: string;
+    providers: ProviderName[];
+    url: string;
+    return_url: string | null;
+    expires_at: string;
+    completed_at: string | null;
+    created_at: string;
+  }> {
     return this.http.request({ method: 'POST', path: 'v1/connect-sessions', body, ...options });
   }
 }
@@ -340,31 +410,40 @@ export class MediaResource extends Resource {
    */
   async upload(
     file: Blob | ArrayBuffer | Uint8Array,
-    input: { filename: string; content_type: string; alt_text?: string },
+    input: { profile_id: string; filename: string; mime_type: string; alt_text?: string | null },
     options: RequestOptions = {},
   ): Promise<Media> {
     // `Uint8Array` and `ArrayBuffer` are both valid Blob parts at runtime everywhere this
     // SDK runs; the DOM lib that names the union is not loaded for a library targeting
     // Node and Workers alike.
-    const blob = file instanceof Blob ? file : new Blob([file as never], { type: input.content_type });
+    const blob = file instanceof Blob ? file : new Blob([file as never], { type: input.mime_type });
 
-    const created = await this.http.request<{ media_id: string; upload_url: string }>({
+    const created = await this.http.request<{
+      id: string;
+      upload_url: string;
+      upload_method: 'PUT';
+      /** Must be replayed exactly, or the signature does not validate. */
+      upload_headers: Record<string, string>;
+    }>({
       method: 'POST',
       path: 'v1/media/uploads',
       body: {
+        profile_id: input.profile_id,
         filename: input.filename,
-        content_type: input.content_type,
-        bytes: blob.size,
+        mime_type: input.mime_type,
+        byte_size: blob.size,
         ...(input.alt_text !== undefined ? { alt_text: input.alt_text } : {}),
       },
       ...options,
     });
 
-    // Direct to storage, using the signed URL. Deliberately not through `this.http` — it
-    // carries an Authorization header that must never be sent to a third-party host.
+    // Direct to storage, using the signed URL. Deliberately not through `this.http` — that
+    // carries an Authorization header which must never be sent to a third-party host.
     const upload = await fetch(created.upload_url, {
-      method: 'PUT',
-      headers: { 'content-type': input.content_type },
+      method: created.upload_method,
+      // The signature covers these headers; omitting one is rejected by storage with a
+      // message about the signature rather than about the header.
+      headers: { ...created.upload_headers },
       body: blob,
       ...(options.signal ? { signal: options.signal } : {}),
     });
@@ -375,14 +454,14 @@ export class MediaResource extends Resource {
 
     return this.http.request<Media>({
       method: 'POST',
-      path: `v1/media/uploads/${created.media_id}/complete`,
+      path: `v1/media/uploads/${created.id}/complete`,
       ...options,
     });
   }
 
   /** Register media already hosted somewhere public, without moving the bytes. */
   async fromUrl(
-    body: { url: string; alt_text?: string },
+    body: { profile_id: string; url: string; alt_text?: string | null },
     options: RequestOptions = {},
   ): Promise<Media> {
     return this.http.request<Media>({ method: 'POST', path: 'v1/media/external', body, ...options });
@@ -482,7 +561,14 @@ export class WebhooksResource extends Resource {
   }
 
   async create(
-    body: { url: string; event_types: string[]; description?: string },
+    body: {
+      url: string;
+      /** Omit or send an empty array to receive every event type. */
+      event_types?: WebhookEventType[];
+      description?: string | null;
+      /** Restricts deliveries to one profile. */
+      profile_id?: string | null;
+    },
     options: RequestOptions = {},
   ): Promise<WebhookEndpoint & { secret: string }> {
     // The signing secret is returned exactly once, here. There is no endpoint that reveals

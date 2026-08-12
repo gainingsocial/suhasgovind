@@ -49,6 +49,7 @@ packages/
     discord/            Bot token, no approval gate; channels are the destinations
     google-business-profile/  Local Posts — three API hosts, one adapter
   sdk-js/               TypeScript SDK — typed client, auto-retry, cursor pagination
+  cli/                  `gs` — publish, preflight and inspect from a terminal or CI
 
 infra/
   cloudflare/           Queue, Workflow, DO, R2, Hyperdrive provisioning notes

@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // A CLI is the one thing in this repo that genuinely runs on Node: it reads files,
+    // writes a config file and owns a process exit code.
+    "types": ["@cloudflare/workers-types", "node"]
+  },
+  "include": ["src/**/*.ts"]
+}

@@ -18,6 +18,34 @@ export const metadata = pageSeo({
  * page that answers "how do I actually do this" does.
  */
 
+const GUIDES = [
+  {
+    href: '/docs/quickstart',
+    title: 'Quickstart',
+    summary: 'Nothing to a published post in seven steps, with copyable curl.',
+  },
+  {
+    href: '/docs/retries',
+    title: 'Retries and duplicate prevention',
+    summary: 'Why a post is never published twice, and which errors are safe to retry.',
+  },
+  {
+    href: '/docs/webhooks',
+    title: 'Webhooks',
+    summary: 'Verifying signatures, tolerating redelivery, replaying a failed delivery.',
+  },
+  {
+    href: '/docs/media',
+    title: 'Media uploads',
+    summary: 'Direct-to-storage uploads, alt text, and the limits for every network.',
+  },
+  {
+    href: '/docs/multi-tenant',
+    title: 'Multi-tenant and white-label',
+    summary: 'Publishing on behalf of your own customers, under your own branding.',
+  },
+] as const;
+
 const SECTIONS = [
   {
     heading: 'Authentication',
@@ -100,6 +128,27 @@ export default function DocsPage() {
             OpenAPI specification
           </a>
         </div>
+
+        {/* Guides before the endpoint reference. Someone arriving here has a task, not a
+            list of routes to browse — and these are the pages that earn inbound links. */}
+        <section className="mt-12">
+          <h2 className="text-xl font-semibold tracking-tight">Guides</h2>
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+            {GUIDES.map((guide) => (
+              <li key={guide.href}>
+                <Link
+                  href={guide.href as never}
+                  className="block h-full rounded-[var(--radius-card)] border bg-[var(--surface-raised)] p-4 hover:border-brand-600"
+                >
+                  <span className="block text-sm font-medium">{guide.title}</span>
+                  <span className="mt-1 block text-sm text-pretty text-[var(--text-muted)]">
+                    {guide.summary}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
 
         {SECTIONS.map((section) => (
           <section key={section.heading} className="mt-12">
