@@ -11,13 +11,13 @@
     "head_sampling_rate": 1
   },
   "vars": {
-    "ENVIRONMENT": "test",
+    "ENVIRONMENT": "live",
     "SERVICE_VERSION": "0.1.0",
     "LOG_LEVEL": "info",
     // Some adapters send the registered redirect URI when refreshing a token, and the
     // provider validates it against what is registered — a wrong value fails the refresh
     // rather than being ignored. It must match the API Worker's own PUBLIC_API_ORIGIN.
-    "PUBLIC_API_ORIGIN": "http://127.0.0.1:8787"
+    "PUBLIC_API_ORIGIN": "https://api.gainingsocial.com"
   },
   "hyperdrive": [
     {

@@ -12,7 +12,10 @@
     "head_sampling_rate": 1
   },
   "vars": {
-    "ENVIRONMENT": "test",
+    // `live`, because this block is what reaches the public domain. Left as `test` it
+    // advertises the `mock` provider on `GET /v1/platforms` as something a customer can
+    // connect, and labels `/health` as a test deployment.
+    "ENVIRONMENT": "live",
     "SERVICE_VERSION": "0.1.0",
     "LOG_LEVEL": "info",
     // Public discovery endpoint for the JWKS that verifies dashboard sessions (§39).
@@ -22,7 +25,16 @@
     // (§21.2, §22). Derived from the request when unset, which is right in development
     // and wrong the moment a proxy sits in front — so it is stated explicitly. It must
     // match what is registered in each platform's developer console exactly.
-    "PUBLIC_API_ORIGIN": "http://127.0.0.1:8787"
+    //
+    // Production value, because `wrangler deploy` publishes THIS block: the custom domain
+    // is bound to `gs-api` directly, so `--env production` would deploy a differently
+    // named Worker that no route points at. Local development overrides both this and
+    // ENVIRONMENT through the `dev` script.
+    //
+    // It was previously localhost here, which silently made every OAuth redirect URI
+    // `http://127.0.0.1:8787/...` in production — a value no platform will accept, so
+    // connecting any account would have failed at the last step.
+    "PUBLIC_API_ORIGIN": "https://api.gainingsocial.com"
   },
   "kv_namespaces": [
     {
@@ -58,51 +70,5 @@
       "binding": "MEDIA",
       "bucket_name": "gs-media-dev"
     }
-  ],
-  "env": {
-    "production": {
-      "vars": {
-        "ENVIRONMENT": "live",
-        "SERVICE_VERSION": "0.1.0",
-        "LOG_LEVEL": "info",
-        "SUPABASE_URL": "https://miemfmjjnsqhukxlvcmp.supabase.co",
-        // Registered with every platform. Changing it invalidates every OAuth
-        // registration at once, so it is pinned here rather than inferred per request.
-        "PUBLIC_API_ORIGIN": "https://api.gainingsocial.com"
-      },
-      "kv_namespaces": [
-        {
-          "binding": "IDEMPOTENCY",
-          "id": "a52d1bbd993c49798cabd91e325a78b6"
-        }
-      ],
-      "queues": {
-        "producers": [
-          {
-            "binding": "PUBLISH_QUEUE",
-            "queue": "gs-publish"
-          },
-          {
-            "binding": "WEBHOOK_QUEUE",
-            "queue": "gs-webhook-delivery"
-          }
-        ]
-      },
-      // A distinct config so production can be re-pointed at its own Supabase project
-      // without touching this file. Both currently resolve to the same database —
-      // Phase 0 calls for a separate production project, which is still outstanding.
-      "hyperdrive": [
-        {
-          "binding": "HYPERDRIVE",
-          "id": "04758a98fb28438faae433e4b7bbf601"
-        }
-      ],
-      "r2_buckets": [
-        {
-          "binding": "MEDIA",
-          "bucket_name": "gs-media-prod"
-        }
-      ]
-    }
-  }
+  ]
 }

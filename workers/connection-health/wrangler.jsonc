@@ -6,7 +6,15 @@
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,
   "observability": { "enabled": true, "head_sampling_rate": 1 },
-  "vars": { "ENVIRONMENT": "test", "SERVICE_VERSION": "0.1.0", "LOG_LEVEL": "info" },
+  "vars": {
+    "ENVIRONMENT": "live",
+    "SERVICE_VERSION": "0.1.0",
+    "LOG_LEVEL": "info",
+    // Several providers validate the redirect URI on a refresh against what is registered,
+    // so a wrong value fails the refresh rather than being ignored — and a refresh that
+    // fails for every connection is the silent outage this worker exists to prevent.
+    "PUBLIC_API_ORIGIN": "https://api.gainingsocial.com"
+  },
   "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "563bb35cce9040409987142c4d631c8e" }],
   "queues": {
     "producers": [{ "binding": "WEBHOOK_QUEUE", "queue": "gs-webhook-delivery" }]

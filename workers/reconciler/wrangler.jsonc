@@ -6,7 +6,7 @@
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,
   "observability": { "enabled": true, "head_sampling_rate": 1 },
-  "vars": { "ENVIRONMENT": "test", "SERVICE_VERSION": "0.1.0", "LOG_LEVEL": "info" },
+  "vars": { "ENVIRONMENT": "live", "SERVICE_VERSION": "0.1.0", "LOG_LEVEL": "info" },
   "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "563bb35cce9040409987142c4d631c8e" }],
   "queues": {
     "producers": [
