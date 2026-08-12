@@ -154,6 +154,31 @@ export {
 } from './repositories/agents.js';
 
 export type {
+  ListCommentsInput,
+  ListConversationsInput,
+  RecordMessageInput,
+  UpsertCommentInput,
+  UpsertContactInput,
+  UpsertConversationInput,
+} from './repositories/engagement.js';
+export {
+  findCommentById,
+  findContactById,
+  findConversationById,
+  linkCommentParent,
+  listComments,
+  listConversations,
+  listMessages,
+  markCommentDeleted,
+  markCommentHandled,
+  markConversationRead,
+  recordMessage,
+  upsertComment,
+  upsertContact,
+  upsertConversation,
+} from './repositories/engagement.js';
+
+export type {
   AnalyticsTotals,
   ListExternalPostsInput,
   RecordSnapshotInput,

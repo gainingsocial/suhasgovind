@@ -1,6 +1,10 @@
 import {
   AnalyticsSummaryResponseSchema,
   ApiKeyListResponseSchema,
+  CommentListResponseSchema,
+  CommentSchema,
+  ConversationListResponseSchema,
+  MessageListResponseSchema,
   ExternalPostListResponseSchema,
   ApprovalListResponseSchema,
   ApprovalSchema,
@@ -812,6 +816,73 @@ const ROUTES: RouteSpec[] = [
     successDescription: 'Per-target validation results.',
     response: PreflightResponseSchema,
     errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'PROFILE_NOT_FOUND', 'DUPLICATE_DESTINATION'],
+  },
+  {
+    method: 'get',
+    path: '/v1/comments',
+    operationId: 'listComments',
+    summary: 'The comment inbox',
+    description:
+      'Comments across every connected account, unhandled first and newest first ' +
+      '(plan Phase 7). Pass `handled=all` for history.\n\n' +
+      'Read from our own store, never live from a provider: an inbox is refreshed ' +
+      'constantly, and fetching from six platforms per load would spend a rate limit ' +
+      'publishing depends on to render a list somebody scrolls past in a second.\n\n' +
+      '`handled_at` is ours rather than a provider concept — it is what turns a firehose ' +
+      'into an inbox somebody can actually clear.',
+    tags: ['Engagement'],
+    scopes: ['inbox:read'],
+    successStatus: 200,
+    successDescription: 'Comments awaiting attention.',
+    response: CommentListResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST'],
+  },
+  {
+    method: 'get',
+    path: '/v1/comments/{commentId}',
+    operationId: 'getComment',
+    summary: 'One comment',
+    description: 'A single comment with its author and thread position.',
+    tags: ['Engagement'],
+    scopes: ['inbox:read'],
+    pathParams: [{ name: 'commentId', description: 'Public comment id.' }],
+    successStatus: 200,
+    successDescription: 'The comment.',
+    response: CommentSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'RESOURCE_NOT_FOUND'],
+  },
+  {
+    method: 'get',
+    path: '/v1/conversations',
+    operationId: 'listConversations',
+    summary: 'Direct-message threads',
+    description:
+      'Threads across every connected account, most recent first. `unread_count` counts ' +
+      'inbound messages only — answering somebody must not make their thread look more ' +
+      'urgent.',
+    tags: ['Engagement'],
+    scopes: ['inbox:read'],
+    successStatus: 200,
+    successDescription: 'Conversations.',
+    response: ConversationListResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST'],
+  },
+  {
+    method: 'get',
+    path: '/v1/conversations/{conversationId}/messages',
+    operationId: 'listConversationMessages',
+    summary: 'Messages in a thread',
+    description:
+      'Newest first. Reading a thread clears its unread count, because a client that has ' +
+      'to remember a second call will forget it and a badge that never clears is one ' +
+      'people stop trusting.',
+    tags: ['Engagement'],
+    scopes: ['inbox:read'],
+    pathParams: [{ name: 'conversationId', description: 'Public conversation id.' }],
+    successStatus: 200,
+    successDescription: 'Messages in the thread.',
+    response: MessageListResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'RESOURCE_NOT_FOUND'],
   },
   {
     method: 'get',

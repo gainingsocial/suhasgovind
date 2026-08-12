@@ -14,6 +14,7 @@ export * from './posts.js';
 export * from './idempotency.js';
 export * from './agents.js';
 export * from './analytics.js';
+export * from './engagement.js';
 export * from './webhooks.js';
 export * from './platform.js';
 export * from './operations.js';

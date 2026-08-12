@@ -3,6 +3,7 @@ export * from './analytics.js';
 export * from './approvals.js';
 export * from './compose.js';
 export * from './connections.js';
+export * from './engagement.js';
 export * from './errors.js';
 export * from './health.js';
 export * from './identity.js';

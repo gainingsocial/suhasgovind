@@ -7713,6 +7713,1004 @@
         }
       }
     },
+    "/v1/comments": {
+      "get": {
+        "operationId": "listComments",
+        "summary": "The comment inbox",
+        "description": "Comments across every connected account, unhandled first and newest first (plan Phase 7). Pass `handled=all` for history.\n\nRead from our own store, never live from a provider: an inbox is refreshed constantly, and fetching from six platforms per load would spend a rate limit publishing depends on to render a list somebody scrolls past in a second.\n\n`handled_at` is ours rather than a provider concept — it is what turns a firehose into an inbox somebody can actually clear.\n\nRequires scope: `inbox:read`.",
+        "tags": [
+          "Engagement"
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comments awaiting attention.",
+            "headers": {
+              "x-request-id": {
+                "description": "Echoed request identifier. Quote this when reporting a problem.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "x-trace-id": {
+                "description": "Trace identifier correlating this request across services.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "const": "list"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "object": {
+                            "type": "string",
+                            "const": "comment"
+                          },
+                          "provider": {
+                            "type": "string",
+                            "enum": [
+                              "mock",
+                              "bluesky",
+                              "telegram",
+                              "linkedin",
+                              "facebook",
+                              "instagram",
+                              "threads",
+                              "tiktok",
+                              "youtube",
+                              "pinterest",
+                              "google_business_profile",
+                              "x",
+                              "discord"
+                            ],
+                            "description": "Social platform identifier."
+                          },
+                          "destination_id": {
+                            "type": "string"
+                          },
+                          "post_id": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "external_comment_id": {
+                            "type": "string"
+                          },
+                          "parent_comment_id": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "author": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "object": {
+                                    "type": "string",
+                                    "const": "contact"
+                                  },
+                                  "display_name": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "handle": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "avatar_url": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "object",
+                                  "display_name",
+                                  "handle",
+                                  "avatar_url"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "body": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "like_count": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "reply_count": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "posted_at": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "handled_at": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "object",
+                          "provider",
+                          "destination_id",
+                          "post_id",
+                          "external_comment_id",
+                          "parent_comment_id",
+                          "author",
+                          "body",
+                          "like_count",
+                          "reply_count",
+                          "posted_at",
+                          "handled_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "next_cursor": {
+                      "type": "null"
+                    }
+                  },
+                  "required": [
+                    "object",
+                    "data",
+                    "has_more",
+                    "next_cursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`INVALID_REQUEST` — The request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTHENTICATION_REQUIRED` — An API key is required. Send it as `Authorization: Bearer sk_live_...`.\n\n`API_KEY_MALFORMED` — The API key is malformed. Expected a key beginning with `sk_test_` or `sk_live_`.\n\n`API_KEY_INVALID` — The API key is not valid.\n\n`API_KEY_REVOKED` — This API key has been revoked.\n\n`API_KEY_EXPIRED` — This API key has expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR` — An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/comments/{commentId}": {
+      "get": {
+        "operationId": "getComment",
+        "summary": "One comment",
+        "description": "A single comment with its author and thread position.\n\nRequires scope: `inbox:read`.",
+        "tags": [
+          "Engagement"
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "commentId",
+            "in": "path",
+            "required": true,
+            "description": "Public comment id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The comment.",
+            "headers": {
+              "x-request-id": {
+                "description": "Echoed request identifier. Quote this when reporting a problem.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "x-trace-id": {
+                "description": "Trace identifier correlating this request across services.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "object": {
+                      "type": "string",
+                      "const": "comment"
+                    },
+                    "provider": {
+                      "type": "string",
+                      "enum": [
+                        "mock",
+                        "bluesky",
+                        "telegram",
+                        "linkedin",
+                        "facebook",
+                        "instagram",
+                        "threads",
+                        "tiktok",
+                        "youtube",
+                        "pinterest",
+                        "google_business_profile",
+                        "x",
+                        "discord"
+                      ],
+                      "description": "Social platform identifier."
+                    },
+                    "destination_id": {
+                      "type": "string"
+                    },
+                    "post_id": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "external_comment_id": {
+                      "type": "string"
+                    },
+                    "parent_comment_id": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "author": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "object": {
+                              "type": "string",
+                              "const": "contact"
+                            },
+                            "display_name": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "handle": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "avatar_url": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "object",
+                            "display_name",
+                            "handle",
+                            "avatar_url"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "body": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "like_count": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "reply_count": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "posted_at": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "handled_at": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "object",
+                    "provider",
+                    "destination_id",
+                    "post_id",
+                    "external_comment_id",
+                    "parent_comment_id",
+                    "author",
+                    "body",
+                    "like_count",
+                    "reply_count",
+                    "posted_at",
+                    "handled_at"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`INVALID_REQUEST` — The request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTHENTICATION_REQUIRED` — An API key is required. Send it as `Authorization: Bearer sk_live_...`.\n\n`API_KEY_MALFORMED` — The API key is malformed. Expected a key beginning with `sk_test_` or `sk_live_`.\n\n`API_KEY_INVALID` — The API key is not valid.\n\n`API_KEY_REVOKED` — This API key has been revoked.\n\n`API_KEY_EXPIRED` — This API key has expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`RESOURCE_NOT_FOUND` — The requested resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR` — An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/conversations": {
+      "get": {
+        "operationId": "listConversations",
+        "summary": "Direct-message threads",
+        "description": "Threads across every connected account, most recent first. `unread_count` counts inbound messages only — answering somebody must not make their thread look more urgent.\n\nRequires scope: `inbox:read`.",
+        "tags": [
+          "Engagement"
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversations.",
+            "headers": {
+              "x-request-id": {
+                "description": "Echoed request identifier. Quote this when reporting a problem.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "x-trace-id": {
+                "description": "Trace identifier correlating this request across services.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "const": "list"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "object": {
+                            "type": "string",
+                            "const": "conversation"
+                          },
+                          "provider": {
+                            "type": "string",
+                            "enum": [
+                              "mock",
+                              "bluesky",
+                              "telegram",
+                              "linkedin",
+                              "facebook",
+                              "instagram",
+                              "threads",
+                              "tiktok",
+                              "youtube",
+                              "pinterest",
+                              "google_business_profile",
+                              "x",
+                              "discord"
+                            ],
+                            "description": "Social platform identifier."
+                          },
+                          "destination_id": {
+                            "type": "string"
+                          },
+                          "contact": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "object": {
+                                    "type": "string",
+                                    "const": "contact"
+                                  },
+                                  "display_name": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "handle": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "avatar_url": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "object",
+                                  "display_name",
+                                  "handle",
+                                  "avatar_url"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "subject": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "last_message_at": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "last_message_preview": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "unread_count": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "object",
+                          "provider",
+                          "destination_id",
+                          "contact",
+                          "subject",
+                          "last_message_at",
+                          "last_message_preview",
+                          "unread_count"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "next_cursor": {
+                      "type": "null"
+                    }
+                  },
+                  "required": [
+                    "object",
+                    "data",
+                    "has_more",
+                    "next_cursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`INVALID_REQUEST` — The request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTHENTICATION_REQUIRED` — An API key is required. Send it as `Authorization: Bearer sk_live_...`.\n\n`API_KEY_MALFORMED` — The API key is malformed. Expected a key beginning with `sk_test_` or `sk_live_`.\n\n`API_KEY_INVALID` — The API key is not valid.\n\n`API_KEY_REVOKED` — This API key has been revoked.\n\n`API_KEY_EXPIRED` — This API key has expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR` — An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/conversations/{conversationId}/messages": {
+      "get": {
+        "operationId": "listConversationMessages",
+        "summary": "Messages in a thread",
+        "description": "Newest first. Reading a thread clears its unread count, because a client that has to remember a second call will forget it and a badge that never clears is one people stop trusting.\n\nRequires scope: `inbox:read`.",
+        "tags": [
+          "Engagement"
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversationId",
+            "in": "path",
+            "required": true,
+            "description": "Public conversation id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Messages in the thread.",
+            "headers": {
+              "x-request-id": {
+                "description": "Echoed request identifier. Quote this when reporting a problem.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "x-trace-id": {
+                "description": "Trace identifier correlating this request across services.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "const": "list"
+                    },
+                    "conversation_id": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "object": {
+                            "type": "string",
+                            "const": "message"
+                          },
+                          "direction": {
+                            "type": "string",
+                            "enum": [
+                              "inbound",
+                              "outbound"
+                            ]
+                          },
+                          "body": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "sent_at": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "object",
+                          "direction",
+                          "body",
+                          "sent_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "next_cursor": {
+                      "type": "null"
+                    }
+                  },
+                  "required": [
+                    "object",
+                    "conversation_id",
+                    "data",
+                    "has_more",
+                    "next_cursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`INVALID_REQUEST` — The request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTHENTICATION_REQUIRED` — An API key is required. Send it as `Authorization: Bearer sk_live_...`.\n\n`API_KEY_MALFORMED` — The API key is malformed. Expected a key beginning with `sk_test_` or `sk_live_`.\n\n`API_KEY_INVALID` — The API key is not valid.\n\n`API_KEY_REVOKED` — This API key has been revoked.\n\n`API_KEY_EXPIRED` — This API key has expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`RESOURCE_NOT_FOUND` — The requested resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR` — An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/analytics/posts": {
       "get": {
         "operationId": "listAnalyticsPosts",
