@@ -57,6 +57,13 @@
       "when": 1787011200000,
       "tag": "0007_agent_governance",
       "breakpoints": false
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787097600000,
+      "tag": "0008_analytics",
+      "breakpoints": false
     }
   ]
 }

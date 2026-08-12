@@ -85,6 +85,21 @@ export {
   ruleMatches,
 } from './agents/policy.js';
 
+export type {
+  FreshnessInput,
+  FreshnessPlan,
+  FreshnessTier,
+  MetricValues,
+  NormalizedMetric,
+} from './analytics/freshness.js';
+export {
+  NORMALIZED_METRICS,
+  deriveEngagements,
+  engagementRate,
+  metricDelta,
+  planFreshness,
+} from './analytics/freshness.js';
+
 export type { ConnectionHealth } from './connections/connection-health.js';
 export {
   CONNECTION_HEALTH_STATES,

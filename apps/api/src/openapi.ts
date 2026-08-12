@@ -1,5 +1,7 @@
 import {
+  AnalyticsSummaryResponseSchema,
   ApiKeyListResponseSchema,
+  ExternalPostListResponseSchema,
   ApprovalListResponseSchema,
   ApprovalSchema,
   DecideApprovalRequestSchema,
@@ -810,6 +812,41 @@ const ROUTES: RouteSpec[] = [
     successDescription: 'Per-target validation results.',
     response: PreflightResponseSchema,
     errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'PROFILE_NOT_FOUND', 'DUPLICATE_DESTINATION'],
+  },
+  {
+    method: 'get',
+    path: '/v1/analytics/posts',
+    operationId: 'listAnalyticsPosts',
+    summary: 'Posts with their latest metrics',
+    description:
+      'Every post seen on a connected account, whether or not this system published it ' +
+      '(plan Phase 6), newest first.\n\nMetrics come from stored observations, never a live ' +
+      'provider call. Each carries a `freshness` object with three deliberately distinct ' +
+      'timestamps: when we asked, what the provider said the numbers were current as of, ' +
+      'and when we will ask again. Analytics is not real-time and the response says so.',
+    tags: ['Analytics'],
+    scopes: ['analytics:read'],
+    successStatus: 200,
+    successDescription: 'Posts with their most recent metrics.',
+    response: ExternalPostListResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST'],
+  },
+  {
+    method: 'get',
+    path: '/v1/analytics/summary',
+    operationId: 'getAnalyticsSummary',
+    summary: 'Totals across a profile',
+    description:
+      'Totals from the latest observation of each post — not a sum over every reading ever ' +
+      'taken, which would count a post once per observation.\n\nFigures are null rather than ' +
+      'zero when nothing has been observed: a total of 0 and “no data yet” look identical ' +
+      'on a dashboard and mean opposite things.',
+    tags: ['Analytics'],
+    scopes: ['analytics:read'],
+    successStatus: 200,
+    successDescription: 'Aggregate metrics.',
+    response: AnalyticsSummaryResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST'],
   },
   {
     method: 'get',

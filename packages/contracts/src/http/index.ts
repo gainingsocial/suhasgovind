@@ -1,4 +1,5 @@
 export * from './api-keys.js';
+export * from './analytics.js';
 export * from './approvals.js';
 export * from './compose.js';
 export * from './connections.js';

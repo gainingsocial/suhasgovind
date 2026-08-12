@@ -153,6 +153,24 @@ export {
   startAgentRun,
 } from './repositories/agents.js';
 
+export type {
+  AnalyticsTotals,
+  ListExternalPostsInput,
+  RecordSnapshotInput,
+  UpsertExternalPostInput,
+} from './repositories/analytics.js';
+export {
+  findExternalPostById,
+  findLatestSnapshot,
+  findPostsDueForRefresh,
+  listExternalPosts,
+  listSnapshots,
+  markExternalPostDeleted,
+  recordAnalyticsSnapshot,
+  summarizeProfileAnalytics,
+  upsertExternalPost,
+} from './repositories/analytics.js';
+
 export type { RecordUsageInput, UsageMetric, UsageSummaryRow } from './repositories/usage.js';
 export {
   USAGE_METRICS,
