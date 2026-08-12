@@ -80,6 +80,14 @@ export const ERROR_CODES = [
    * This one is our own deliberate kill switch, and it is expected to clear.
    */
   'PROVIDER_TEMPORARILY_DISABLED',
+  /**
+   * Somebody already approved or rejected this request (plan Phase 9).
+   *
+   * Not a conflict to be retried. Two approvers acting at once is normal — the
+   * notification goes to a team — so telling the second one what the decision *was* is
+   * more useful than telling them they were slow.
+   */
+  'APPROVAL_ALREADY_DECIDED',
   /** The `state` on a callback is unknown, already used, or expired (plan §21.2). */
   'AUTHORIZATION_SESSION_INVALID',
   /** The provider redirected back with an error, or the user declined consent. */

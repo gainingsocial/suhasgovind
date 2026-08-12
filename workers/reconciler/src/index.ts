@@ -1,6 +1,7 @@
 import {
   createDatabaseFromEnv,
   expireAbandonedUploads,
+  expireStaleApprovals,
   findAbandonedTargets,
   findOverdueScheduledPosts,
   findDueDeliveries,
@@ -135,15 +136,28 @@ async function sweepDueDeliveries(db: Database, env: Env, log: ReturnType<typeof
  * a client that asks for a presigned URL and never uploads leaves a row behind every time.
  */
 async function sweepExpired(db: Database, log: ReturnType<typeof createLogger>) {
-  const [keys, uploads] = await Promise.all([
+  const [keys, uploads, approvals] = await Promise.all([
     purgeExpiredIdempotencyKeys(db),
     expireAbandonedUploads(db),
+    /**
+     * Approvals nobody answered (plan Phase 9).
+     *
+     * An approval that waits forever is a post that silently never goes out — the worst
+     * failure this product has, because nothing surfaces it. Expiring makes it visible,
+     * and unlike waiting it produces a state a customer can alert on.
+     */
+    expireStaleApprovals(db),
   ]);
 
-  if (keys > 0 || uploads > 0) {
-    log.info('reconciler.expired_swept', { idempotencyKeys: keys, uploads });
+  if (keys > 0 || uploads > 0 || approvals.length > 0) {
+    log.info('reconciler.expired_swept', {
+      idempotencyKeys: keys,
+      uploads,
+      approvals: approvals.length,
+    });
   }
-  return keys + uploads;
+
+  return keys + uploads + approvals.length;
 }
 
 export default {

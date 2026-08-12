@@ -50,6 +50,13 @@
       "when": 1786928400000,
       "tag": "0006_feature_flag_scope_uniqueness",
       "breakpoints": false
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787011200000,
+      "tag": "0007_agent_governance",
+      "breakpoints": false
     }
   ]
 }

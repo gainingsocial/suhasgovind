@@ -234,6 +234,13 @@ export const ERROR_CODE_METADATA: Record<ErrorCode, ErrorCodeMetadata> = {
     'Publishing to this platform is temporarily switched off.',
     'retry_later_or_publish_to_another_destination',
   ),
+  APPROVAL_ALREADY_DECIDED: m(
+    'conflict_error',
+    409,
+    false,
+    'This approval request has already been decided.',
+    'read_the_current_decision',
+  ),
   AUTHORIZATION_SESSION_INVALID: m(
     'connection_error',
     400,

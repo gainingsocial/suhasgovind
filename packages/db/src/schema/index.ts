@@ -12,6 +12,7 @@ export * from './connections.js';
 export * from './media.js';
 export * from './posts.js';
 export * from './idempotency.js';
+export * from './agents.js';
 export * from './webhooks.js';
 export * from './platform.js';
 export * from './operations.js';

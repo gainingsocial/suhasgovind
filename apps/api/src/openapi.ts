@@ -1,5 +1,8 @@
 import {
   ApiKeyListResponseSchema,
+  ApprovalListResponseSchema,
+  ApprovalSchema,
+  DecideApprovalRequestSchema,
   CapabilitiesResponseSchema,
   ComposeRequestSchema,
   ComposeResponseSchema,
@@ -807,6 +810,43 @@ const ROUTES: RouteSpec[] = [
     successDescription: 'Per-target validation results.',
     response: PreflightResponseSchema,
     errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'PROFILE_NOT_FOUND', 'DUPLICATE_DESTINATION'],
+  },
+  {
+    method: 'get',
+    path: '/v1/approvals',
+    operationId: 'listApprovals',
+    summary: 'Agent work waiting for a person',
+    description:
+      'Everything an agent proposed that policy held for review (plan Phase 9), newest ' +
+      'first. Authenticated by a dashboard session, never an API key 2014 an approval an ' +
+      'agent could grant itself is not an approval.',
+    tags: ['Governance'],
+    scopes: [],
+    querySchema: undefined,
+    successStatus: 200,
+    successDescription: 'Pending approval requests.',
+    response: ApprovalListResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST'],
+  },
+  {
+    method: 'post',
+    path: '/v1/approvals/{approvalId}/decide',
+    operationId: 'decideApproval',
+    summary: 'Approve or reject held work',
+    description:
+      'Releases the held work on approval, or cancels it on rejection. Requires the role ' +
+      'the policy demanded, which travels on the request so editing a policy later cannot ' +
+      'retroactively lower the bar on work already held.\n\nDecided exactly once: a second ' +
+      'decision returns APPROVAL_ALREADY_DECIDED rather than overwriting the first, because ' +
+      'two approvers acting at once is normal.',
+    tags: ['Governance'],
+    scopes: [],
+    pathParams: [{ name: 'approvalId', description: 'Public approval id, `apr_2026`.' }],
+    requestBody: DecideApprovalRequestSchema,
+    successStatus: 200,
+    successDescription: 'The decided approval request.',
+    response: ApprovalSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'RESOURCE_NOT_FOUND', 'APPROVAL_ALREADY_DECIDED'],
   },
   {
     method: 'get',

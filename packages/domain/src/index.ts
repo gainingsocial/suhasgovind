@@ -70,6 +70,21 @@ export {
   worstDecision,
 } from './media/fit-plan.js';
 
+export type {
+  AgentPolicyRule,
+  PolicyConditions,
+  PolicyDecision,
+  PolicyEffect,
+  PolicyOutcome,
+  ProposedAction,
+} from './agents/policy.js';
+export {
+  DEFAULT_OUTCOME,
+  SUGGESTED_POLICIES,
+  evaluatePolicy,
+  ruleMatches,
+} from './agents/policy.js';
+
 export type { ConnectionHealth } from './connections/connection-health.js';
 export {
   CONNECTION_HEALTH_STATES,

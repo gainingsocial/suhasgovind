@@ -135,6 +135,18 @@ should not report the same thing twice.
 A 404 here means "not visible to this key". An id belonging to another project reports
 `TENANT_FORBIDDEN` instead; see the note above on why.
 
+## Governance
+
+Returned by the approval control plane (plan Phase 9).
+
+| Code | Status | Retryable | Meaning | What to do |
+| --- | --- | --- | --- | --- |
+| `APPROVAL_ALREADY_DECIDED` | 409 | no | Somebody already approved or rejected this request. | Read the current decision. This is not a race you lost — it is a race somebody won. |
+
+Two approvers acting at once is the normal case, not an edge case: the notification goes to
+a team. The first decision wins and the second is refused, because the alternative is a
+rejection landing on top of an approval that has already released the post.
+
 ## Idempotency
 
 `POST /v1/posts` requires an `Idempotency-Key`. It is not optional, because a duplicate

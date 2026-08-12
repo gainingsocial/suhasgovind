@@ -129,6 +129,30 @@ export {
   upsertFeatureFlag,
 } from './repositories/environment-settings.js';
 
+export type {
+  CreateApprovalInput,
+  LoadPoliciesScope,
+  RecordAgentActionInput,
+  UpsertPolicyInput,
+} from './repositories/agents.js';
+export {
+  createAgentIdentity,
+  createAgentPolicy,
+  createApprovalRequest,
+  decideApproval,
+  disableAgentPolicy,
+  expireStaleApprovals,
+  findAgentIdentity,
+  findApprovalById,
+  findPendingApproval,
+  finishAgentRun,
+  listAgentIdentities,
+  listPendingApprovals,
+  loadAgentPolicies,
+  recordAgentAction,
+  startAgentRun,
+} from './repositories/agents.js';
+
 export type { RecordUsageInput, UsageMetric, UsageSummaryRow } from './repositories/usage.js';
 export {
   USAGE_METRICS,
