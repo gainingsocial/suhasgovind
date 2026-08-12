@@ -161,6 +161,26 @@ All 4 networks ready to publish.
 nothing and reports the problems instead. Neither rewrites or rephrases — that is a model
 call an author reviews, not something a publish does quietly. Composing never publishes.
 
+## For agents
+
+The MCP endpoint is `/mcp`, authenticated with the same API key as everything else:
+
+```json
+{ "mcpServers": { "gaining-social": {
+  "url": "https://api.gainingsocial.com/mcp",
+  "headers": { "Authorization": "Bearer sk_live_…" }
+} } }
+```
+
+Every tool call re-enters the API through its own front door — same middleware, same
+authentication, same handler — so an agent gets exactly the scopes its key carries and no
+more. Both the stateless `2026-07-28` revision and the older `initialize` handshake are
+served, negotiated per request.
+
+The default tool set is deliberately small (plan §50 — never 300 tools in a prompt), with
+`search_tools` for the rest. See
+[the MCP layer](./docs/architecture/mcp.md).
+
 ## Rehearsing without publishing
 
 An environment is `live` or `simulate`. In `simulate` the entire pipeline runs — preflight,

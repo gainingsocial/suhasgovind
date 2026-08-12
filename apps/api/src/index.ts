@@ -13,6 +13,7 @@ import { connections } from './routes/connections.js';
 import { media } from './routes/media.js';
 import { destinations, platforms, providerHealth } from './routes/platforms.js';
 import { compose } from './routes/compose.js';
+import { createMcpRoute } from './routes/mcp.js';
 import { posts } from './routes/posts.js';
 import { profiles } from './routes/profiles.js';
 import { providerApps } from './routes/provider-apps.js';
@@ -58,6 +59,28 @@ app.route('/v1/provider-apps', providerApps);
 app.route('/v1/environments', environments);
 app.route('/v1/webhooks', webhooks);
 app.route('/v1/webhook-deliveries', webhookDeliveriesRoute);
+
+/**
+ * The MCP endpoint (plan §50).
+ *
+ * Mounted last, and wired with `app.request` so every tool call re-enters this same
+ * application through its own front door: the same middleware, the same authentication,
+ * the same handler. Plan §50 forbids duplicate social logic inside MCP, and dispatching
+ * through the app is a structural guarantee rather than a convention somebody has to keep.
+ *
+ * Unversioned, because the URL goes into an agent's configuration and stays there. The
+ * protocol version it speaks is negotiated per request, which is a finer-grained and more
+ * honest control than a path prefix.
+ */
+app.route(
+  '/mcp',
+  // The bindings and execution context of the *outer* request are handed through, so an
+  // internal call reaches the same database binding and the same `waitUntil` budget. A
+  // dispatch built without them would authenticate against nothing.
+  createMcpRoute((request, env, ctx) =>
+    app.fetch(request, env, ctx as ExecutionContext),
+  ),
+);
 
 app.get('/openapi.json', (c) => c.json(buildOpenApiDocument(new URL(c.req.url).origin)));
 
