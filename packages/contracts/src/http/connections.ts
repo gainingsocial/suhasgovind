@@ -85,6 +85,35 @@ export const ConnectionSchema = z.object({
 export type Connection = z.infer<typeof ConnectionSchema>;
 
 /**
+ * One step in a connection's health history (plan §42).
+ *
+ * The endpoint that answers "why did this stop working?" — and, just as often, "why did it
+ * start working again?". A single current `health` value cannot answer either, because by
+ * the time anyone asks, the interesting transition has already been overwritten.
+ */
+export const ConnectionHealthEventSchema = z.object({
+  object: z.literal('connection_health_event'),
+  /** Null for the first recorded transition; there was no previous observation. */
+  from_health: ConnectionHealthSchema.nullable(),
+  to_health: ConnectionHealthSchema,
+  reason: z.string().nullable(),
+  /** Normalized provider code (plan §79), never the provider's own wording. */
+  provider_error_code: z.string().nullable(),
+  /** Correlates the transition with the request or sweep that caused it. */
+  trace_id: z.string().nullable(),
+  occurred_at: z.iso.datetime(),
+});
+
+export const ConnectionHealthHistoryResponseSchema = z.object({
+  object: z.literal('list'),
+  connection_id: z.string(),
+  current_health: ConnectionHealthSchema,
+  data: z.array(ConnectionHealthEventSchema),
+  has_more: z.boolean(),
+  next_cursor: z.null(),
+});
+
+/**
  * Start an authorization (plan §21.1).
  *
  * Returns a URL the end user visits. For strategies with no consent screen — Bluesky's

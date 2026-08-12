@@ -41,6 +41,7 @@ import {
   CompleteConnectionRequestSchema,
   CompleteConnectionResponseSchema,
   ConnectSessionResponseSchema,
+  ConnectionHealthHistoryResponseSchema,
   ConnectionSchema,
   CreateConnectSessionRequestSchema,
   CreateProfileRequestSchema,
@@ -497,6 +498,24 @@ const ROUTES: RouteSpec[] = [
     successStatus: 200,
     successDescription: 'The connection.',
     response: ConnectionSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'CONNECTION_NOT_FOUND'],
+  },
+  {
+    method: 'get',
+    path: '/v1/connections/{connectionId}/health',
+    operationId: 'getConnectionHealthHistory',
+    summary: 'A connection’s health history',
+    description:
+      'Every health transition, newest first (plan §42) — what changed, why, and which ' +
+      'normalized provider code caused it. Exists because the current `health` value alone ' +
+      'cannot answer “why did this stop working?”: by the time anyone asks, the transition ' +
+      'that explains it has been overwritten by whatever happened since.',
+    tags: ['Connections'],
+    scopes: ['connections:read'],
+    pathParams: [{ name: 'connectionId', description: 'Public connection id, `con_…`.' }],
+    successStatus: 200,
+    successDescription: 'The connection’s health transitions, newest first.',
+    response: ConnectionHealthHistoryResponseSchema,
     errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'CONNECTION_NOT_FOUND'],
   },
   {

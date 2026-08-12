@@ -22,6 +22,7 @@ workers/
   customer-webhooks/    Outbound signed webhook delivery + retries + DLQ
   provider-webhooks/    Inbound provider webhook ingress (verify fast, process async)
   reconciler/           Cron safety net — repairs orphaned scheduled work
+  connection-health/    Refreshes tokens before they expire; escalates when it cannot
 
 packages/
   contracts/            Zod schemas → OpenAPI → SDK types → MCP tool schemas

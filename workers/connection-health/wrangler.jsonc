@@ -1,0 +1,18 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "gs-connection-health",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "observability": { "enabled": true, "head_sampling_rate": 1 },
+  "vars": { "ENVIRONMENT": "test", "SERVICE_VERSION": "0.1.0", "LOG_LEVEL": "info" },
+  "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "563bb35cce9040409987142c4d631c8e" }],
+  "queues": {
+    "producers": [{ "binding": "WEBHOOK_QUEUE", "queue": "gs-webhook-delivery" }]
+  },
+  // Hourly. The refresh window is a day wide, so an expiring token gets roughly
+  // twenty-four chances before it actually expires — enough that a multi-hour provider
+  // outage does not cost anyone a connection.
+  "triggers": { "crons": ["17 * * * *"] }
+}

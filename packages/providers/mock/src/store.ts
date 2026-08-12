@@ -57,6 +57,21 @@ export interface MockBehaviour {
   processingMs: number;
   /** Seconds the mock reports in Retry-After when rate limiting. */
   retryAfterSeconds: number;
+
+  /**
+   * What `auth.refresh` does (plan §42).
+   *
+   * Separate from `failWith`, because refresh and publish fail for different reasons and a
+   * test almost always wants to control one without disturbing the other — a connection
+   * whose refresh is broken usually still publishes fine right up until the token dies.
+   *
+   *   `no_op`   the provider hands back the same still-valid credential
+   *   `rotate`  a new access and refresh token, invalidating the old pair
+   *   `expired` 401 — the refresh token is dead and only a human can fix it
+   *   `revoked` 403 — the user withdrew access at the provider
+   *   `unavailable` 503 — the provider is having a bad minute
+   */
+  refresh: 'no_op' | 'rotate' | 'expired' | 'revoked' | 'unavailable';
 }
 
 const DEFAULT_BEHAVIOUR: MockBehaviour = {
@@ -64,12 +79,14 @@ const DEFAULT_BEHAVIOUR: MockBehaviour = {
   remaining: 0,
   processingMs: 50,
   retryAfterSeconds: 2,
+  refresh: 'no_op',
 };
 
 class MockStore {
   private behaviour: MockBehaviour = { ...DEFAULT_BEHAVIOUR };
   private readonly posts = new Map<string, MockPublishedPost>();
   private sequence = 0;
+  private rotations = 0;
 
   /** Set of scopes the mock connection is treated as having granted. */
   grantedScopes: string[] = ['post.write', 'post.read', 'destination.read'];
@@ -94,6 +111,25 @@ class MockStore {
 
   currentBehaviour(): Readonly<MockBehaviour> {
     return this.behaviour;
+  }
+
+  /**
+   * Issue a fresh credential pair, and count it.
+   *
+   * The counter is the assertion a concurrency test needs: two workers refreshing the same
+   * connection must produce exactly one rotation, and counting rotations is the only way
+   * to see the second one happen.
+   */
+  rotateCredentials(): { accessToken: string; refreshToken: string } {
+    this.rotations += 1;
+    return {
+      accessToken: `mock_access_${this.rotations}`,
+      refreshToken: `mock_refresh_${this.rotations}`,
+    };
+  }
+
+  rotationCount(): number {
+    return this.rotations;
   }
 
   nextPostId(): string {
@@ -143,6 +179,7 @@ class MockStore {
     this.behaviour = { ...DEFAULT_BEHAVIOUR };
     this.posts.clear();
     this.sequence = 0;
+    this.rotations = 0;
     this.grantedScopes = ['post.write', 'post.read', 'destination.read'];
     this.accountType = 'business';
   }

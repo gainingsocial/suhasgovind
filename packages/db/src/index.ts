@@ -201,10 +201,16 @@ export {
   updateWebhookEndpoint,
 } from './repositories/webhooks.js';
 
-export type { StoreCredentialInput, StoredCredential } from './repositories/credentials.js';
+export type {
+  ConnectionDueForRefresh,
+  ExpiringCredential,
+  StoreCredentialInput,
+  StoredCredential,
+} from './repositories/credentials.js';
 export {
   acquireRefreshLock,
   findConnectionCredentials,
+  findConnectionsDueForRefresh,
   findCredentialsNearingExpiry,
   releaseRefreshLock,
   storeCredential,

@@ -1,4 +1,5 @@
 import {
+  ConnectionHealthHistoryResponseSchema,
   ConnectionListResponseSchema,
   DestinationListResponseSchema,
   DisconnectConnectionResponseSchema,
@@ -8,6 +9,7 @@ import { fromPublicId, toPublicId } from '@gs/contracts/ids';
 import {
   disconnectConnection,
   findConnectionById,
+  listConnectionHealthEvents,
   listConnections,
   listDestinationsForConnection,
   type ConnectionWithScopes,
@@ -29,6 +31,14 @@ import { toConnectionResponse, toDestinationResponse } from './connection-serial
  * here is everything an integrator does with a connection once it exists.
  */
 export const connections = new Hono<AppEnv>();
+
+/**
+ * How far back the health history goes.
+ *
+ * Fifty transitions is far more than a healthy connection ever produces, and a connection
+ * producing more than that has a problem no amount of paging will explain.
+ */
+const HEALTH_HISTORY_LIMIT = 50;
 
 connections.get('/', withDatabase(), authenticate(['connections:read']), async (c) => {
   const principal = c.get('principal');
@@ -102,6 +112,50 @@ connections.get('/:connectionId', withDatabase(), authenticate(['connections:rea
   const connectionId = requirePathId(c, 'connection', 'connectionId');
   return c.json(toConnectionResponse(await loadOwnedConnection(c, connectionId)), 200);
 });
+
+/**
+ * A connection's health history (plan §42).
+ *
+ * Exists because "why did this stop working?" is unanswerable from a current health value
+ * alone — by the time somebody asks, the transition that explains it has been overwritten
+ * by whatever happened since. Every change is appended, so the answer is a timeline rather
+ * than a guess.
+ */
+connections.get(
+  '/:connectionId/health',
+  withDatabase(),
+  authenticate(['connections:read']),
+  async (c) => {
+    const connectionId = requirePathId(c, 'connection', 'connectionId');
+    const connection = await loadOwnedConnection(c, connectionId);
+
+    const events = await listConnectionHealthEvents(c.get('db'), connectionId, HEALTH_HISTORY_LIMIT + 1);
+    const page = events.slice(0, HEALTH_HISTORY_LIMIT);
+
+    return c.json(
+      ConnectionHealthHistoryResponseSchema.parse({
+        object: 'list',
+        connection_id: toPublicId('connection', connectionId),
+        current_health: connection.health,
+        data: page.map((event) => ({
+          object: 'connection_health_event',
+          from_health: event.fromHealth,
+          to_health: event.toHealth,
+          reason: event.reason,
+          provider_error_code: event.providerErrorCode,
+          trace_id: event.traceId,
+          // Rule 15 — every public timestamp is UTC ISO-8601.
+          occurred_at: event.createdAt.toISOString(),
+        })),
+        has_more: events.length > HEALTH_HISTORY_LIMIT,
+        // Deliberately no cursor. A connection with more than fifty health transitions has
+        // a problem no amount of paging through its history will explain.
+        next_cursor: null,
+      }),
+      200,
+    );
+  },
+);
 
 connections.get(
   '/:connectionId/destinations',

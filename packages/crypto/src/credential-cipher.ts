@@ -133,14 +133,17 @@ export class Keyring {
    * Build a keyring from environment variables named `CREDENTIAL_KEK_V{n}`, with the
    * active version in `CREDENTIAL_KEK_ACTIVE_VERSION`.
    *
-   * Accepts `unknown` values because the caller is usually a Worker `Env`, which also
-   * carries Hyperdrive handles, queues and Durable Object namespaces. Non-string values
-   * are skipped rather than coerced — a binding object stringified into key material
-   * would produce a keyring that loads successfully and decrypts nothing.
+   * Takes a plain `object` rather than `Record<string, unknown>` so a Worker `Env` — which
+   * is declared as an interface, and which TypeScript therefore will not assign to an
+   * indexed type — can be passed whole. Bindings, queues and Durable Object namespaces
+   * come along for the ride and are ignored.
+   *
+   * Non-string values are skipped rather than coerced. A binding object stringified into
+   * key material would produce a keyring that loads successfully and decrypts nothing.
    */
-  static fromEnv(env: Record<string, unknown>): Keyring {
+  static fromEnv(env: object): Keyring {
     const entries: KeyringEntry[] = [];
-    for (const [name, value] of Object.entries(env)) {
+    for (const [name, value] of Object.entries(env as Record<string, unknown>)) {
       const match = /^CREDENTIAL_KEK_V(\d+)$/.exec(name);
       if (match && typeof value === 'string' && value.length > 0) {
         entries.push({ version: Number(match[1]), material: value });
@@ -153,10 +156,8 @@ export class Keyring {
       );
     }
 
-    const declared =
-      typeof env.CREDENTIAL_KEK_ACTIVE_VERSION === 'string'
-        ? env.CREDENTIAL_KEK_ACTIVE_VERSION
-        : undefined;
+    const active = (env as Record<string, unknown>).CREDENTIAL_KEK_ACTIVE_VERSION;
+    const declared = typeof active === 'string' ? active : undefined;
     const activeVersion = declared
       ? Number(declared)
       : Math.max(...entries.map((entry) => entry.version));

@@ -105,6 +105,39 @@ describeIntegration('connections and capabilities', () => {
       expect(response.status).toBe(404);
       expect(await code(response)).toBe('DESTINATION_NOT_FOUND');
     });
+
+    it('does not expose another tenant’s connection health history', async () => {
+      // A health history names provider error codes and the reasons an account broke —
+      // operational detail about somebody else's business.
+      const response = await call(`/v1/connections/${h.tenantB.publicConnectionId}/health`);
+      expect(response.status).toBe(404);
+      expect(await code(response)).toBe('CONNECTION_NOT_FOUND');
+    });
+  });
+
+  describe('health history (plan §42)', () => {
+    it('returns the current health and a timeline for the tenant’s own connection', async () => {
+      const body = await json<{
+        object: string;
+        connection_id: string;
+        current_health: string;
+        data: { to_health: string; occurred_at: string }[];
+        has_more: boolean;
+      }>(await call(`/v1/connections/${h.tenantA.publicConnectionId}/health`));
+
+      expect(body.object).toBe('list');
+      expect(body.connection_id).toBe(h.tenantA.publicConnectionId);
+      expect(body.current_health).toBe('healthy');
+      // A freshly seeded connection has recorded no transitions, and an empty timeline is
+      // the correct answer rather than an error.
+      expect(Array.isArray(body.data)).toBe(true);
+      expect(body.has_more).toBe(false);
+    });
+
+    it('rejects a malformed connection id before touching the database', async () => {
+      const response = await call('/v1/connections/not-an-id/health');
+      expect(response.status).toBe(400);
+    });
   });
 
   describe('destinations', () => {

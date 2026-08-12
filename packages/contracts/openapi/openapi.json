@@ -2905,6 +2905,238 @@
         }
       }
     },
+    "/v1/connections/{connectionId}/health": {
+      "get": {
+        "operationId": "getConnectionHealthHistory",
+        "summary": "A connection’s health history",
+        "description": "Every health transition, newest first (plan §42) — what changed, why, and which normalized provider code caused it. Exists because the current `health` value alone cannot answer “why did this stop working?”: by the time anyone asks, the transition that explains it has been overwritten by whatever happened since.\n\nRequires scope: `connections:read`.",
+        "tags": [
+          "Connections"
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "connectionId",
+            "in": "path",
+            "required": true,
+            "description": "Public connection id, `con_…`.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The connection’s health transitions, newest first.",
+            "headers": {
+              "x-request-id": {
+                "description": "Echoed request identifier. Quote this when reporting a problem.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "x-trace-id": {
+                "description": "Trace identifier correlating this request across services.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "const": "list"
+                    },
+                    "connection_id": {
+                      "type": "string"
+                    },
+                    "current_health": {
+                      "type": "string",
+                      "enum": [
+                        "healthy",
+                        "refresh_due",
+                        "refreshing",
+                        "reauth_required",
+                        "permission_missing",
+                        "rate_limited",
+                        "provider_degraded",
+                        "disconnected",
+                        "revoked"
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "object": {
+                            "type": "string",
+                            "const": "connection_health_event"
+                          },
+                          "from_health": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "healthy",
+                                  "refresh_due",
+                                  "refreshing",
+                                  "reauth_required",
+                                  "permission_missing",
+                                  "rate_limited",
+                                  "provider_degraded",
+                                  "disconnected",
+                                  "revoked"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "to_health": {
+                            "type": "string",
+                            "enum": [
+                              "healthy",
+                              "refresh_due",
+                              "refreshing",
+                              "reauth_required",
+                              "permission_missing",
+                              "rate_limited",
+                              "provider_degraded",
+                              "disconnected",
+                              "revoked"
+                            ]
+                          },
+                          "reason": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "provider_error_code": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "trace_id": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "occurred_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "object",
+                          "from_health",
+                          "to_health",
+                          "reason",
+                          "provider_error_code",
+                          "trace_id",
+                          "occurred_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "next_cursor": {
+                      "type": "null"
+                    }
+                  },
+                  "required": [
+                    "object",
+                    "connection_id",
+                    "current_health",
+                    "data",
+                    "has_more",
+                    "next_cursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`INVALID_REQUEST` — The request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTHENTICATION_REQUIRED` — An API key is required. Send it as `Authorization: Bearer sk_live_...`.\n\n`API_KEY_MALFORMED` — The API key is malformed. Expected a key beginning with `sk_test_` or `sk_live_`.\n\n`API_KEY_INVALID` — The API key is not valid.\n\n`API_KEY_REVOKED` — This API key has been revoked.\n\n`API_KEY_EXPIRED` — This API key has expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`CONNECTION_NOT_FOUND` — No such connection.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR` — An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/connections/{connectionId}/destinations": {
       "get": {
         "operationId": "listConnectionDestinations",

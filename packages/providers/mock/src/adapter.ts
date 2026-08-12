@@ -172,9 +172,37 @@ export function createMockAdapter(): SocialProviderAdapter {
         };
       },
 
+      /**
+       * Refresh, in every shape the health engine has to handle (plan §42).
+       *
+       * The default is a no-op: an api_key credential does not expire, and reporting
+       * `rotated: false` lets the engine skip a pointless re-encrypt and write.
+       *
+       * The other modes exist so the refresh engine can be tested at all. Rotation
+       * specifically is the case worth exercising, because most OAuth providers invalidate
+       * the old refresh token the instant a new one is issued — which is what makes a
+       * concurrent refresh destructive rather than merely wasteful.
+       */
       async refresh(input) {
-        // An api_key credential does not expire, so refresh is a no-op. Reporting
-        // `rotated: false` lets the engine skip a pointless re-encrypt and write.
+        const mode = mockStore.currentBehaviour().refresh;
+
+        if (mode === 'expired') throw new MockProviderError('Refresh token expired.', 401);
+        if (mode === 'revoked') throw new MockProviderError('Access revoked.', 403);
+        if (mode === 'unavailable') throw new MockProviderError('Upstream unavailable.', 503);
+
+        if (mode === 'rotate') {
+          const issued = mockStore.rotateCredentials();
+          return {
+            credentials: {
+              ...input.credentials,
+              accessToken: issued.accessToken,
+              refreshToken: issued.refreshToken,
+              expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+            },
+            rotated: true,
+          };
+        }
+
         return { credentials: input.credentials, rotated: false };
       },
 

@@ -1,11 +1,12 @@
 import { newUuidV7 } from '@gs/contracts/ids';
-import { and, eq, inArray, isNotNull, isNull, lt, or } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNotNull, isNull, lt, or } from 'drizzle-orm';
 
 import type { Database, Transaction } from '../client.js';
 import {
   connectionScopes,
   socialConnections,
   socialCredentials,
+  type SocialConnection,
   type SocialCredential,
 } from '../schema/connections.js';
 
@@ -256,4 +257,78 @@ export async function findCredentialsNearingExpiry(
 
   // The WHERE clause already excludes NULLs, but the column type does not know that.
   return rows.filter((row): row is ExpiringCredential => row.expiresAt !== null);
+}
+
+/**
+ * Connections due for a proactive token refresh, with everything the refresher needs.
+ *
+ * One joined query rather than a list of ids followed by a lookup each. A sweep that finds
+ * a hundred expiring credentials would otherwise be a hundred round trips to a database a
+ * region away, and the sweep has a cron invocation's time budget to work within.
+ *
+ * Ordered by expiry so the most urgent goes first: if the batch limit truncates the work,
+ * what gets left behind should be what has the most time left.
+ */
+export interface ConnectionDueForRefresh {
+  connectionId: string;
+  organizationId: string;
+  projectId: string;
+  projectEnvironmentId: string;
+  profileId: string;
+  provider: string;
+  authStrategy: SocialConnection['authStrategy'];
+  health: SocialConnection['health'];
+  providerAccountId: string;
+  expiresAt: Date;
+  /** When the *refresh* token itself expires. Past this, no refresh can succeed. */
+  refreshExpiresAt: Date | null;
+}
+
+export async function findConnectionsDueForRefresh(
+  db: Database,
+  withinSeconds: number,
+  limit = 50,
+): Promise<ConnectionDueForRefresh[]> {
+  const now = new Date();
+  const threshold = new Date(now.getTime() + withinSeconds * 1000);
+
+  const rows = await db
+    .select({
+      connectionId: socialConnections.id,
+      organizationId: socialConnections.organizationId,
+      projectId: socialConnections.projectId,
+      projectEnvironmentId: socialConnections.projectEnvironmentId,
+      profileId: socialConnections.profileId,
+      provider: socialConnections.provider,
+      authStrategy: socialConnections.authStrategy,
+      health: socialConnections.health,
+      providerAccountId: socialConnections.providerAccountId,
+      expiresAt: socialCredentials.expiresAt,
+      refreshExpiresAt: socialCredentials.refreshExpiresAt,
+    })
+    .from(socialCredentials)
+    .innerJoin(socialConnections, eq(socialConnections.id, socialCredentials.connectionId))
+    .where(
+      and(
+        eq(socialCredentials.credentialType, 'access_token'),
+        isNotNull(socialCredentials.expiresAt),
+        lt(socialCredentials.expiresAt, threshold),
+        isNull(socialConnections.disconnectedAt),
+        /**
+         * Only connections that could still be working. A `reauth_required` connection has
+         * already been through this and failed — retrying it every sweep would hammer the
+         * provider with a refresh that cannot succeed, and would re-emit the customer's
+         * alert each time.
+         */
+        inArray(socialConnections.health, ['healthy', 'refresh_due', 'rate_limited', 'provider_degraded']),
+        /** Skip anything another worker currently holds (plan §42 rule 3). */
+        or(isNull(socialConnections.refreshLockedUntil), lt(socialConnections.refreshLockedUntil, now)),
+        /** Destination-scoped tokens refresh with their connection, not on their own. */
+        isNull(socialCredentials.destinationId),
+      ),
+    )
+    .orderBy(asc(socialCredentials.expiresAt))
+    .limit(limit);
+
+  return rows.filter((row): row is ConnectionDueForRefresh => row.expiresAt !== null);
 }
