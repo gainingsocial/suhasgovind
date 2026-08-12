@@ -86,6 +86,74 @@ export const EstimatedTransformationSchema = z
 
 export type EstimatedTransformation = z.infer<typeof EstimatedTransformationSchema>;
 
+/**
+ * How much consent a media fix needs (plan §63E).
+ *
+ * The ordering is the contract: anything at `SAFE_AUTOFIX` or below happens without asking
+ * (P17), and anything above it waits for a person. The split exists because a format
+ * conversion preserves what the media *is* while a heavy crop decides what it is *of*, and
+ * only the second is an editorial judgement.
+ */
+export const FitDecisionSchema = z.enum([
+  'PASS',
+  'SAFE_AUTOFIX',
+  'REVIEW_AUTOFIX',
+  'USER_DECISION_REQUIRED',
+  'UNSUPPORTED',
+]);
+
+export const PlannedTransformSchema = z
+  .object({
+    kind: z.enum([
+      'convert_format',
+      'resize',
+      'crop',
+      'pad',
+      'compress',
+      'trim_duration',
+      'generate_thumbnail',
+    ]),
+    decision: FitDecisionSchema,
+    /** Plain language, aimed at whoever has to approve it. */
+    reason: z.string(),
+    parameters: z.record(z.string(), z.unknown()),
+  })
+  .strict();
+
+export const MediaFitPlanSchema = z
+  .object({
+    media_id: z.string(),
+    decision: FitDecisionSchema,
+    transforms: z.array(PlannedTransformSchema).readonly(),
+    /** Why this cannot be published here at all. Present only for `UNSUPPORTED`. */
+    blocked_reason: z.string().nullable(),
+  })
+  .strict();
+
+/**
+ * What publishing would do to this post's media on this destination (plan §63E).
+ *
+ * Reported before anything is published, so nothing done to a customer's content is a
+ * surprise after the fact — and so an agent can decide whether to proceed, ask, or compose
+ * differently, which is the whole of P16 and P17.
+ */
+export const PostMediaFitSchema = z
+  .object({
+    /** The worst decision across every item. `PASS` means publish the bytes untouched. */
+    decision: FitDecisionSchema,
+    items: z.array(MediaFitPlanSchema).readonly(),
+    /** Problems with the set rather than any one item — too many photos, for instance. */
+    findings: z
+      .array(
+        z.object({ code: z.string(), message: z.string(), decision: FitDecisionSchema }).strict(),
+      )
+      .readonly(),
+  })
+  .strict();
+
+export type FitDecision = z.infer<typeof FitDecisionSchema>;
+export type PostMediaFit = z.infer<typeof PostMediaFitSchema>;
+
 /** Validation outcome for one publish target. */
 export const TargetValidationResultSchema = z
   .object({
@@ -95,6 +163,11 @@ export const TargetValidationResultSchema = z
     errors: z.array(ValidationFindingSchema).readonly(),
     warnings: z.array(ValidationFindingSchema).readonly(),
     estimated_transformations: z.array(EstimatedTransformationSchema).readonly(),
+    /**
+     * The media fit plan (plan §63E). Null when the target has no media, or when core
+     * checks failed early enough that planning would have been guesswork.
+     */
+    media_fit: PostMediaFitSchema.nullable(),
   })
   .strict();
 

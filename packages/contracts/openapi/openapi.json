@@ -4214,6 +4214,152 @@
                               ],
                               "additionalProperties": false
                             }
+                          },
+                          "media_fit": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "decision": {
+                                    "type": "string",
+                                    "enum": [
+                                      "PASS",
+                                      "SAFE_AUTOFIX",
+                                      "REVIEW_AUTOFIX",
+                                      "USER_DECISION_REQUIRED",
+                                      "UNSUPPORTED"
+                                    ]
+                                  },
+                                  "items": {
+                                    "readOnly": true,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "media_id": {
+                                          "type": "string"
+                                        },
+                                        "decision": {
+                                          "type": "string",
+                                          "enum": [
+                                            "PASS",
+                                            "SAFE_AUTOFIX",
+                                            "REVIEW_AUTOFIX",
+                                            "USER_DECISION_REQUIRED",
+                                            "UNSUPPORTED"
+                                          ]
+                                        },
+                                        "transforms": {
+                                          "readOnly": true,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "kind": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "convert_format",
+                                                  "resize",
+                                                  "crop",
+                                                  "pad",
+                                                  "compress",
+                                                  "trim_duration",
+                                                  "generate_thumbnail"
+                                                ]
+                                              },
+                                              "decision": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "PASS",
+                                                  "SAFE_AUTOFIX",
+                                                  "REVIEW_AUTOFIX",
+                                                  "USER_DECISION_REQUIRED",
+                                                  "UNSUPPORTED"
+                                                ]
+                                              },
+                                              "reason": {
+                                                "type": "string"
+                                              },
+                                              "parameters": {
+                                                "type": "object",
+                                                "propertyNames": {
+                                                  "type": "string"
+                                                },
+                                                "additionalProperties": {}
+                                              }
+                                            },
+                                            "required": [
+                                              "kind",
+                                              "decision",
+                                              "reason",
+                                              "parameters"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "blocked_reason": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "media_id",
+                                        "decision",
+                                        "transforms",
+                                        "blocked_reason"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "findings": {
+                                    "readOnly": true,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "code": {
+                                          "type": "string"
+                                        },
+                                        "message": {
+                                          "type": "string"
+                                        },
+                                        "decision": {
+                                          "type": "string",
+                                          "enum": [
+                                            "PASS",
+                                            "SAFE_AUTOFIX",
+                                            "REVIEW_AUTOFIX",
+                                            "USER_DECISION_REQUIRED",
+                                            "UNSUPPORTED"
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "code",
+                                        "message",
+                                        "decision"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "decision",
+                                  "items",
+                                  "findings"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           }
                         },
                         "required": [
@@ -4222,7 +4368,8 @@
                           "valid",
                           "errors",
                           "warnings",
-                          "estimated_transformations"
+                          "estimated_transformations",
+                          "media_fit"
                         ],
                         "additionalProperties": false
                       }
@@ -7332,6 +7479,152 @@
                               ],
                               "additionalProperties": false
                             }
+                          },
+                          "media_fit": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "decision": {
+                                    "type": "string",
+                                    "enum": [
+                                      "PASS",
+                                      "SAFE_AUTOFIX",
+                                      "REVIEW_AUTOFIX",
+                                      "USER_DECISION_REQUIRED",
+                                      "UNSUPPORTED"
+                                    ]
+                                  },
+                                  "items": {
+                                    "readOnly": true,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "media_id": {
+                                          "type": "string"
+                                        },
+                                        "decision": {
+                                          "type": "string",
+                                          "enum": [
+                                            "PASS",
+                                            "SAFE_AUTOFIX",
+                                            "REVIEW_AUTOFIX",
+                                            "USER_DECISION_REQUIRED",
+                                            "UNSUPPORTED"
+                                          ]
+                                        },
+                                        "transforms": {
+                                          "readOnly": true,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "kind": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "convert_format",
+                                                  "resize",
+                                                  "crop",
+                                                  "pad",
+                                                  "compress",
+                                                  "trim_duration",
+                                                  "generate_thumbnail"
+                                                ]
+                                              },
+                                              "decision": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "PASS",
+                                                  "SAFE_AUTOFIX",
+                                                  "REVIEW_AUTOFIX",
+                                                  "USER_DECISION_REQUIRED",
+                                                  "UNSUPPORTED"
+                                                ]
+                                              },
+                                              "reason": {
+                                                "type": "string"
+                                              },
+                                              "parameters": {
+                                                "type": "object",
+                                                "propertyNames": {
+                                                  "type": "string"
+                                                },
+                                                "additionalProperties": {}
+                                              }
+                                            },
+                                            "required": [
+                                              "kind",
+                                              "decision",
+                                              "reason",
+                                              "parameters"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "blocked_reason": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "media_id",
+                                        "decision",
+                                        "transforms",
+                                        "blocked_reason"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "findings": {
+                                    "readOnly": true,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "code": {
+                                          "type": "string"
+                                        },
+                                        "message": {
+                                          "type": "string"
+                                        },
+                                        "decision": {
+                                          "type": "string",
+                                          "enum": [
+                                            "PASS",
+                                            "SAFE_AUTOFIX",
+                                            "REVIEW_AUTOFIX",
+                                            "USER_DECISION_REQUIRED",
+                                            "UNSUPPORTED"
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "code",
+                                        "message",
+                                        "decision"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "decision",
+                                  "items",
+                                  "findings"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           }
                         },
                         "required": [
@@ -7340,7 +7633,8 @@
                           "valid",
                           "errors",
                           "warnings",
-                          "estimated_transformations"
+                          "estimated_transformations",
+                          "media_fit"
                         ],
                         "additionalProperties": false
                       }

@@ -1,3 +1,4 @@
+import type { CapabilityConstraints } from '@gs/contracts/capabilities';
 import type { TargetValidationResult, ValidationFinding } from '@gs/contracts/validation';
 import { fromPublicId, toPublicId } from '@gs/contracts/ids';
 import { isProviderName, type ProviderName } from '@gs/contracts/providers';
@@ -9,7 +10,7 @@ import {
   type Database,
   type MediaAsset,
 } from '@gs/db';
-import { resolveTargetContent } from '@gs/domain';
+import { planPostMediaFit, resolveTargetContent, type MediaFitInput } from '@gs/domain';
 import { getAdapter, hasAdapter } from '@gs/providers';
 import type { ProviderCallContext, ResolvedMedia } from '@gs/provider-kit';
 
@@ -86,6 +87,25 @@ function toResolvedMedia(asset: MediaAsset): ResolvedMedia {
     durationSeconds: asset.durationSeconds,
     altText: asset.altText,
     downloadUrl: '',
+  };
+}
+
+/**
+ * Narrow a resolved media item to what the fit planner needs.
+ *
+ * Drops `downloadUrl` and `altText` deliberately: the planner is pure and must not be
+ * given a signed URL it could be tempted to fetch, and alt text has no bearing on whether
+ * the bytes fit a platform's specification.
+ */
+function toFitInput(media: ResolvedMedia): MediaFitInput {
+  return {
+    mediaId: media.mediaId,
+    kind: media.kind,
+    mimeType: media.mimeType,
+    bytes: media.bytes,
+    width: media.width,
+    height: media.height,
+    durationSeconds: media.durationSeconds,
   };
 }
 
@@ -333,12 +353,107 @@ export async function runPreflight(input: PreflightInput): Promise<PreflightOutc
     });
 
     let estimatedTransformations: TargetValidationResult['estimated_transformations'] = [];
+    let mediaFit: TargetValidationResult['media_fit'] = null;
 
     // Only ask the adapter once the core checks pass. A disconnected connection has
     // nothing useful to say about text length, and asking would mean a pointless call.
     const coreValid = !findings.some((f) => f.severity === 'error');
     if (coreValid && provider && hasAdapter(provider)) {
       const adapter = getAdapter(provider);
+
+      /**
+       * Media auto-fit (plan §63E, P16, P17).
+       *
+       * Planned from the destination's cached effective capability where one exists, and
+       * from the adapter's generic capability otherwise. Effective matters: an unaudited
+       * TikTok client and a Business Instagram account accept different things, and
+       * planning against the generic document would promise a fix the destination rejects.
+       *
+       * No network call either way — generic capability is code, and effective capability
+       * was cached at connect time. Plan §18 forbids preflight from making one.
+       */
+      if (media.length > 0) {
+        const constraints =
+          (ownership?.capabilities as { constraints?: CapabilityConstraints } | null)?.constraints ??
+          (await adapter.capabilities({ context: input.context, app: null })).constraints;
+
+        const plan = planPostMediaFit(media.map(toFitInput), constraints);
+
+        mediaFit = {
+          decision: plan.decision,
+          items: plan.items.map((item) => ({
+            media_id: item.mediaId,
+            decision: item.decision,
+            transforms: item.transforms.map((transform) => ({
+              kind: transform.kind,
+              decision: transform.decision,
+              reason: transform.reason,
+              parameters: transform.parameters as Record<string, unknown>,
+            })),
+            blocked_reason: item.blockedReason,
+          })),
+          findings: plan.findings,
+        };
+
+        /**
+         * `UNSUPPORTED` is the only decision that fails preflight.
+         *
+         * The others are all publishable — automatically, or after somebody chooses — and
+         * failing on them would make preflight refuse posts the product is specifically
+         * built to fix. A crop awaiting review is reported as a warning so it surfaces
+         * without blocking a caller who is happy with the default.
+         */
+        for (const item of plan.items) {
+          if (item.decision === 'UNSUPPORTED') {
+            findings.push(
+              finding(
+                'error',
+                'MEDIA_TYPE_UNSUPPORTED',
+                item.blockedReason ?? 'This media cannot be published to this destination.',
+                'replace_or_remove_the_media',
+                `media[${item.mediaId}]`,
+              ),
+            );
+          } else if (item.decision !== 'PASS' && item.decision !== 'SAFE_AUTOFIX') {
+            /**
+             * Named by the transform that needs consent, not by a generic "review this".
+             * An agent branches on the code, and `MEDIA_RATIO_UNSUPPORTED` tells it to
+             * supply a focal point while `MEDIA_DURATION_UNSUPPORTED` tells it to pick a
+             * segment — two different actions that one shared code would flatten into a
+             * shrug.
+             */
+            const blocking = item.transforms.find((t) => t.decision === item.decision);
+
+            findings.push(
+              finding(
+                'warning',
+                blocking?.kind === 'trim_duration'
+                  ? 'MEDIA_DURATION_UNSUPPORTED'
+                  : 'MEDIA_RATIO_UNSUPPORTED',
+                blocking?.reason ??
+                  'This media needs a change that should be reviewed before publishing.',
+                blocking?.kind === 'trim_duration'
+                  ? 'choose_which_section_to_publish'
+                  : 'review_the_proposed_crop_or_supply_a_focal_point',
+                `media[${item.mediaId}]`,
+              ),
+            );
+          }
+        }
+
+        for (const setFinding of plan.findings) {
+          findings.push(
+            finding(
+              'warning',
+              setFinding.code,
+              setFinding.message,
+              'choose_which_media_to_publish_here',
+              'media',
+            ),
+          );
+        }
+      }
+
       const adapterResult = await adapter.publishing.validate({
         context: input.context,
         target: {
@@ -373,6 +488,7 @@ export async function runPreflight(input: PreflightInput): Promise<PreflightOutc
       errors,
       warnings,
       estimated_transformations: estimatedTransformations,
+      media_fit: mediaFit,
     });
   }
 

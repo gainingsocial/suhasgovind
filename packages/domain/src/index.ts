@@ -30,6 +30,32 @@ export {
   resolveTargetContent,
 } from './posts/content-resolution.js';
 
+export type { AspectRatio } from './media/aspect-ratio.js';
+export {
+  ASPECT_RATIO_TOLERANCE,
+  centredCrop,
+  cropLoss,
+  nearestRatio,
+  parseAspectRatio,
+  ratioMatches,
+} from './media/aspect-ratio.js';
+
+export type {
+  FitDecision,
+  MediaFitInput,
+  MediaFitPlan,
+  PlannedTransform,
+  PostMediaFitPlan,
+  TransformKind,
+} from './media/fit-plan.js';
+export {
+  SAFE_CROP_LOSS,
+  planMediaFit,
+  planPostMediaFit,
+  variantKeyFor,
+  worstDecision,
+} from './media/fit-plan.js';
+
 export type { ConnectionHealth } from './connections/connection-health.js';
 export {
   CONNECTION_HEALTH_STATES,

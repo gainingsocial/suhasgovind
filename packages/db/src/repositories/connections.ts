@@ -214,6 +214,15 @@ export interface DestinationOwnership {
   providerDestinationId: string;
   destinationName: string;
   selected: boolean;
+  /**
+   * Effective capability for this destination, cached at connect time (plan §17).
+   *
+   * Carried on the ownership row because preflight plans media auto-fit against it, and a
+   * separate lookup per target would make a ten-destination post ten extra round trips on
+   * a path plan §18 requires to stay fast. `null` when it has never been resolved, in
+   * which case the caller falls back to generic capability.
+   */
+  capabilities: Record<string, unknown> | null;
   connectionHealth: SocialConnection['health'];
   setupCompletedAt: Date | null;
   disconnectedAt: Date | null;
@@ -237,6 +246,7 @@ export async function findDestinationOwnership(
       providerDestinationId: socialDestinations.providerDestinationId,
       destinationName: socialDestinations.name,
       selected: socialDestinations.selected,
+      capabilities: socialDestinations.capabilities,
       connectionHealth: socialConnections.health,
       setupCompletedAt: socialConnections.setupCompletedAt,
       disconnectedAt: socialConnections.disconnectedAt,
@@ -272,6 +282,7 @@ export async function findDestinationOwnerships(
       providerDestinationId: socialDestinations.providerDestinationId,
       destinationName: socialDestinations.name,
       selected: socialDestinations.selected,
+      capabilities: socialDestinations.capabilities,
       connectionHealth: socialConnections.health,
       setupCompletedAt: socialConnections.setupCompletedAt,
       disconnectedAt: socialConnections.disconnectedAt,
