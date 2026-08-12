@@ -59,6 +59,23 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
+      # Inbound provider webhooks. Deployed even before any platform is registered to send
+      # them: the endpoint has to exist and answer before a developer console will accept
+      # it, so a worker that ships only once traffic is expected can never be registered.
+      - name: Deploy provider-webhooks
+        run: pnpm --filter @gs/worker-provider-webhooks run deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # Token refresh. The one worker whose absence is silent — nothing fails until a
+      # credential expires, and by then the only symptom is a customer's post not going out.
+      - name: Deploy connection-health
+        run: pnpm --filter @gs/worker-connection-health run deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
       # The dashboard must be built on Linux. OpenNext resolves manifest paths in a way
       # that breaks on Windows — the deployed Worker fails at runtime with
       # "Dynamic require of /.next/server/middleware-manifest.json is not supported".

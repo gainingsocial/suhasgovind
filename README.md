@@ -65,6 +65,14 @@ docs/
   errors/               Every error code the API can return, and what to do about it
 ```
 
+## Before this runs in production
+
+[`docs/OPERATIONS.md`](./docs/OPERATIONS.md) lists everything that needs somebody signed in
+to Cloudflare, Supabase or a platform console — queues to create, secrets to set on the new
+workers, a route for the webhook ingress, and the one product decision I left open (which
+model provider powers Content Intelligence). Each item says what it blocks and how to tell
+it worked.
+
 ## Architecture deep dives
 
 The parts where the *ordering* or the *default* is the design, rather than the code:
