@@ -13,10 +13,13 @@ import {
   listProviderApps,
   upsertProviderApp,
 } from '@gs/db';
+import { decodeSecret, deriveProviderVerifyToken } from '@gs/crypto';
 import { ApiError } from '@gs/errors';
+import { webhookUrlFor } from '@gs/platform-credentials';
+import { getAdapter, hasAdapter } from '@gs/providers';
 import { Hono, type Context } from 'hono';
 
-import type { AppEnv } from '../env.js';
+import type { AppEnv, Env } from '../env.js';
 import { withDatabase } from '../middleware/database.js';
 import { authenticateHuman } from '../middleware/authenticate-human.js';
 import { parseBody, requirePathId } from '../lib/request.js';
@@ -96,6 +99,41 @@ function apiOrigin(url: string, configured: string | undefined): string {
   return configured ?? new URL(url).origin;
 }
 
+/**
+ * The webhook URL and verify token to register with a platform (plan §34).
+ *
+ * Returned only for providers whose webhook verification is actually implemented. A URL
+ * shown for a provider we cannot verify would invite an operator to register an endpoint
+ * that silently discards everything it receives — worse than no URL, because it looks
+ * configured.
+ *
+ * An explicitly configured token wins over the derived one: a provider console may already
+ * hold a token from an earlier setup, and changing it there breaks a live subscription.
+ */
+async function webhookRegistration(
+  env: Env,
+  origin: string,
+  row: { id: string; provider: string; callbackConfig?: Record<string, unknown> | null },
+): Promise<{ webhook_url: string | null; webhook_verify_token: string | null }> {
+  if (!hasAdapter(row.provider) || !getAdapter(row.provider).verifyWebhook) {
+    return { webhook_url: null, webhook_verify_token: null };
+  }
+
+  const configured = row.callbackConfig?.['webhook_verify_token'];
+  const token =
+    typeof configured === 'string' && configured.length > 0
+      ? configured
+      : env.WEBHOOK_SIGNING_ROOT
+        ? await deriveProviderVerifyToken(
+            decodeSecret('WEBHOOK_SIGNING_ROOT', env.WEBHOOK_SIGNING_ROOT),
+            row.provider,
+            row.id,
+          )
+        : null;
+
+  return { webhook_url: webhookUrlFor(origin, row.provider), webhook_verify_token: token };
+}
+
 providerApps.get('/', withDatabase(), authenticateHuman(), async (c) => {
   const user = c.get('user');
   const environmentId = requireEnvironmentId(c.req.query('environment_id'));
@@ -116,24 +154,27 @@ providerApps.get('/', withDatabase(), authenticateHuman(), async (c) => {
 
   const origin = apiOrigin(c.req.url, c.env.PUBLIC_API_ORIGIN);
 
-  const data = [...byProvider.values()]
-    .filter((row) => isProviderName(row.provider))
-    .map((row) =>
-      ProviderAppSchema.parse({
-        id: toPublicId('providerApp', row.id),
-        object: 'provider_app',
-        provider: row.provider,
-        ownership: row.ownership,
-        // The client id is public — it appears in every authorization URL. The secret is
-        // not in the row at all: `listProviderApps` projects it away.
-        client_id: row.clientId || null,
-        configured: Boolean(row.clientId),
-        approval_status: row.approvalStatus,
-        scopes: row.scopes,
-        redirect_uri: isProviderName(row.provider) ? callbackUrlFor(origin, row.provider) : '',
-        updated_at: row.updatedAt.toISOString(),
-      }),
-    );
+  const data = await Promise.all(
+    [...byProvider.values()]
+      .filter((row) => isProviderName(row.provider))
+      .map(async (row) =>
+        ProviderAppSchema.parse({
+          id: toPublicId('providerApp', row.id),
+          object: 'provider_app',
+          provider: row.provider,
+          ownership: row.ownership,
+          // The client id is public — it appears in every authorization URL. The secret is
+          // not in the row at all: `listProviderApps` projects it away.
+          client_id: row.clientId || null,
+          configured: Boolean(row.clientId),
+          approval_status: row.approvalStatus,
+          scopes: row.scopes,
+          redirect_uri: isProviderName(row.provider) ? callbackUrlFor(origin, row.provider) : '',
+          ...(await webhookRegistration(c.env, origin, row)),
+          updated_at: row.updatedAt.toISOString(),
+        }),
+      ),
+  );
 
   return c.json(
     ProviderAppListResponseSchema.parse({

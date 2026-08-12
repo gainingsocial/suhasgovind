@@ -74,6 +74,9 @@ importers:
       '@gs/observability':
         specifier: workspace:*
         version: link:../../packages/observability
+      '@gs/platform-credentials':
+        specifier: workspace:*
+        version: link:../../packages/platform-credentials
       '@gs/provider-kit':
         specifier: workspace:*
         version: link:../../packages/provider-kit
@@ -273,11 +276,39 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
+  packages/platform-credentials:
+    dependencies:
+      '@gs/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@gs/crypto':
+        specifier: workspace:*
+        version: link:../crypto
+      '@gs/db':
+        specifier: workspace:*
+        version: link:../db
+      '@gs/errors':
+        specifier: workspace:*
+        version: link:../errors
+      '@gs/provider-kit':
+        specifier: workspace:*
+        version: link:../provider-kit
+    devDependencies:
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@22.20.1)(@vitest/coverage-v8@4.1.10)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(tsx@4.23.10)(yaml@2.9.0))
+
   packages/provider-kit:
     dependencies:
       '@gs/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@gs/crypto':
+        specifier: workspace:*
+        version: link:../crypto
       '@gs/errors':
         specifier: workspace:*
         version: link:../errors
@@ -675,6 +706,46 @@ importers:
         specifier: ^4.120.0
         version: 4.120.0(@cloudflare/workers-types@5.20260804.1)
 
+  workers/provider-webhooks:
+    dependencies:
+      '@gs/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@gs/crypto':
+        specifier: workspace:*
+        version: link:../../packages/crypto
+      '@gs/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@gs/events':
+        specifier: workspace:*
+        version: link:../../packages/events
+      '@gs/observability':
+        specifier: workspace:*
+        version: link:../../packages/observability
+      '@gs/platform-credentials':
+        specifier: workspace:*
+        version: link:../../packages/platform-credentials
+      '@gs/provider-kit':
+        specifier: workspace:*
+        version: link:../../packages/provider-kit
+      '@gs/providers':
+        specifier: workspace:*
+        version: link:../../packages/providers/registry
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^5.20260804.1
+        version: 5.20260804.1
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@22.20.1)(@vitest/coverage-v8@4.1.10)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(tsx@4.23.10)(yaml@2.9.0))
+      wrangler:
+        specifier: ^4.120.0
+        version: 4.120.0(@cloudflare/workers-types@5.20260804.1)
+
   workers/publisher:
     dependencies:
       '@gs/contracts':
@@ -698,6 +769,9 @@ importers:
       '@gs/observability':
         specifier: workspace:*
         version: link:../../packages/observability
+      '@gs/platform-credentials':
+        specifier: workspace:*
+        version: link:../../packages/platform-credentials
       '@gs/provider-kit':
         specifier: workspace:*
         version: link:../../packages/provider-kit

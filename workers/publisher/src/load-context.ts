@@ -1,16 +1,15 @@
 import { fromPublicId } from '@gs/contracts/ids';
-import { requiresProviderApp } from '@gs/contracts/providers';
 import { CredentialCipher, Keyring, type CREDENTIAL_ALGORITHM } from '@gs/crypto';
 import {
   findConnectionCredentials,
   findDestinationOwnership,
   findMediaByIds,
-  findProviderApp,
   getPostWithTargets,
   type Database,
   type MediaAsset,
   type PostTarget,
 } from '@gs/db';
+import { callbackUrlFor, resolveProviderApp } from '@gs/platform-credentials';
 import { resolveTargetContent } from '@gs/domain';
 import type {
   ProviderAppCredentials,
@@ -215,48 +214,25 @@ export async function loadPublishContext(
   // Resolved per publish rather than cached, because the whole point of storing platform
   // credentials in a table is that a rotated secret or a newly approved platform takes
   // effect without a deploy (plan §23). A cache would reintroduce the restart it removes.
-  let app: ProviderAppCredentials | null = null;
-  const strategy = stored[0]!.authStrategy;
+  const resolution = await resolveProviderApp(db, {
+    provider: ownership.provider,
+    authStrategy: stored[0]!.authStrategy,
+    projectId: ownership.projectId,
+    redirectUri: callbackUrlFor(env.PUBLIC_API_ORIGIN ?? '', ownership.provider),
+    env,
+  });
 
-  if (requiresProviderApp(strategy)) {
-    const row = await findProviderApp(db, ownership.provider, ownership.projectId);
-
-    if (!row || row.disabledAt || !row.clientId || !row.encryptedClientSecret) {
-      // Blocked rather than thrown: a missing platform application is not this post's
-      // fault and will not be fixed by retrying it. Blocking records a precise reason on
-      // the target, which is what the dashboard shows and what a support reply quotes.
-      return {
-        blocked: {
-          code: 'PROVIDER_NOT_CONFIGURED',
-          message: `No application credentials are configured for ${ownership.provider}.`,
-        },
-      } as PublishContext;
-    }
-
-    const clientSecret = await cipher.decrypt(
-      {
-        ciphertext: row.encryptedClientSecret.ciphertext,
-        nonce: row.encryptedClientSecret.nonce,
-        algorithm: row.encryptedClientSecret.algorithm as typeof CREDENTIAL_ALGORITHM,
-        keyVersion: row.encryptedClientSecret.keyVersion,
-      },
-      {
-        // Matches how the API encrypted it: a platform-managed app belongs to no tenant,
-        // so those slots carry a constant rather than being dropped from the AAD.
-        organizationId: row.organizationId ?? 'platform',
-        projectId: row.projectId ?? 'platform',
-        connectionId: row.id,
-        credentialType: 'client_secret',
-      },
-    );
-
-    app = {
-      clientId: row.clientId,
-      clientSecret,
-      redirectUri: `${env.PUBLIC_API_ORIGIN ?? ''}/v1/oauth/${ownership.provider}/callback`,
-      metadata: (row.callbackConfig ?? {}) as Record<string, unknown>,
-    };
+  if (resolution.kind === 'unavailable') {
+    // Blocked rather than thrown: a missing platform application is not this post's fault
+    // and will not be fixed by retrying it. Blocking records a precise reason on the
+    // target, which is what the dashboard shows and what a support reply quotes.
+    return {
+      blocked: { code: 'PROVIDER_NOT_CONFIGURED', message: resolution.message },
+    } as PublishContext;
   }
+
+  const app: ProviderAppCredentials | null =
+    resolution.kind === 'resolved' ? resolution.credentials : null;
 
   return {
     credentials,

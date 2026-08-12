@@ -17,6 +17,7 @@
     "@gs/errors": "workspace:*",
     "@gs/events": "workspace:*",
     "@gs/observability": "workspace:*",
+    "@gs/platform-credentials": "workspace:*",
     "@gs/provider-kit": "workspace:*",
     "@gs/providers": "workspace:*",
     "@gs/storage": "workspace:*"

@@ -18,6 +18,8 @@ import type {
   PreparedPublish,
   ProviderDestination,
   ProviderErrorContext,
+  ProviderWebhookRequest,
+  ProviderWebhookResult,
   PublishResult,
   PublishStatusInput,
   PublishStatusResult,
@@ -28,7 +30,6 @@ import type {
   RefreshResult,
   RevokeCredentialInput,
   ValidateTargetInput,
-  VerifiedProviderEvent,
 } from './types.js';
 
 /**
@@ -104,8 +105,14 @@ export interface SocialProviderAdapter {
    */
   normalizeError(error: unknown, context: ProviderErrorContext): NormalizedProviderError;
 
-  /** Present only for providers that deliver webhooks (plan §34). */
-  verifyWebhook?(request: Request): Promise<VerifiedProviderEvent>;
+  /**
+   * Present only for providers that deliver webhooks (plan §34).
+   *
+   * Must be pure and fast: verify the signature, carve the batch into normalized events,
+   * return. No network calls and no side effects — the ingress acknowledges before any
+   * processing happens, and anything slow here eats into the provider's ack deadline.
+   */
+  verifyWebhook?(request: ProviderWebhookRequest): Promise<ProviderWebhookResult>;
 }
 
 /**

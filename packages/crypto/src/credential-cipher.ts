@@ -132,12 +132,17 @@ export class Keyring {
   /**
    * Build a keyring from environment variables named `CREDENTIAL_KEK_V{n}`, with the
    * active version in `CREDENTIAL_KEK_ACTIVE_VERSION`.
+   *
+   * Accepts `unknown` values because the caller is usually a Worker `Env`, which also
+   * carries Hyperdrive handles, queues and Durable Object namespaces. Non-string values
+   * are skipped rather than coerced — a binding object stringified into key material
+   * would produce a keyring that loads successfully and decrypts nothing.
    */
-  static fromEnv(env: Record<string, string | undefined>): Keyring {
+  static fromEnv(env: Record<string, unknown>): Keyring {
     const entries: KeyringEntry[] = [];
     for (const [name, value] of Object.entries(env)) {
       const match = /^CREDENTIAL_KEK_V(\d+)$/.exec(name);
-      if (match && value) {
+      if (match && typeof value === 'string' && value.length > 0) {
         entries.push({ version: Number(match[1]), material: value });
       }
     }
@@ -148,7 +153,10 @@ export class Keyring {
       );
     }
 
-    const declared = env.CREDENTIAL_KEK_ACTIVE_VERSION;
+    const declared =
+      typeof env.CREDENTIAL_KEK_ACTIVE_VERSION === 'string'
+        ? env.CREDENTIAL_KEK_ACTIVE_VERSION
+        : undefined;
     const activeVersion = declared
       ? Number(declared)
       : Math.max(...entries.map((entry) => entry.version));

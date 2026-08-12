@@ -39,6 +39,24 @@ export async function deriveWebhookSecret(
   return `${SECRET_DISPLAY_PREFIX}${derived}`;
 }
 
+/**
+ * The token a provider echoes back during a webhook subscription handshake (plan §34).
+ *
+ * Derived rather than invented, for the same reasons as the endpoint secret above: there
+ * is no plaintext token in the database to leak, and the value is stable enough to be
+ * displayed on the Platforms page and pasted into the provider's developer console.
+ *
+ * Distinct from `deriveWebhookSecret` by its label, so an outbound signing secret and an
+ * inbound verify token can never collide even for the same id and version.
+ */
+export async function deriveProviderVerifyToken(
+  root: Uint8Array,
+  provider: string,
+  providerAppId: string,
+): Promise<string> {
+  return hmacSha256Base64Url(root, `provider-webhook-verify|${provider}|${providerAppId}`);
+}
+
 /** The exact string that gets signed. Shared by us and by the customer's verifier. */
 export function webhookSigningPayload(timestamp: number, rawBody: string): string {
   return `${timestamp}.${rawBody}`;

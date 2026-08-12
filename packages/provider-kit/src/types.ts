@@ -368,16 +368,108 @@ export interface DeleteResult {
 // Webhooks (plan §34)
 // ---------------------------------------------------------------------------
 
+/**
+ * What an inbound provider event *means* to the engine.
+ *
+ * Deliberately a small closed set. Providers describe their own events in their own
+ * vocabulary — Meta's `permissions` field change, LinkedIn's `REVOKE` notification and
+ * TikTok's `authorization.removed` all say the same thing — and the engine must branch on
+ * the meaning, never on the provider's wording, for the same reason retry policy branches
+ * on the normalized error code (plan §79).
+ *
+ * Anything an adapter cannot confidently classify is `unrecognized`: it is still stored
+ * for forensics, but nothing acts on it (Rule 14). Guessing at a revocation would
+ * disconnect a working account; guessing at a publish success would mark an unpublished
+ * post live.
+ */
+export type ProviderEventKind =
+  /** The user or platform withdrew authorization. Connection needs reconnecting. */
+  | 'authorization_revoked'
+  /** The credential is still valid but a scope we relied on is gone. */
+  | 'permissions_changed'
+  /** An asynchronous publish the provider had accepted has now completed. */
+  | 'publish_succeeded'
+  /** An asynchronous publish failed after acceptance — moderation, transcode, policy. */
+  | 'publish_failed'
+  /** Account metadata changed: name, handle, avatar, account type. */
+  | 'account_updated'
+  /** Someone engaged with a published post. Consumed by the engagement layer (Phase 7). */
+  | 'engagement'
+  /** Understood as a real event, but nothing in this system acts on it. */
+  | 'unrecognized';
+
+/**
+ * One normalized event carved out of an inbound provider webhook.
+ *
+ * A single HTTP POST frequently carries many of these — Meta batches up to 1000 updates
+ * per request — so verification is a property of the *request* and lives on
+ * {@link ProviderWebhookResult}, while identity and dedupe are properties of each event.
+ */
 export interface VerifiedProviderEvent {
-  /** False when the signature does not verify. The engine drops the event and alerts. */
-  readonly verified: boolean;
-  /** Provider's event id, used for dedupe (plan §10.4). */
+  /**
+   * Provider's own event id when it supplies a stable one (plan §10.4). `null` when it
+   * does not, in which case the engine fingerprints the payload instead — the adapter
+   * must not invent an id, because a fabricated one defeats deduplication silently.
+   */
   readonly externalEventId: string | null;
+  readonly kind: ProviderEventKind;
+  /** The provider's own event name, preserved verbatim for logs and support. */
   readonly eventType: string;
   /** Provider account the event concerns, for routing to a connection. */
   readonly externalAccountId: string | null;
+  /** Provider id of the object the event is about: a post, a media container, a comment. */
+  readonly externalObjectId: string | null;
+  /** UTC ISO-8601 when the provider says it happened, not when we received it (Rule 15). */
+  readonly occurredAt: string | null;
   readonly payload: unknown;
 }
+
+/**
+ * An inbound webhook, reduced to the parts an adapter may see.
+ *
+ * The raw body is passed as the exact bytes received. Re-serializing before verification
+ * would break every HMAC scheme in use, because no two JSON encoders agree on key order
+ * and unicode escaping.
+ */
+export interface ProviderWebhookRequest {
+  readonly method: string;
+  readonly url: string;
+  /** Lower-cased header names, so an adapter never has to guess at casing. */
+  readonly headers: Readonly<Record<string, string>>;
+  readonly rawBody: string;
+  /**
+   * The registered app, needed because most schemes sign with the app secret. `null` when
+   * the provider has no app to register; an adapter that needs one must report
+   * `verified: false` with a reason rather than skipping the check (Rule 14).
+   */
+  readonly app: ProviderAppCredentials | null;
+  /** The token registered with the provider for subscription handshakes, when it uses one. */
+  readonly verifyToken: string | null;
+}
+
+export type ProviderWebhookResult =
+  /**
+   * A subscription handshake rather than an event — Meta's `hub.challenge`, X's CRC.
+   * The engine echoes `body` back with `status` and stores nothing.
+   */
+  | {
+      readonly kind: 'handshake';
+      readonly status: number;
+      readonly body: string;
+      readonly contentType: string;
+    }
+  /**
+   * Real traffic. `verified: false` means the signature check failed: the engine records
+   * the attempt for forensics, acts on none of it, and still acknowledges — arguing with
+   * a forged request by returning 401 only tells the sender which secret to try next.
+   */
+  | {
+      readonly kind: 'events';
+      readonly verified: boolean;
+      /** Why verification failed. Logged, never returned to the caller. */
+      readonly reason?: string;
+      readonly events: readonly VerifiedProviderEvent[];
+    };
 
 export interface CapabilityContext {
   readonly context: ProviderCallContext;

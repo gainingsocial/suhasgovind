@@ -163,7 +163,14 @@ export async function listProviderApps(
 ): Promise<
   Pick<
     ProviderApp,
-    'id' | 'provider' | 'ownership' | 'clientId' | 'approvalStatus' | 'scopes' | 'updatedAt'
+    | 'id'
+    | 'provider'
+    | 'ownership'
+    | 'clientId'
+    | 'approvalStatus'
+    | 'scopes'
+    | 'callbackConfig'
+    | 'updatedAt'
   >[]
 > {
   return db
@@ -174,6 +181,10 @@ export async function listProviderApps(
       clientId: providerApps.clientId,
       approvalStatus: providerApps.approvalStatus,
       scopes: providerApps.scopes,
+      // Non-secret registration settings — the webhook verify token an operator pinned,
+      // for example. Included because the admin screen must show what is actually in
+      // effect, and excluded from nothing else because it holds nothing sensitive.
+      callbackConfig: providerApps.callbackConfig,
       updatedAt: providerApps.updatedAt,
     })
     .from(providerApps)
@@ -201,6 +212,27 @@ export async function findProviderAppById(
       projectId: providerApps.projectId,
       organizationId: providerApps.organizationId,
     })
+    .from(providerApps)
+    .where(eq(providerApps.id, providerAppId))
+    .limit(1);
+
+  return rows[0] ?? null;
+}
+
+/**
+ * The full row, ciphertext included, for a caller that must actually use the credentials.
+ *
+ * Separate from `findProviderAppById` on purpose. That one is an authority check and
+ * projects away the secret; this one is the deliberate, greppable act of loading a client
+ * secret into memory. Widening the narrow lookup would have made every authority check
+ * quietly start reading ciphertext it never needs (plan §7.2).
+ */
+export async function loadProviderAppWithCredentials(
+  db: Database,
+  providerAppId: string,
+): Promise<ProviderApp | null> {
+  const rows = await db
+    .select()
     .from(providerApps)
     .where(eq(providerApps.id, providerAppId))
     .limit(1);

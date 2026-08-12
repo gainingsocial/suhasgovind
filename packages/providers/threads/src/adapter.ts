@@ -19,6 +19,7 @@ import {
   ContainerNotReadyError,
   GraphError,
   graphCall,
+  handleMetaWebhook,
   normalizeGraphError,
   readContainerStatus,
   requireAccessToken,
@@ -710,6 +711,15 @@ export function createThreadsAdapter(): SocialProviderAdapter {
         code: 'UNKNOWN_PROVIDER_ERROR',
         message: `Unrecognized Threads failure during ${context.operation}.`,
       };
+    },
+
+    /**
+     * Threads webhooks (plan §34). A separate app registration from Facebook and
+     * Instagram, so a separate secret — which the ingress supplies per provider rather
+     * than assuming one Meta app covers all three.
+     */
+    verifyWebhook(request) {
+      return handleMetaWebhook(request, 'threads');
     },
   };
 }

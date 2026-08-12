@@ -1,11 +1,10 @@
 {
-  "name": "@gs/provider-kit",
+  "name": "@gs/platform-credentials",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./certification": "./src/certification/index.ts"
+    ".": "./src/index.ts"
   },
   "scripts": {
     "lint": "eslint src",
@@ -14,8 +13,9 @@
   "dependencies": {
     "@gs/contracts": "workspace:*",
     "@gs/crypto": "workspace:*",
+    "@gs/db": "workspace:*",
     "@gs/errors": "workspace:*",
-    "zod": "^4.4.3"
+    "@gs/provider-kit": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^6.0.3",

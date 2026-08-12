@@ -33,4 +33,10 @@ export {
   type BuildCapabilitiesInput,
 } from './capabilities.js';
 
+export {
+  hmacSha256Hex,
+  timingSafeEqualHex,
+  verifyHmacHexSignature,
+} from './webhook-verification.js';
+
 export * as findings from './findings.js';

@@ -88,6 +88,7 @@ export type {
   ConnectionWithScopes,
   DestinationOwnership,
   EncryptedCredentialInput,
+  HealthTransition,
   ListConnectionsInput,
   SaveConnectionInput,
   SaveConnectionResult,
@@ -100,6 +101,7 @@ export {
   findDestinationById,
   findDestinationOwnership,
   findDestinationOwnerships,
+  listConnectionHealthEvents,
   listConnections,
   listDestinationsForConnection,
   planConnectionIds,
@@ -108,6 +110,20 @@ export {
   setConnectionHealth,
   storeDestinationCapabilities,
 } from './repositories/connections.js';
+
+export type {
+  RecordProviderEventInput,
+  RecordedProviderEvent,
+} from './repositories/provider-events.js';
+export {
+  attachProviderEventOwner,
+  findConnectionsByProviderAccount,
+  findProviderEventById,
+  findUnprocessedProviderEvents,
+  markProviderEventProcessed,
+  purgeProviderEvents,
+  recordProviderEvent,
+} from './repositories/provider-events.js';
 
 export type { CreateOAuthSessionInput } from './repositories/oauth-sessions.js';
 export {
@@ -194,6 +210,7 @@ export {
   findProviderApp,
   findProviderAppById,
   listProviderApps,
+  loadProviderAppWithCredentials,
   setApprovalStatus,
   upsertProviderApp,
 } from './repositories/provider-apps.js';

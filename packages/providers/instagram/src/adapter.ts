@@ -22,6 +22,7 @@ import {
   exchangeForLongLivedToken,
   GraphError,
   graphCall,
+  handleMetaWebhook,
   inspectToken,
   listManagedPages,
   normalizeGraphError,
@@ -792,6 +793,11 @@ export function createInstagramAdapter(): SocialProviderAdapter {
         code: 'UNKNOWN_PROVIDER_ERROR',
         message: `Unrecognized Instagram failure during ${context.operation}.`,
       };
+    },
+
+    /** Instagram webhooks (plan §34) — same protocol as the rest of the Meta family. */
+    verifyWebhook(request) {
+      return handleMetaWebhook(request, 'instagram');
     },
   };
 }

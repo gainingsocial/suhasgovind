@@ -31,6 +31,7 @@ packages/
   errors/               Agent-native error envelope + provider error taxonomy
   events/               Internal domain events (decoupled from webhook formatting)
   observability/        Request/trace IDs, structured logging, secret redaction
+  platform-credentials/ Resolves + decrypts a registered platform app, shared by all runtimes
   provider-kit/         SocialProviderAdapter interface + certification harness
   providers/
     registry/           getAdapter(provider) — the only way the core reaches an adapter
@@ -57,8 +58,8 @@ infra/
 
 docs/
   adr/                  Architecture decision records — read before changing architecture
-  architecture/         Diagrams and deep dives
-  platforms/            Per-provider integration + compliance notes
+  architecture/         Deep dives on the parts whose ordering is load-bearing
+  errors/               Every error code the API can return, and what to do about it
 ```
 
 ## Prerequisites
@@ -127,6 +128,12 @@ The page shows the exact redirect URI to register in the platform's developer co
 Bluesky, Telegram and Discord need none of this — they have no application to register,
 which is why they are the reference providers. Progress on each application is tracked in
 [`PLATFORM_APPROVALS.md`](./PLATFORM_APPROVALS.md).
+
+Platforms that deliver webhooks also show a webhook URL and verify token on that page. Only
+the Meta family (Facebook Pages, Instagram, Threads) has a certified webhook integration
+today; the rest show no URL, because a URL that verifies nothing looks configured while
+discarding everything it receives. See
+[inbound provider webhooks](./docs/architecture/inbound-provider-webhooks.md).
 
 TikTok and YouTube add a second step. Both restrict an unaudited client to private posting
 *without failing the request*, so both adapters refuse to publish anything public until the

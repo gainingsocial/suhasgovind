@@ -45,6 +45,7 @@ export type { WebhookVerificationInput, WebhookVerificationResult } from './webh
 export {
   DEFAULT_TOLERANCE_SECONDS,
   WEBHOOK_HEADERS,
+  deriveProviderVerifyToken,
   deriveWebhookSecret,
   signWebhookPayload,
   verifyProviderHmacSignature,

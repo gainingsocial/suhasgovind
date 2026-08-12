@@ -10794,6 +10794,26 @@
                           "redirect_uri": {
                             "type": "string"
                           },
+                          "webhook_url": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "webhook_verify_token": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "updated_at": {
                             "type": "string",
                             "format": "date-time",
@@ -10810,6 +10830,8 @@
                           "approval_status",
                           "scopes",
                           "redirect_uri",
+                          "webhook_url",
+                          "webhook_verify_token",
                           "updated_at"
                         ],
                         "additionalProperties": false
@@ -11041,6 +11063,26 @@
                     "redirect_uri": {
                       "type": "string"
                     },
+                    "webhook_url": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "webhook_verify_token": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "updated_at": {
                       "type": "string",
                       "format": "date-time",
@@ -11057,6 +11099,8 @@
                     "approval_status",
                     "scopes",
                     "redirect_uri",
+                    "webhook_url",
+                    "webhook_verify_token",
                     "updated_at"
                   ],
                   "additionalProperties": false

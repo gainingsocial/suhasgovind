@@ -270,6 +270,22 @@ export const ProviderAppSchema = z.object({
   scopes: z.array(z.string()),
   /** The URL to register with the platform. Copy it into their developer console. */
   redirect_uri: z.string(),
+  /**
+   * Where this platform should deliver webhooks (plan §34). Unversioned on purpose: the
+   * value is typed into a developer console once and stays there for years, so an API
+   * version bump must not silently stop a provider from reaching us.
+   *
+   * `null` for platforms with no certified webhook integration — showing a URL that
+   * verifies nothing would invite an operator to register an endpoint that drops
+   * everything it receives.
+   */
+  webhook_url: z.string().nullable(),
+  /**
+   * The token to paste into the platform's webhook setup screen, where the platform uses
+   * one. Derived rather than stored, so it is stable and there is no plaintext token in
+   * the database to leak.
+   */
+  webhook_verify_token: z.string().nullable(),
   updated_at: z.iso.datetime(),
 });
 

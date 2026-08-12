@@ -1,0 +1,34 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "gs-provider-webhooks",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat"],
+  // Providers deliver to a stable, registered URL. A workers.dev subdomain would be one,
+  // but a route on our own domain is what a developer console can keep pointing at across
+  // account changes.
+  "workers_dev": false,
+  "observability": { "enabled": true, "head_sampling_rate": 1 },
+  "vars": { "ENVIRONMENT": "test", "SERVICE_VERSION": "0.1.0", "LOG_LEVEL": "info" },
+  "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "563bb35cce9040409987142c4d631c8e" }],
+  "queues": {
+    "producers": [
+      { "binding": "PROVIDER_EVENT_QUEUE", "queue": "gs-provider-events" },
+      { "binding": "WEBHOOK_QUEUE", "queue": "gs-webhook-delivery" }
+    ],
+    "consumers": [
+      {
+        "queue": "gs-provider-events",
+        "max_batch_size": 20,
+        "max_batch_timeout": 5,
+        "max_concurrency": 5,
+        // Processing is idempotent, so queue retries are safe here — unlike outbound
+        // delivery, whose ladder lives in the database.
+        "max_retries": 3,
+        "dead_letter_queue": "gs-provider-events-dlq"
+      }
+    ]
+  },
+  // The safety net for an enqueue that failed after the row was committed.
+  "triggers": { "crons": ["*/15 * * * *"] }
+}

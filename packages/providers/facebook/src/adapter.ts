@@ -8,6 +8,7 @@ import {
   GRAPH_HOST,
   GraphError,
   graphCall,
+  handleMetaWebhook,
   inspectToken,
   listManagedPages,
   normalizeGraphError,
@@ -634,6 +635,14 @@ export function createFacebookAdapter(): SocialProviderAdapter {
         code: 'UNKNOWN_PROVIDER_ERROR',
         message: `Unrecognized Facebook failure during ${context.operation}.`,
       };
+    },
+
+    /**
+     * Page webhooks (plan §34). `page` is the Meta webhook object for a Facebook Page,
+     * which is what distinguishes a Page comment from the identical Instagram payload.
+     */
+    verifyWebhook(request) {
+      return handleMetaWebhook(request, 'page');
     },
   };
 }

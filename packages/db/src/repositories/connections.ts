@@ -3,9 +3,11 @@ import { and, asc, desc, eq, gt, inArray, isNull, lt, notInArray, sql } from 'dr
 
 import type { Database, Transaction } from '../client.js';
 import {
+  connectionHealthEvents,
   connectionScopes,
   socialConnections,
   socialDestinations,
+  type ConnectionHealthEvent,
   type SocialConnection,
   type SocialCredential,
   type SocialDestination,
@@ -299,17 +301,79 @@ export async function storeDestinationCapabilities(
     .where(eq(socialDestinations.id, destinationId));
 }
 
-/** Health transition, recorded on the connection (the audit trail lives in §42's table). */
+export interface HealthTransition {
+  /** False when the connection was already in this state. */
+  changed: boolean;
+  from: SocialConnection['health'] | null;
+  to: SocialConnection['health'];
+}
+
+/**
+ * Move a connection's health, and record the transition (plan §42).
+ *
+ * Conditional on the current value, and the history row is written only when the value
+ * actually moved. Both matter because health is written from several places at once — the
+ * publisher on a failed call, the health sweeper, an inbound provider webhook — and each
+ * is at-least-once. Writing unconditionally would produce a history of a hundred identical
+ * "still degraded" rows, and would re-emit `connection.reauth_required` to the customer on
+ * every retry of the same failure.
+ *
+ * `healthCheckedAt` is stamped regardless, since "we looked and nothing changed" is
+ * genuinely different from "we have not looked since Tuesday".
+ */
 export async function setConnectionHealth(
   db: Database,
   connectionId: string,
   health: SocialConnection['health'],
   detail: string | null,
-): Promise<void> {
-  await db
+  context: { reason?: string; providerErrorCode?: string | null; traceId?: string | null } = {},
+): Promise<HealthTransition> {
+  const updated = await db
     .update(socialConnections)
     .set({ health, healthDetail: detail, healthCheckedAt: new Date(), updatedAt: new Date() })
-    .where(eq(socialConnections.id, connectionId));
+    .where(eq(socialConnections.id, connectionId))
+    .returning({ id: socialConnections.id });
+
+  if (updated.length === 0) {
+    // The connection was deleted between resolution and write. Nothing to record.
+    return { changed: false, from: null, to: health };
+  }
+
+  const previous = await db
+    .select({ toHealth: connectionHealthEvents.toHealth })
+    .from(connectionHealthEvents)
+    .where(eq(connectionHealthEvents.connectionId, connectionId))
+    .orderBy(desc(connectionHealthEvents.createdAt))
+    .limit(1);
+
+  const from = previous[0]?.toHealth ?? null;
+  if (from === health) return { changed: false, from, to: health };
+
+  await db.insert(connectionHealthEvents).values({
+    id: newUuidV7(),
+    connectionId,
+    fromHealth: from,
+    toHealth: health,
+    reason: context.reason ?? detail,
+    providerErrorCode: context.providerErrorCode ?? null,
+    traceId: context.traceId ?? null,
+  });
+
+  return { changed: true, from, to: health };
+}
+
+/** The health story for one connection — "why did this stop working?" (plan §42). */
+export async function listConnectionHealthEvents(
+  db: Database,
+  connectionId: string,
+  limit: number,
+): Promise<ConnectionHealthEvent[]> {
+  return db
+    .select()
+    .from(connectionHealthEvents)
+    .where(eq(connectionHealthEvents.connectionId, connectionId))
+    .orderBy(desc(connectionHealthEvents.createdAt))
+    .limit(limit);
 }
 
 // ---------------------------------------------------------------------------

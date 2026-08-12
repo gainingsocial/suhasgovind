@@ -36,6 +36,13 @@ export {
 } from './facebook-login.js';
 
 export {
+  handleMetaWebhook,
+  metaHandshake,
+  parseMetaEvents,
+  verifyMetaSignature,
+} from './webhooks.js';
+
+export {
   ContainerNotReadyError,
   readContainerStatus,
   waitForContainer,
