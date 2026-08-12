@@ -7,4 +7,5 @@ export * from './identity.js';
 export * from './media.js';
 export * from './posts.js';
 export * from './profiles.js';
+export * from './usage.js';
 export * from './webhooks.js';

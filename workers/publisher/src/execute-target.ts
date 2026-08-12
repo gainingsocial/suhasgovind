@@ -9,6 +9,7 @@ import {
   markTargetPublished,
   markTargetReconciliationRequired,
   markTargetRetryableFailure,
+  meter,
   recalculatePostStatus,
   releaseTargetLease,
   startPublishAttempt,
@@ -71,6 +72,39 @@ export interface ExecuteResult {
 function nextAttemptDelayMs(attemptNumber: number): number {
   const base = Math.min(30_000 * 2 ** Math.max(attemptNumber - 1, 0), 6 * 60 * 60 * 1000);
   return Math.floor(Math.random() * base);
+}
+
+/**
+ * Record a successful publish as usage (plan §70).
+ *
+ * Failures are swallowed and logged rather than thrown. A metering write that fails must
+ * not turn a post that genuinely published into a retried target — the provider already
+ * has the post, and retrying it risks the duplicate the entire engine is built to avoid.
+ * Losing a usage row is a reconcilable accounting gap; a duplicate post is not.
+ */
+async function meterPublish(
+  db: Database,
+  context: { organizationId: string; projectId: string; projectEnvironmentId: string; profileId: string },
+  target: PostTarget,
+  logger: Logger,
+): Promise<void> {
+  try {
+    await meter(db, {
+      organizationId: context.organizationId,
+      projectId: context.projectId,
+      projectEnvironmentId: context.projectEnvironmentId,
+      profileId: context.profileId,
+      metric: 'successful_publish',
+      provider: target.provider,
+      resourceType: 'post_target',
+      resourceId: target.id,
+    });
+  } catch (error) {
+    logger.error('usage.metering_failed', {
+      postTargetId: target.id,
+      reason: error instanceof Error ? error.message : String(error),
+    });
+  }
 }
 
 export async function executeTarget(
@@ -445,6 +479,19 @@ export async function executeTarget(
       providerPostId: result.externalPostId,
       durationMs: Date.now() - startedAt,
     });
+
+    /**
+     * Metered at the moment it happened (plan §70).
+     *
+     * Keyed on the target, so a queue redelivery that re-publishes nothing cannot
+     * double-bill. Simulated publishes are excluded above by the short circuit — nobody
+     * should pay for a rehearsal.
+     *
+     * Recorded after the attempt, never before: a usage row for a publish that then threw
+     * would bill for something that did not happen, and the customer has no way to
+     * discover it.
+     */
+    await meterPublish(db, context.tenancy, target, logger);
 
     await recalculatePostStatus(db, target.postId);
 

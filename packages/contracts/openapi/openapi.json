@@ -7713,6 +7713,151 @@
         }
       }
     },
+    "/v1/usage": {
+      "get": {
+        "operationId": "getUsage",
+        "summary": "Usage for a period",
+        "description": "Metered usage summed from the immutable event log (plan §70), scoped to this key’s environment. Defaults to the last 30 days. Pass `metric` to additionally receive a daily breakdown for that one metric.\n\nSummed from events rather than from rolled-up counters on purpose: a counter is an optimization that can drift, and this is the number an invoice is built from.\n\nRequires scope: `analytics:read`.",
+        "tags": [
+          "Observability"
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage totals, and a daily series when a metric was named.",
+            "headers": {
+              "x-request-id": {
+                "description": "Echoed request identifier. Quote this when reporting a problem.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "x-trace-id": {
+                "description": "Trace identifier correlating this request across services.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "const": "usage"
+                    },
+                    "from": {
+                      "type": "string"
+                    },
+                    "to": {
+                      "type": "string"
+                    },
+                    "totals": {
+                      "readOnly": true,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "metric": {
+                            "type": "string"
+                          },
+                          "quantity": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "metric",
+                          "quantity"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "daily": {
+                      "readOnly": true,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "date": {
+                            "type": "string"
+                          },
+                          "quantity": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "date",
+                          "quantity"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "object",
+                    "from",
+                    "to",
+                    "totals",
+                    "daily"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`INVALID_REQUEST` — The request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTHENTICATION_REQUIRED` — An API key is required. Send it as `Authorization: Bearer sk_live_...`.\n\n`API_KEY_MALFORMED` — The API key is malformed. Expected a key beginning with `sk_test_` or `sk_live_`.\n\n`API_KEY_INVALID` — The API key is not valid.\n\n`API_KEY_REVOKED` — This API key has been revoked.\n\n`API_KEY_EXPIRED` — This API key has expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR` — An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/compose": {
       "post": {
         "operationId": "composePost",

@@ -129,6 +129,20 @@ export {
   upsertFeatureFlag,
 } from './repositories/environment-settings.js';
 
+export type { RecordUsageInput, UsageMetric, UsageSummaryRow } from './repositories/usage.js';
+export {
+  USAGE_METRICS,
+  incrementUsageCounter,
+  listUsageEvents,
+  meter,
+  readUsageCounter,
+  recordUsage,
+  summarizeUsage,
+  usageByDay,
+  usageDate,
+  usageMonth,
+} from './repositories/usage.js';
+
 export type {
   RecordProviderEventInput,
   RecordedProviderEvent,

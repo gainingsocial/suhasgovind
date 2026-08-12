@@ -17,6 +17,7 @@ import { createMcpRoute } from './routes/mcp.js';
 import { posts } from './routes/posts.js';
 import { profiles } from './routes/profiles.js';
 import { providerApps } from './routes/provider-apps.js';
+import { usage } from './routes/usage.js';
 import { webhookDeliveriesRoute, webhooks } from './routes/webhooks.js';
 
 /**
@@ -57,6 +58,7 @@ app.route('/v1/compose', compose);
 app.route('/v1/api-keys', apiKeys);
 app.route('/v1/provider-apps', providerApps);
 app.route('/v1/environments', environments);
+app.route('/v1/usage', usage);
 app.route('/v1/webhooks', webhooks);
 app.route('/v1/webhook-deliveries', webhookDeliveriesRoute);
 

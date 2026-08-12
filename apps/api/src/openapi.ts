@@ -65,6 +65,7 @@ import {
   ProfileListResponseSchema,
   ProfileSchema,
   UpdateProfileRequestSchema,
+  UsageResponseSchema,
 } from '@gs/contracts/http';
 import { PaginationQuerySchema } from '@gs/contracts/pagination';
 import { API_SCOPES, type ApiScope } from '@gs/contracts/scopes';
@@ -806,6 +807,24 @@ const ROUTES: RouteSpec[] = [
     successDescription: 'Per-target validation results.',
     response: PreflightResponseSchema,
     errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'PROFILE_NOT_FOUND', 'DUPLICATE_DESTINATION'],
+  },
+  {
+    method: 'get',
+    path: '/v1/usage',
+    operationId: 'getUsage',
+    summary: 'Usage for a period',
+    description:
+      'Metered usage summed from the immutable event log (plan §70), scoped to this key’s ' +
+      'environment. Defaults to the last 30 days. Pass `metric` to additionally receive a ' +
+      'daily breakdown for that one metric.\n\n' +
+      'Summed from events rather than from rolled-up counters on purpose: a counter is an ' +
+      'optimization that can drift, and this is the number an invoice is built from.',
+    tags: ['Observability'],
+    scopes: ['analytics:read'],
+    successStatus: 200,
+    successDescription: 'Usage totals, and a daily series when a metric was named.',
+    response: UsageResponseSchema,
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST'],
   },
   {
     method: 'post',

@@ -57,6 +57,19 @@ export interface PublishContext {
   app: ProviderAppCredentials | null;
   destinationExternalId: string;
   content: ResolvedTargetContent;
+  /**
+   * Who this publish belongs to.
+   *
+   * Carried through rather than re-queried when usage is metered. The ownership chain was
+   * already resolved to load the credentials, and asking again would be a second round
+   * trip on the hot path for an answer that cannot have changed mid-publish.
+   */
+  tenancy: {
+    organizationId: string;
+    projectId: string;
+    projectEnvironmentId: string;
+    profileId: string;
+  };
 }
 
 /** Media the provider fetches by URL. Short-lived signed reads, never public URLs (§31). */
@@ -310,6 +323,12 @@ export async function loadPublishContext(
     simulate,
     credentials,
     app,
+    tenancy: {
+      organizationId: ownership.organizationId,
+      projectId: ownership.projectId,
+      projectEnvironmentId: ownership.projectEnvironmentId,
+      profileId: ownership.profileId,
+    },
     destinationExternalId: ownership.providerDestinationId,
     content: {
       text: resolved.text ?? '',
