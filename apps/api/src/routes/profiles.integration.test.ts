@@ -212,7 +212,13 @@ describeIntegration('profiles', () => {
             executionContext,
           );
 
-        await Promise.all([0, 1, 2, 3, 4].map((i) => post(`Page ${i}`)));
+        // Checked, not fired and forgotten. These five run concurrently against a pooled
+        // connection, and a create that loses a connection under load used to surface at
+        // the bottom of this test as "expected 6, got 5" — a pagination assertion failing
+        // for a reason that has nothing to do with pagination. Asserting here means a
+        // flaky create says so where it happened.
+        const created = await Promise.all([0, 1, 2, 3, 4].map((i) => post(`Page ${i}`)));
+        expect(created.map((response) => response.status)).toEqual([201, 201, 201, 201, 201]);
 
         const seen: string[] = [];
         let cursor: string | null = null;
