@@ -33,6 +33,30 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
 
+      # Schema before code, always.
+      #
+      # Every migration in this repository is additive — new tables and columns — so a
+      # database that is one migration ahead of the running Workers is harmless, while a
+      # Worker that is ahead of the database returns 500s on a missing relation. That
+      # asymmetry is what decides the ordering, and it is why this is safe to automate:
+      # applying first can only ever leave the old code reading a schema it already
+      # understands.
+      #
+      # A migration that *removes* something breaks that assumption. When one is needed it
+      # must be split — deploy code that no longer uses the column, then drop it in a later
+      # migration — which is the discipline the ordering here quietly enforces.
+      #
+      # The runner is idempotent and prints "already up to date" when there is nothing
+      # pending, so this costs a few seconds on the overwhelming majority of deploys.
+      - name: Apply database migrations
+        run: pnpm db:migrate
+        env:
+          # No DATABASE_URL: the pooled connection is `gs_app`, which has no DDL permission
+          # by design. The runner would probe it, be refused and fall through — so passing
+          # it would only buy a wasted round trip and a confusing log line.
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
       # API first: the dashboard calls it, so a dashboard expecting a new endpoint should
       # never go live before that endpoint exists.
       - name: Deploy API

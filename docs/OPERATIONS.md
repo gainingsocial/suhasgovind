@@ -151,7 +151,17 @@ their `gs_app` grants automatically, because `0002_app_role` set default privile
 objects `postgres` creates in `public` — there is no grant to remember alongside a
 migration.
 
-**Still not run by the deploy.** The workflow deploys Workers and does not migrate, because
-a migration that runs itself on every push is one that can roll a schema forward while the
-previous Worker version is still serving. Run `pnpm db:migrate` after merging a migration;
-`--dry-run` first if you want to see what it will do.
+**Run automatically on deploy — nothing to remember.** The workflow applies pending
+migrations before it deploys a single Worker, using the same command and the same fallback.
+
+Schema before code, always. Every migration here is additive, so a database one migration
+ahead of the running Workers is harmless, while a Worker ahead of the database returns 500s
+on a missing relation. That asymmetry decides the ordering and is what makes automating it
+safe: applying first can only leave the old code reading a schema it already understands.
+
+A migration that *removes* something breaks that assumption, and has to be split — deploy
+code that no longer uses the column, then drop it in a later migration. The ordering here
+quietly enforces that discipline.
+
+Running it locally is still fine and is the fastest way to see what is pending:
+`pnpm db:migrate --dry-run`.
