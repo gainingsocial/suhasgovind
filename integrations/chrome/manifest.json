@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "GainingSocial",
+  "version": "1.0.0",
+  "description": "Share the page you are on to every social network you have connected, with a preview of exactly what each one will publish.",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": ["https://api.gainingsocial.com/*"],
+  "action": {
+    "default_title": "Share this page",
+    "default_popup": "src/popup.html"
+  },
+  "options_page": "src/options.html",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

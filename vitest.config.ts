@@ -11,7 +11,14 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     globals: false,
-    include: ['packages/**/src/**/*.{test,spec}.ts', 'apps/**/src/**/*.{test,spec}.ts'],
+    include: [
+      'packages/**/src/**/*.{test,spec}.ts',
+      'apps/**/src/**/*.{test,spec}.ts',
+      // The browser extension is plain JavaScript — it ships to Chrome unbundled, so
+      // there is no build step to compile TypeScript away. Its extraction logic still
+      // needs covering, hence the `js` here.
+      'integrations/**/src/**/*.{test,spec}.js',
+    ],
     exclude: [
       '**/node_modules/**',
       '**/dist/**',

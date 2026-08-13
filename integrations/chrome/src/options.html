@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>GainingSocial settings</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="options">
+      <h1>GainingSocial</h1>
+
+      <section class="field">
+        <label for="api-key">API key</label>
+        <input id="api-key" type="password" autocomplete="off" placeholder="sk_test_…" />
+        <p class="hint">
+          Create one in <a href="https://gainingsocial.com/app/keys" target="_blank" rel="noopener">your dashboard</a>.
+          A test key can never publish to a real account, so it is safe to try.
+        </p>
+      </section>
+
+      <section class="field">
+        <label for="profile">Publish as</label>
+        <select id="profile"><option value="">Add an API key first</option></select>
+      </section>
+
+      <section class="field">
+        <span class="label">Share to</span>
+        <div id="destinations" class="destinations">
+          <p class="hint">Choose a profile to see its connected accounts.</p>
+        </div>
+      </section>
+
+      <section class="field">
+        <label class="check">
+          <input id="utm" type="checkbox" />
+          Tag shared links so the traffic is attributable in analytics
+        </label>
+        <input id="campaign" type="text" placeholder="gainingsocial" />
+      </section>
+
+      <button id="save" class="button" type="button">Save</button>
+      <p id="status" class="status" role="status" aria-live="polite" hidden></p>
+    </main>
+
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

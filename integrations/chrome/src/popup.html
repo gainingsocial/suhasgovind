@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Share this page</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="popup">
+      <header class="head">
+        <span class="mark">gs</span>
+        <span class="name">GainingSocial</span>
+        <a class="settings" id="open-options" href="#">Settings</a>
+      </header>
+
+      <div id="status" class="status" role="status" aria-live="polite">Reading the page…</div>
+
+      <section id="preview" class="preview" hidden>
+        <h1 id="title" class="title"></h1>
+        <p id="url" class="url"></p>
+        <div id="targets" class="targets"></div>
+      </section>
+
+      <footer class="foot">
+        <button id="share" class="button" type="button" disabled>Share</button>
+      </footer>
+    </main>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

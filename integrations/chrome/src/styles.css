@@ -1,0 +1,238 @@
+/*
+ * Extension chrome.
+ *
+ * Follows the browser's own light/dark preference rather than picking one. A popup that is
+ * blinding white inside a dark browser is the single most common complaint about
+ * extensions in this category.
+ */
+
+:root {
+  --bg: #ffffff;
+  --surface: #f7f7f8;
+  --text: #1b1c20;
+  --muted: #5c5f6b;
+  --border: #e3e4e8;
+  --brand: #f5c518;
+  --on-brand: #1b1c20;
+  --fail: #b32d2e;
+  --ok: #1a7f47;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1c20;
+    --surface: #24262c;
+    --text: #f2f3f5;
+    --muted: #a1a5b0;
+    --border: #34373f;
+    --fail: #ff6b6b;
+    --ok: #4ade80;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.popup {
+  width: 360px;
+  display: flex;
+  flex-direction: column;
+  max-height: 560px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--brand);
+  color: var(--on-brand);
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.name {
+  font-weight: 600;
+}
+
+.settings {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.settings:hover {
+  color: var(--text);
+}
+
+.status {
+  margin: 0;
+  padding: 12px 14px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.status[data-tone='error'] {
+  color: var(--fail);
+}
+
+.status[data-tone='warn'] {
+  color: var(--text);
+}
+
+.status[data-tone='ok'] {
+  color: var(--ok);
+}
+
+.preview {
+  padding: 0 14px 8px;
+  overflow-y: auto;
+}
+
+.title {
+  margin: 8px 0 2px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.url {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 11px;
+  word-break: break-all;
+}
+
+.target {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 10px;
+  margin-bottom: 8px;
+  background: var(--surface);
+}
+
+.target[data-status='blocked'] {
+  opacity: 0.65;
+}
+
+.target-name {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+  color: var(--muted);
+}
+
+.target-text {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.target-blocked {
+  margin: 6px 0 0;
+  color: var(--fail);
+  font-size: 11px;
+}
+
+.foot {
+  padding: 10px 14px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.button {
+  width: 100%;
+  min-height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--brand);
+  color: var(--on-brand);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Options */
+
+.options {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 28px 20px 40px;
+}
+
+.options h1 {
+  font-size: 18px;
+  margin: 0 0 20px;
+}
+
+.field {
+  margin-bottom: 22px;
+}
+
+.field label,
+.field .label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.field input[type='text'],
+.field input[type='password'],
+.field select {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+.check {
+  display: block;
+  font-weight: 400;
+  margin-bottom: 6px;
+}
+
+.hint {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.hint a {
+  color: inherit;
+}
+
+.warn {
+  color: var(--fail);
+}
+
+.destinations {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 10px;
+  background: var(--surface);
+}

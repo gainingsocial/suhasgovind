@@ -21,7 +21,7 @@ import { ApiError } from '@gs/errors';
 import { Hono, type Context } from 'hono';
 
 import type { AppEnv } from '../env.js';
-import { requirePathId } from '../lib/request.js';
+import { parseBody, parseQuery, requirePathId } from '../lib/request.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { withDatabase } from '../middleware/database.js';
 
@@ -79,7 +79,7 @@ export function createDraftSetRoutes(dispatch: InternalDispatch): Hono<AppEnv> {
 
   draftSets.get('/', withDatabase(), authenticate(['content:read']), async (c) => {
     const principal = c.get('principal');
-    const query = ListDraftSetsQuerySchema.parse(c.req.query());
+    const query = parseQuery(c, ListDraftSetsQuerySchema);
 
     const cursor = query.cursor ? fromPublicId('draftSet', query.cursor) : undefined;
     if (query.cursor && !cursor) {
@@ -152,7 +152,7 @@ export function createDraftSetRoutes(dispatch: InternalDispatch): Hono<AppEnv> {
   draftSets.patch('/:draftSetId', withDatabase(), authenticate(['content:write']), async (c) => {
     const principal = c.get('principal');
     const draftSetId = requirePathId(c, 'draftSet', 'draftSetId');
-    const body = UpdateDraftSetRequestSchema.parse(await c.req.json());
+    const body = await parseBody(c, UpdateDraftSetRequestSchema);
 
     const detail = await loadOwnedDraftSet(c, draftSetId);
 

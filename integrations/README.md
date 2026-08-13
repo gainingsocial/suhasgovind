@@ -44,7 +44,7 @@ never quietly rephrases anybody.
 | --- | --- | --- |
 | [`wordpress/`](./wordpress) | Built | No platform logic. Auto-share, evergreen re-sharing, UTM tracking, bulk share. Needs a WordPress.org listing to ship |
 | Agent connectors | Live | `share_article` on the `/mcp` endpoint — works in ChatGPT, Claude and any MCP client today |
-| Chrome extension | Not built | Reads `og:*` from the page; covers Wix, Ghost, Squarespace and everything else without a per-platform app |
+| [`chrome/`](./chrome) | Built | Reads the page's own metadata; covers Wix, Ghost, Squarespace and everything else without a per-platform app. Needs a Web Store listing to ship |
 | Wix / Squarespace apps | Not built | Deliberately last — weeks of marketplace review for audiences the extension already serves |
 
 ## WordPress
@@ -80,3 +80,52 @@ much of WordPress still runs on, so the 7.4 leg is the one that earns its place.
 **Still not exercised against a live WordPress install.** The syntax is verified and the
 pure logic is tested, but nothing here has run inside a real WordPress request. Put it on a
 staging site first.
+
+## Chrome
+
+Manifest V3. Load `chrome/` unpacked from `chrome://extensions`, then add an API key from
+the extension's options page.
+
+Click the toolbar button on any page and it reads that page's own metadata, asks the API
+what each connected network would publish, and shows you — before anything goes out. The
+preview is the point: every other extension in this category posts first and shows you the
+result afterwards, which is when you find out one network silently dropped the link.
+
+What it does *not* do is as deliberate: no character counting, no aspect-ratio checks, no
+per-network rules of any kind. `POST /v1/articles/compose` answers all of that, so the
+extension cannot drift out of step with the plugin or the agent tool.
+
+### Extraction precedence
+
+Open Graph, then structured data, then the page. Open Graph wins because it is the one
+thing on a page written specifically to be shared — a `<title>` is routinely
+`Headline | Section | Site Name`, which nobody would choose to post. The canonical URL
+beats the address bar for the same class of reason: the address bar carries whatever
+campaign parameters the visitor arrived with, and sharing those credits our own traffic to
+whoever last linked the page.
+
+### Permissions
+
+`activeTab` and `host_permissions` limited to our own API — nothing else. A publishing
+extension that asks for `<all_urls>` is requesting to read every page the person ever
+visits, and both reviewers and users treat it accordingly. `activeTab` grants the same
+reach for the one tab being shared, only at the moment the button is clicked.
+
+### Verification
+
+```bash
+pnpm test -- integrations/chrome
+```
+
+24 checks: extraction precedence against real page shapes, and a manifest check that every
+referenced file exists, that no code is remotely hosted, and that the popup neither
+evaluates strings nor assigns `innerHTML` — page-controlled text reaches that UI.
+
+Icons are generated rather than committed as opaque binaries:
+
+```bash
+node integrations/chrome/tools/make-icons.mjs
+```
+
+**Not yet loaded into a real Chrome profile.** The logic is tested and the manifest is
+validated, but the browser APIs it calls have not been exercised.

@@ -45,7 +45,7 @@ import { ApiError } from '@gs/errors';
 import { Hono, type Context } from 'hono';
 
 import type { AppEnv } from '../env.js';
-import { requirePathId } from '../lib/request.js';
+import { parseBody, parseQuery, requirePathId } from '../lib/request.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { withDatabase } from '../middleware/database.js';
 
@@ -161,7 +161,7 @@ async function resolveProfileId(
 
 contentSources.post('/', withDatabase(), authenticate(['content:write']), async (c) => {
   const principal = c.get('principal');
-  const body = CreateContentSourceRequestSchema.parse(await c.req.json());
+  const body = await parseBody(c, CreateContentSourceRequestSchema);
 
   const profileId = await resolveProfileId(c, body.profile_id);
 
@@ -181,7 +181,7 @@ contentSources.post('/', withDatabase(), authenticate(['content:write']), async 
 
 contentSources.get('/', withDatabase(), authenticate(['content:read']), async (c) => {
   const principal = c.get('principal');
-  const query = ListContentSourcesQuerySchema.parse(c.req.query());
+  const query = parseQuery(c, ListContentSourcesQuerySchema);
 
   const cursor = query.cursor ? fromPublicId('contentSource', query.cursor) : undefined;
   if (query.cursor && !cursor) {
@@ -218,7 +218,7 @@ contentSources.get('/', withDatabase(), authenticate(['content:read']), async (c
 contentSources.patch('/:sourceId', withDatabase(), authenticate(['content:write']), async (c) => {
   const principal = c.get('principal');
   const sourceId = requirePathId(c, 'contentSource', 'sourceId');
-  const body = UpdateContentSourceRequestSchema.parse(await c.req.json());
+  const body = await parseBody(c, UpdateContentSourceRequestSchema);
 
   const existing = await findContentSource(c.get('db'), principal.projectEnvironmentId, sourceId);
   if (!existing) throw new ApiError('RESOURCE_NOT_FOUND', { message: 'No such content source.' });
@@ -273,7 +273,7 @@ async function sha256Hex(text: string): Promise<string> {
 
 contentItems.post('/ingest', withDatabase(), authenticate(['content:write']), async (c) => {
   const principal = c.get('principal');
-  const body = IngestContentRequestSchema.parse(await c.req.json());
+  const body = await parseBody(c, IngestContentRequestSchema);
 
   const sourceId = fromPublicId('contentSource', body.content_source_id);
   if (!sourceId) {
@@ -358,7 +358,7 @@ contentItems.post('/ingest', withDatabase(), authenticate(['content:write']), as
  */
 contentItems.post('/repurpose', withDatabase(), authenticate(['content:write']), async (c) => {
   const principal = c.get('principal');
-  const body = RepurposeRequestSchema.parse(await c.req.json());
+  const body = await parseBody(c, RepurposeRequestSchema);
 
   const itemId = fromPublicId('sourceItem', body.source_item_id);
   if (!itemId) {
@@ -399,7 +399,7 @@ contentItems.post('/repurpose', withDatabase(), authenticate(['content:write']),
 
 contentItems.get('/items', withDatabase(), authenticate(['content:read']), async (c) => {
   const principal = c.get('principal');
-  const query = ListSourceItemsQuerySchema.parse(c.req.query());
+  const query = parseQuery(c, ListSourceItemsQuerySchema);
 
   const cursor = query.cursor ? fromPublicId('sourceItem', query.cursor) : undefined;
   if (query.cursor && !cursor) {
@@ -560,7 +560,7 @@ brandProfiles.put(
   async (c) => {
     const principal = c.get('principal');
     const profileId = requirePathId(c, 'profile', 'profileId');
-    const body = UpsertBrandProfileRequestSchema.parse(await c.req.json());
+    const body = await parseBody(c, UpsertBrandProfileRequestSchema);
 
     const profile = await findProfileById(c.get('db'), principal.projectEnvironmentId, profileId);
     if (!profile) throw new ApiError('PROFILE_NOT_FOUND');
