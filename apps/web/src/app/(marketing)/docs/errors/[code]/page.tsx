@@ -20,11 +20,14 @@ import { breadcrumbSchema, jsonLd, pageSeo } from '@/lib/seo';
  * the three questions in that order: what happened, is retrying worth anything, and what
  * do I change.
  *
- * `dynamicParams = false` so a code that is not in the catalog 404s rather than rendering
- * an authoritative-looking page about an error that does not exist.
+ * A code that is not in the catalog 404s rather than rendering an authoritative-looking
+ * page about an error that does not exist. That is enforced by the `isErrorCode` guard
+ * below rather than by `dynamicParams = false`, deliberately: the guard is a property of
+ * this page, so it holds whether a request is served from the prerendered output or
+ * rendered on demand. `dynamicParams = false` puts the same rule in the router, where it
+ * depends on the deployment finding the prerender manifest — and when that lookup failed
+ * on Cloudflare, all 93 valid codes 404'd along with the invalid ones.
  */
-
-export const dynamicParams = false;
 
 export function generateStaticParams(): { code: string }[] {
   return ALL_ERROR_DOCS.map((doc) => ({ code: doc.code }));
