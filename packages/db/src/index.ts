@@ -290,6 +290,7 @@ export type {
 } from './repositories/credentials.js';
 export {
   acquireRefreshLock,
+  deleteConnectionCredentials,
   findConnectionCredentials,
   findConnectionsDueForRefresh,
   findCredentialsNearingExpiry,
@@ -319,3 +320,42 @@ export {
   setApprovalStatus,
   upsertProviderApp,
 } from './repositories/provider-apps.js';
+
+export type {
+  CreateContentSourceInput,
+  CreateDraftSetInput,
+  DraftClaim,
+  DraftInput,
+  DraftSetDetail,
+  IngestSourceVersionInput,
+  IngestSourceVersionResult,
+  ListContentSourcesInput,
+  ListDraftSetsInput,
+  ListSourceItemsInput,
+  RecordExtractionInput,
+  RecordLlmRunInput,
+  SourceItemDetail,
+  UpdateContentSourceInput,
+  UpsertBrandProfileInput,
+} from './repositories/content.js';
+export {
+  attachPostToDraft,
+  createContentSource,
+  createDraftSet,
+  disableContentSource,
+  findBrandProfile,
+  findContentSource,
+  findDraftSetDetail,
+  findSourceItemDetail,
+  findSpansForExtraction,
+  ingestSourceVersion,
+  listContentSources,
+  listDraftSets,
+  listSourceItems,
+  recordExtraction,
+  recordLlmRun,
+  transitionDraftSet,
+  updateContentSource,
+  updateDraft,
+  upsertBrandProfile,
+} from './repositories/content.js';

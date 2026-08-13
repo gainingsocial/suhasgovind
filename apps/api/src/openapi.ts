@@ -75,6 +75,26 @@ import {
   ProfileSchema,
   UpdateProfileRequestSchema,
   UsageResponseSchema,
+  BrandProfileSchema,
+  ContentSourceListResponseSchema,
+  ContentSourceSchema,
+  CreateContentSourceRequestSchema,
+  DeleteContentSourceResponseSchema,
+  DraftSetListResponseSchema,
+  DraftSetSchema,
+  IngestContentRequestSchema,
+  IngestContentResponseSchema,
+  ListContentSourcesQuerySchema,
+  ListDraftSetsQuerySchema,
+  ListSourceItemsQuerySchema,
+  PublishDraftSetRequestSchema,
+  PublishDraftSetResponseSchema,
+  RepurposeRequestSchema,
+  SourceItemDetailSchema,
+  SourceItemListResponseSchema,
+  UpdateContentSourceRequestSchema,
+  UpdateDraftSetRequestSchema,
+  UpsertBrandProfileRequestSchema,
 } from '@gs/contracts/http';
 import { PaginationQuerySchema } from '@gs/contracts/pagination';
 import { API_SCOPES, type ApiScope } from '@gs/contracts/scopes';
@@ -147,7 +167,7 @@ const AUTH_ERRORS = [
 ] as const satisfies readonly ErrorCode[];
 
 interface RouteSpec {
-  method: 'get' | 'post' | 'patch' | 'delete';
+  method: 'get' | 'post' | 'patch' | 'put' | 'delete';
   path: string;
   operationId: string;
   summary: string;
@@ -1389,6 +1409,347 @@ const ROUTES: RouteSpec[] = [
       'TENANT_FORBIDDEN',
       'INVALID_REQUEST',
       'RESOURCE_NOT_FOUND',
+      'INTERNAL_ERROR',
+    ],
+  },
+  // ---- Content Intelligence (plan §63Q) -------------------------------------
+  {
+    method: 'post',
+    path: '/v1/content-sources',
+    operationId: 'createContentSource',
+    summary: 'Register a content source',
+    description:
+      'A page, a feed, an upload or text pasted straight in. `automation_mode` defaults to ' +
+      '`approval_required`: automation defaults to review (P20), and a source that published ' +
+      'on its own because nobody set a field would be the wrong default to have.',
+    tags: ['Content'],
+    scopes: ['content:write'],
+    requestBody: CreateContentSourceRequestSchema,
+    successStatus: 201,
+    successDescription: 'The source is registered.',
+    response: ContentSourceSchema,
+    errors: [
+      'AUTHENTICATION_REQUIRED',
+      'INSUFFICIENT_SCOPE',
+      'INVALID_REQUEST',
+      'PROFILE_NOT_FOUND',
+      'TENANT_FORBIDDEN',
+      'INTERNAL_ERROR',
+    ],
+  },
+  {
+    method: 'get',
+    path: '/v1/content-sources',
+    operationId: 'listContentSources',
+    summary: 'List content sources',
+    description: 'Disabled sources are excluded unless `include_disabled=true`.',
+    tags: ['Content'],
+    scopes: ['content:read'],
+    querySchema: ListContentSourcesQuerySchema,
+    successStatus: 200,
+    successDescription: 'A page of content sources.',
+    response: ContentSourceListResponseSchema,
+    errors: ['AUTHENTICATION_REQUIRED', 'INSUFFICIENT_SCOPE', 'INVALID_REQUEST', 'INTERNAL_ERROR'],
+  },
+  {
+    method: 'patch',
+    path: '/v1/content-sources/{sourceId}',
+    operationId: 'updateContentSource',
+    summary: 'Update a content source',
+    description: 'Rename it, change how far it may go on its own, or disable and re-enable it.',
+    tags: ['Content'],
+    scopes: ['content:write'],
+    pathParams: [{ name: 'sourceId', description: 'Public content source id, `src_…`.' }],
+    requestBody: UpdateContentSourceRequestSchema,
+    successStatus: 200,
+    successDescription: 'The updated source.',
+    response: ContentSourceSchema,
+    errors: [
+      'AUTHENTICATION_REQUIRED',
+      'INSUFFICIENT_SCOPE',
+      'INVALID_REQUEST',
+      'RESOURCE_NOT_FOUND',
+      'INTERNAL_ERROR',
+    ],
+  },
+  {
+    method: 'delete',
+    path: '/v1/content-sources/{sourceId}',
+    operationId: 'deleteContentSource',
+    summary: 'Disable a content source',
+    description:
+      'Soft, because its items and their drafts stay meaningful — a post published from an ' +
+      'article last month should still be traceable to that article after somebody stops ' +
+      'following the feed. Disabling an already-disabled source succeeds.',
+    tags: ['Content'],
+    scopes: ['content:write'],
+    pathParams: [{ name: 'sourceId', description: 'Public content source id, `src_…`.' }],
+    successStatus: 200,
+    successDescription: 'The source is disabled.',
+    response: DeleteContentSourceResponseSchema,
+    errors: [
+      'AUTHENTICATION_REQUIRED',
+      'INSUFFICIENT_SCOPE',
+      'RESOURCE_NOT_FOUND',
+      'INTERNAL_ERROR',
+    ],
+  },
+  {
+    method: 'post',
+    path: '/v1/content/ingest',
+    operationId: 'ingestContent',
+    summary: 'Ingest content into a source',
+    description:
+      'Converts HTML to text, scans it for prompt injection, hashes it and splits it into ' +
+      'spans. No model is called, so this works whether or not one is configured. Re-ingesting ' +
+      'identical text returns 200 with `version_is_new: false` rather than creating a second ' +
+      'version — which is what makes running this on a schedule cheap and safe.',
+    tags: ['Content'],
+    scopes: ['content:write'],
+    requestBody: IngestContentRequestSchema,
+    successStatus: 201,
+    successDescription: 'A new version was stored. Returns 200 when the text was unchanged.',
+    response: IngestContentResponseSchema,
+    errors: [
+      'AUTHENTICATION_REQUIRED',
+      'INSUFFICIENT_SCOPE',
+      'INVALID_REQUEST',
+      'RESOURCE_NOT_FOUND',
+      'CONFLICTING_STATE',
+      'TENANT_FORBIDDEN',
+      'INTERNAL_ERROR',
+    ],
+  },
+  {
+    method: 'post',
+    path: '/v1/content/repurpose',
+    operationId: 'repurposeContent',
+    summary: 'Adapt a source into per-network drafts',
+    description:
+      'The one endpoint here that needs a model provider. Returns 503 ' +
+      '`MODEL_PROVIDER_NOT_CONFIGURED` when none is configured — publishing, composing, media ' +
+      'auto-fit, analytics and the inbox never depend on one (P19).',
+    tags: ['Content'],
+    scopes: ['content:write'],
+    requestBody: RepurposeRequestSchema,
+    successStatus: 202,
+    successDescription: 'A draft set is being produced.',
+    response: DraftSetSchema,
+    errors: [
+      'AUTHENTICATION_REQUIRED',
+      'INSUFFICIENT_SCOPE',
+      'INVALID_REQUEST',
+      'SOURCE_NOT_FOUND',
+      'CONFLICTING_STATE',
+      'MODEL_PROVIDER_NOT_CONFIGURED',
+      'NOT_IMPLEMENTED',
+      'INTERNAL_ERROR',
+    ],
+  },
+  {
+    method: 'get',
+    path: '/v1/content/items',
+    operationId: 'listSourceItems',
+    summary: 'List ingested items',
+    description: 'Every item discovered within your sources, newest first.',
+    tags: ['Content'],
+    scopes: ['content:read'],
+    querySchema: ListSourceItemsQuerySchema,
+    successStatus: 200,
+    successDescription: 'A page of source items.',
+    response: SourceItemListResponseSchema,
+    errors: [
+      'AUTHENTICATION_REQUIRED',
+      'INSUFFICIENT_SCOPE',
+      'INVALID_REQUEST',
+      'RESOURCE_NOT_FOUND',
+      'INTERNAL_ERROR',
+    ],
+  },
+  {
+    method: 'get',
+    path: '/v1/content/items/{itemId}',
+    operationId: 'getSourceItem',
+    summary: 'Fetch an item with its spans',
+    description:
+      'Returns the version currently in force, whatever was extracted from it, and the spans ' +
+      'themselves — because a grounding claim cites span ids, and a client that cannot resolve ' +
+      'those has been handed a citation it cannot check.',
+    tags: ['Content'],
+    scopes: ['content:read'],
+    pathParams: [{ name: 'itemId', description: 'Public source item id, `itm_…`.' }],
+    successStatus: 200,
+    successDescription: 'The item, its latest version and its extraction.',
+    response: SourceItemDetailSchema,
+    errors: [
+      'AUTHENTICATION_REQUIRED',
+      'INSUFFICIENT_SCOPE',
+      'RESOURCE_NOT_FOUND',
+      'INTERNAL_ERROR',
+    ],
+  },
+  {
+    method: 'get',
+    path: '/v1/draft-sets',
+    operationId: 'listDraftSets',
+    summary: 'List draft sets',
+    description:
+      'Without their drafts — a set of twenty is a large payload and a list view shows a title ' +
+      'and a status. Fetch one to get the drafts and their grounding.',
+    tags: ['Content'],
+    scopes: ['content:read'],
+    querySchema: ListDraftSetsQuerySchema,
+    successStatus: 200,
+    successDescription: 'A page of draft sets.',
+    response: DraftSetListResponseSchema,
+    errors: ['AUTHENTICATION_REQUIRED', 'INSUFFICIENT_SCOPE', 'INVALID_REQUEST', 'INTERNAL_ERROR'],
+  },
+  {
+    method: 'get',
+    path: '/v1/draft-sets/{draftSetId}',
+    operationId: 'getDraftSet',
+    summary: 'Fetch a draft set',
+    description:
+      'Returns every draft with its grounding claims. The claims are not behind a second call: ' +
+      'a client that has to ask for them separately is a client that will ship without asking.',
+    tags: ['Content'],
+    scopes: ['content:read'],
+    pathParams: [{ name: 'draftSetId', description: 'Public draft set id, `dfs_…`.' }],
+    successStatus: 200,
+    successDescription: 'The draft set.',
+    response: DraftSetSchema,
+    errors: [
+      'AUTHENTICATION_REQUIRED',
+      'INSUFFICIENT_SCOPE',
+      'DRAFT_SET_NOT_FOUND',
+      'TENANT_FORBIDDEN',
+      'INTERNAL_ERROR',
+    ],
+  },
+  {
+    method: 'patch',
+    path: '/v1/draft-sets/{draftSetId}',
+    operationId: 'updateDraftSet',
+    summary: 'Edit drafts, or move the set through review',
+    description:
+      'Editing a draft body re-runs grounding against the source: a claim whose text is no ' +
+      'longer in the draft is dropped, and one that no longer grounds is recorded as ' +
+      'unverified. `status` is a separate field so that approving is never a side effect of ' +
+      'renaming (P20).',
+    tags: ['Content'],
+    scopes: ['content:write'],
+    pathParams: [{ name: 'draftSetId', description: 'Public draft set id, `dfs_…`.' }],
+    requestBody: UpdateDraftSetRequestSchema,
+    successStatus: 200,
+    successDescription: 'The updated draft set.',
+    response: DraftSetSchema,
+    errors: [
+      'AUTHENTICATION_REQUIRED',
+      'INSUFFICIENT_SCOPE',
+      'INVALID_REQUEST',
+      'DRAFT_SET_NOT_FOUND',
+      'RESOURCE_NOT_FOUND',
+      'CONFLICTING_STATE',
+      'TENANT_FORBIDDEN',
+      'INTERNAL_ERROR',
+    ],
+  },
+  {
+    method: 'post',
+    path: '/v1/draft-sets/{draftSetId}/preflight',
+    operationId: 'preflightDraftSet',
+    summary: 'Validate a draft set without publishing',
+    description:
+      'Delegates to `POST /v1/posts/preflight`, so the rules a destination enforces live in ' +
+      'one place. Performs no side effects.',
+    tags: ['Content'],
+    scopes: ['content:read', 'posts:read'],
+    pathParams: [{ name: 'draftSetId', description: 'Public draft set id, `dfs_…`.' }],
+    successStatus: 200,
+    successDescription: 'A verdict per destination.',
+    response: PreflightResponseSchema,
+    errors: [
+      'AUTHENTICATION_REQUIRED',
+      'INSUFFICIENT_SCOPE',
+      'DRAFT_SET_NOT_FOUND',
+      'VALIDATION_FAILED',
+      'TENANT_FORBIDDEN',
+      'INTERNAL_ERROR',
+    ],
+  },
+  {
+    method: 'post',
+    path: '/v1/draft-sets/{draftSetId}/publish',
+    operationId: 'publishDraftSet',
+    summary: 'Publish a draft set',
+    description:
+      'Builds one post with a per-destination override for each draft and re-enters the API ' +
+      'through `POST /v1/posts`, so idempotency, preflight and duplicate prevention are the ' +
+      'same ones every other publish gets. A set whose grounding failed is refused: it may be ' +
+      'edited and re-verified, but not published as it stands (P18).',
+    tags: ['Content'],
+    scopes: ['content:write', 'posts:write'],
+    pathParams: [{ name: 'draftSetId', description: 'Public draft set id, `dfs_…`.' }],
+    requestBody: PublishDraftSetRequestSchema,
+    successStatus: 202,
+    successDescription: 'The post is queued. Watch it with `GET /v1/posts/{id}`.',
+    response: PublishDraftSetResponseSchema,
+    errors: [
+      'AUTHENTICATION_REQUIRED',
+      'INSUFFICIENT_SCOPE',
+      'INVALID_REQUEST',
+      'DRAFT_SET_NOT_FOUND',
+      'CONFLICTING_STATE',
+      'VALIDATION_FAILED',
+      'CONTENT_GROUNDING_FAILED',
+      'TENANT_FORBIDDEN',
+      'INTERNAL_ERROR',
+    ],
+  },
+  {
+    method: 'get',
+    path: '/v1/profiles/{profileId}/brand-profile',
+    operationId: 'getBrandProfile',
+    summary: 'How this profile speaks',
+    description:
+      'An absent brand profile returns an empty one rather than a 404. A profile always has a ' +
+      'voice; we may simply not have been told what it is.',
+    tags: ['Content'],
+    scopes: ['content:read'],
+    pathParams: [{ name: 'profileId', description: 'Public profile id, `pro_…`.' }],
+    successStatus: 200,
+    successDescription: 'The brand profile.',
+    response: BrandProfileSchema,
+    errors: [
+      'AUTHENTICATION_REQUIRED',
+      'INSUFFICIENT_SCOPE',
+      'PROFILE_NOT_FOUND',
+      'TENANT_FORBIDDEN',
+      'INTERNAL_ERROR',
+    ],
+  },
+  {
+    method: 'put',
+    path: '/v1/profiles/{profileId}/brand-profile',
+    operationId: 'putBrandProfile',
+    summary: 'Set how this profile speaks',
+    description:
+      'Replaces the whole document. `banned_phrases` is checked against generated drafts ' +
+      'before they are stored rather than only being asked of a model — a prompt is a request ' +
+      'and a check is a guarantee.',
+    tags: ['Content'],
+    scopes: ['content:write'],
+    pathParams: [{ name: 'profileId', description: 'Public profile id, `pro_…`.' }],
+    requestBody: UpsertBrandProfileRequestSchema,
+    successStatus: 200,
+    successDescription: 'The stored brand profile.',
+    response: BrandProfileSchema,
+    errors: [
+      'AUTHENTICATION_REQUIRED',
+      'INSUFFICIENT_SCOPE',
+      'INVALID_REQUEST',
+      'PROFILE_NOT_FOUND',
+      'TENANT_FORBIDDEN',
       'INTERNAL_ERROR',
     ],
   },

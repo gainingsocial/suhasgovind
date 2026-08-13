@@ -492,6 +492,24 @@ export const ERROR_CODE_METADATA: Record<ErrorCode, ErrorCodeMetadata> = {
     'use_public_https_url_or_upload_media',
   ),
 
+  // ---- content intelligence (plan §63Q, §63R) -------------------------------
+  MODEL_PROVIDER_NOT_CONFIGURED: m(
+    'api_error',
+    503,
+    false,
+    'No model provider is configured. Content Intelligence needs one; publishing does not.',
+    'contact_support',
+  ),
+  CONTENT_GROUNDING_FAILED: m(
+    'validation_error',
+    422,
+    false,
+    'A generated claim could not be traced to the source it cites.',
+    'edit_ungrounded_claims',
+  ),
+  SOURCE_NOT_FOUND: m('not_found_error', 404, false, 'No such content source.'),
+  DRAFT_SET_NOT_FOUND: m('not_found_error', 404, false, 'No such draft set.'),
+
   // ---- internal -------------------------------------------------------------
   INTERNAL_ERROR: m('api_error', 500, true, 'An unexpected error occurred.', 'retry_after_delay'),
   NOT_IMPLEMENTED: m('api_error', 501, false, 'This operation is not implemented yet.'),

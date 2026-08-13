@@ -153,6 +153,26 @@ export const ERROR_CODES = [
   'MEDIA_PROCESSING_FAILED',
   'MEDIA_URL_NOT_ALLOWED',
 
+  // ---- content intelligence (plan §63Q, §63R) -------------------------------
+  /**
+   * No model provider is configured, so nothing that needs one can run.
+   *
+   * A 503 rather than a 501: the capability exists and is deployed, it is waiting on a
+   * key the platform operator supplies. Publishing, composing, media auto-fit, analytics
+   * and the inbox all work without it (P19), which is why this is scoped to the content
+   * pipeline rather than degrading the whole API.
+   */
+  'MODEL_PROVIDER_NOT_CONFIGURED',
+  /**
+   * A generated claim could not be traced back to a span of the source (P18).
+   *
+   * Not retryable and not overridable: a set that fails grounding may be edited and
+   * re-verified, but it may not be published as it stands.
+   */
+  'CONTENT_GROUNDING_FAILED',
+  'SOURCE_NOT_FOUND',
+  'DRAFT_SET_NOT_FOUND',
+
   // ---- internal -------------------------------------------------------------
   'INTERNAL_ERROR',
   'NOT_IMPLEMENTED',

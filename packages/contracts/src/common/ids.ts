@@ -40,6 +40,12 @@ export const ID_PREFIXES = {
   idempotency: 'idm',
   approval: 'apr',
   auditEvent: 'aud',
+  // Content Intelligence (plan §63Q). No underscores — the separator between prefix and
+  // body is `_`, so a prefix containing one would make parsing ambiguous.
+  contentSource: 'src',
+  sourceItem: 'itm',
+  draftSet: 'dfs',
+  draft: 'drf',
 } as const;
 
 export type IdPrefix = (typeof ID_PREFIXES)[keyof typeof ID_PREFIXES];

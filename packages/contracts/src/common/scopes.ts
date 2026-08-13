@@ -23,6 +23,13 @@ export const API_SCOPES = [
   'analytics:read',
   'inbox:read',
   'inbox:write',
+  /**
+   * Content Intelligence (plan §63Q). Separate from `posts:*` because repurposing is
+   * optional around publishing (P19) and costs money per call — a key that publishes
+   * should not be able to run up a model bill unless it was granted that too.
+   */
+  'content:read',
+  'content:write',
 ] as const;
 
 export type ApiScope = (typeof API_SCOPES)[number];

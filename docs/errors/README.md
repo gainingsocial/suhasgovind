@@ -10,7 +10,7 @@ codes are stable and versioned, messages are not.
     "code": "API_KEY_REVOKED",
     "message": "This API key has been revoked.",
     "retryable": false,
-    "docs_url": "https://docs.gainingsocial.com/errors/API_KEY_REVOKED",
+    "docs_url": "https://gainingsocial.com/docs/errors/API_KEY_REVOKED",
     "request_id": "req_06fy2aavb5yb1db0enh4wc7yj4",
     "trace_id": "trc_06fy2aavb5yb3351nf1fbt8aag"
   }
@@ -323,6 +323,24 @@ that and produces the duplicate the whole design exists to prevent (plan §2.2, 
 
 `PROVIDER_ACCOUNT_NOT_ELIGIBLE` most often means a personal Instagram account where a
 Business or Creator account is required — the connection succeeds and publishing does not.
+
+## Content Intelligence
+
+| Code | Status | Retryable | Meaning | What to do |
+| --- | --- | --- | --- | --- |
+| `MODEL_PROVIDER_NOT_CONFIGURED` | 503 | no | No model provider is configured. | Nothing you can do from the API; the platform operator supplies the key. |
+| `CONTENT_GROUNDING_FAILED` | 422 | no | A generated claim could not be traced to the source it cites. | Edit the draft so every claim is grounded, then publish. |
+| `SOURCE_NOT_FOUND` | 404 | no | No such content source or source item within your tenant. | Check the id and the environment the key is scoped to. |
+| `DRAFT_SET_NOT_FOUND` | 404 | no | No such draft set within your tenant. | Check the id and the environment. |
+
+`MODEL_PROVIDER_NOT_CONFIGURED` is scoped to the content pipeline and nothing else.
+Publishing, composing, media auto-fit, analytics, the inbox and MCP all work without a
+model (P19), so this never degrades the parts of the product that matter most.
+
+`CONTENT_GROUNDING_FAILED` is not overridable, including by a source whose automation mode
+is `auto_publish_if_safe`. Choosing that mode expresses a preference about review; it does
+not assert that a specific claim was checkable. A set that fails grounding may be edited and
+re-verified, but not published as it stands (P18).
 
 ## Server
 

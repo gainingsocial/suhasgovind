@@ -10,6 +10,8 @@ import { apiKeys, environments } from './routes/api-keys.js';
 import { connectRoutes, oauthCallbackRoutes } from './routes/connect.js';
 import { connectSessions, hostedConnect } from './routes/connect-sessions.js';
 import { connections } from './routes/connections.js';
+import { brandProfiles, contentItems, contentSources } from './routes/content.js';
+import { createDraftSetRoutes } from './routes/draft-sets.js';
 import { media } from './routes/media.js';
 import { destinations, platforms, providerHealth } from './routes/platforms.js';
 import { analytics } from './routes/analytics.js';
@@ -38,6 +40,11 @@ app.route('/health', health);
 // pin a version prefix on everything.
 app.route('/v1/health', health);
 app.route('/v1/me', me);
+/**
+ * Mounted before the profile CRUD routes so `/:profileId/brand-profile` is matched as the
+ * literal path it is rather than being swallowed by `/:profileId`.
+ */
+app.route('/v1/profiles', brandProfiles);
 app.route('/v1/profiles', profiles);
 // Mounted before the read routes so `/authorize` and `/complete` are matched as literal
 // paths rather than being swallowed by `/:connectionId`.
@@ -68,6 +75,22 @@ app.route('/v1/approvals', approvals);
 app.route('/v1/usage', usage);
 app.route('/v1/webhooks', webhooks);
 app.route('/v1/webhook-deliveries', webhookDeliveriesRoute);
+
+/**
+ * Content Intelligence (plan §63Q).
+ *
+ * `/v1/draft-sets` is wired with the same internal dispatcher the MCP layer uses, because
+ * publishing a draft set is publishing: it builds a `POST /v1/posts` body and re-enters the
+ * API through its own front door rather than reimplementing idempotency, preflight and the
+ * queue handoff. A second path into publishing is a second path that can be wrong about
+ * duplicates.
+ */
+app.route('/v1/content-sources', contentSources);
+app.route('/v1/content', contentItems);
+app.route(
+  '/v1/draft-sets',
+  createDraftSetRoutes((request, env, ctx) => app.fetch(request, env, ctx as ExecutionContext)),
+);
 
 /**
  * The MCP endpoint (plan §50).
