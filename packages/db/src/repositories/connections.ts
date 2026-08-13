@@ -13,7 +13,7 @@ import {
   type SocialDestination,
 } from '../schema/connections.js';
 import { profiles } from '../schema/tenancy.js';
-import { storeCredential } from './credentials.js';
+import { deleteConnectionCredentials, storeCredential } from './credentials.js';
 
 /**
  * Connection and destination repository (plan §76).
@@ -124,12 +124,23 @@ export async function findConnectionById(
 }
 
 /**
- * Mark a connection disconnected.
+ * Mark a connection disconnected and destroy its stored provider credentials.
  *
- * Soft, like every other delete here. The partial unique index on
- * `(profile, provider, provider_account)` only covers rows where `disconnected_at IS
- * NULL`, so disconnecting frees the slot and a later reconnect of the same account
- * updates cleanly instead of colliding.
+ * The connection row itself is soft-deleted, like every other delete here. The partial
+ * unique index on `(profile, provider, provider_account)` only covers rows where
+ * `disconnected_at IS NULL`, so disconnecting frees the slot and a later reconnect of the
+ * same account updates cleanly instead of colliding. The history — which account was
+ * connected, what it published — has to survive, or every past post loses its context.
+ *
+ * The *credentials* are deleted outright. Those two decisions are not in tension: the row
+ * is a record of something that happened, while the token is a live secret with no
+ * remaining purpose the moment a connection can no longer publish. Keeping it would mean a
+ * user who disconnected an account still has a usable access token sitting in our database
+ * (P9, plan §7.1), which is both a standing breach risk and the specific thing every
+ * platform's data-deletion review asks about.
+ *
+ * Both happen in one transaction, so there is no window where the connection reads as
+ * disconnected while the token is still there, or the reverse.
  */
 export async function disconnectConnection(
   db: Database,
@@ -137,19 +148,29 @@ export async function disconnectConnection(
   connectionId: string,
 ): Promise<boolean> {
   const now = new Date();
-  const rows = await db
-    .update(socialConnections)
-    .set({ disconnectedAt: now, health: 'disconnected', updatedAt: now })
-    .where(
-      and(
-        eq(socialConnections.id, connectionId),
-        eq(socialConnections.projectEnvironmentId, projectEnvironmentId),
-        isNull(socialConnections.disconnectedAt),
-      ),
-    )
-    .returning({ id: socialConnections.id });
 
-  return rows.length > 0;
+  return db.transaction(async (tx) => {
+    const rows = await tx
+      .update(socialConnections)
+      .set({ disconnectedAt: now, health: 'disconnected', updatedAt: now })
+      .where(
+        and(
+          eq(socialConnections.id, connectionId),
+          eq(socialConnections.projectEnvironmentId, projectEnvironmentId),
+          isNull(socialConnections.disconnectedAt),
+        ),
+      )
+      .returning({ id: socialConnections.id });
+
+    // Only when this call is the one that disconnected it. An already-disconnected
+    // connection has had its credentials destroyed already, and re-running the delete
+    // would be harmless but would also mask a caller that is repeating itself.
+    if (rows.length > 0) {
+      await deleteConnectionCredentials(tx, connectionId);
+    }
+
+    return rows.length > 0;
+  });
 }
 
 export async function listDestinationsForConnection(

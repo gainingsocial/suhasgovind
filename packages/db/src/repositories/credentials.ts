@@ -180,6 +180,29 @@ export async function storeCredential(
 }
 
 /**
+ * Destroy every stored credential for a connection.
+ *
+ * A hard delete, not a soft one. A disconnected connection can never publish again, so the
+ * ciphertext has no remaining purpose — and a provider token that outlives the user's
+ * decision to disconnect is exactly what P9 and every platform's data-deletion review are
+ * about. Soft-deleting would leave the secret on disk while claiming otherwise.
+ *
+ * Returns how many were destroyed, so a deletion request can report a real number instead
+ * of asserting success.
+ */
+export async function deleteConnectionCredentials(
+  tx: Database | Transaction,
+  connectionId: string,
+): Promise<number> {
+  const rows = await tx
+    .delete(socialCredentials)
+    .where(eq(socialCredentials.connectionId, connectionId))
+    .returning({ id: socialCredentials.id });
+
+  return rows.length;
+}
+
+/**
  * Take the refresh lock for a connection.
  *
  * A conditional UPDATE, the same shape as the target lease. Two workers refreshing the

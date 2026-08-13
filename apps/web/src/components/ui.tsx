@@ -16,7 +16,7 @@ const TONE_CLASSES: Record<Tone, string> = {
   warn: 'bg-warn-100 text-warn-600',
   fail: 'bg-fail-100 text-fail-600',
   busy: 'bg-busy-100 text-busy-600',
-  brand: 'bg-brand-100 text-brand-600',
+  brand: 'bg-brand-100 text-[var(--brand-text)]',
 };
 
 export function cx(...values: (string | false | null | undefined)[]): string {

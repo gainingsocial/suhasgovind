@@ -95,7 +95,7 @@ export function FeaturePage({
                   key={step.name}
                   className="flex gap-3 rounded-[var(--radius-card)] border bg-[var(--surface-raised)] p-4"
                 >
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-100 text-xs font-semibold text-brand-600">
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-100 text-xs font-semibold text-[var(--brand-text)]">
                     {index + 1}
                   </span>
                   <span className="min-w-0">
@@ -134,7 +134,7 @@ export function FeaturePage({
                 <li key={link.href}>
                   <Link
                     href={link.href as never}
-                    className="text-sm text-brand-600 hover:underline"
+                    className="text-sm text-[var(--brand-text)] hover:underline"
                   >
                     {link.label}
                   </Link>

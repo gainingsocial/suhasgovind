@@ -74,7 +74,7 @@ export class GainingSocialError extends Error {
       code: 'CONNECTION_FAILED',
       message,
       retryable: true,
-      docs_url: 'https://docs.gainingsocial.com/errors/CONNECTION_FAILED',
+      docs_url: 'https://gainingsocial.com/docs/errors/CONNECTION_FAILED',
       request_id: '',
       trace_id: '',
     });
@@ -92,7 +92,7 @@ export class GainingSocialError extends Error {
         `First 200 characters: ${body.slice(0, 200)}`,
       // A 5xx is worth another attempt; a 4xx that is not an envelope will not change.
       retryable: status >= 500,
-      docs_url: 'https://docs.gainingsocial.com/errors/UNEXPECTED_RESPONSE',
+      docs_url: 'https://gainingsocial.com/docs/errors/UNEXPECTED_RESPONSE',
       request_id: '',
       trace_id: '',
     });

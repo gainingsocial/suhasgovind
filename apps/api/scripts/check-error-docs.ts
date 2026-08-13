@@ -7,7 +7,7 @@
  * This is a drift guard of the same kind as `openapi:check`, and it exists for the same
  * reason: the published contract must not disagree with what the Worker serves. Here the
  * promise is concrete — every error envelope advertises
- * `docs_url: https://docs.gainingsocial.com/errors/{CODE}`, so an undocumented code is a
+ * `docs_url: https://gainingsocial.com/docs/errors/{CODE}`, so an undocumented code is a
  * link the API hands out and the docs break. Nobody notices until a customer follows it.
  *
  * It lives here rather than as a unit test in `@gs/errors` because that package is typed

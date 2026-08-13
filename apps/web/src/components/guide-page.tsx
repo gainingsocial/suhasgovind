@@ -57,7 +57,7 @@ export function GuidePage({ breadcrumb, heading, lead, body, steps, faqs, relate
         />
       ) : null}
 
-      <article className="mx-auto max-w-3xl px-4 py-14 sm:px-6">
+      <article className="max-w-3xl py-14">
         {/* Visible breadcrumb as well as the structured one: the markup earns the trail in
             search results, the visible version orients the reader who arrived from it. */}
         <nav aria-label="Breadcrumb" className="text-sm text-[var(--text-subtle)]">
@@ -110,7 +110,7 @@ export function GuidePage({ breadcrumb, heading, lead, body, steps, faqs, relate
                   key={step.name}
                   className="flex gap-3 rounded-[var(--radius-card)] border bg-[var(--surface-raised)] p-4"
                 >
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-100 text-xs font-semibold text-brand-600">
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-100 text-xs font-semibold text-[var(--brand-text)]">
                     {index + 1}
                   </span>
                   <span className="min-w-0">
@@ -147,7 +147,7 @@ export function GuidePage({ breadcrumb, heading, lead, body, steps, faqs, relate
             <ul className="mt-3 space-y-2">
               {related.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href as never} className="text-sm text-brand-600 hover:underline">
+                  <Link href={link.href as never} className="text-sm text-[var(--brand-text)] hover:underline">
                     {link.label}
                   </Link>
                 </li>

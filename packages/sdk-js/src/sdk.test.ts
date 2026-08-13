@@ -35,7 +35,7 @@ function errorBody(overrides: Record<string, unknown> = {}) {
       code: 'PROVIDER_UNAVAILABLE',
       message: 'The provider is unavailable.',
       retryable: true,
-      docs_url: 'https://docs.gainingsocial.com/errors/PROVIDER_UNAVAILABLE',
+      docs_url: 'https://gainingsocial.com/docs/errors/PROVIDER_UNAVAILABLE',
       request_id: 'req_01',
       trace_id: 'trc_01',
       ...overrides,

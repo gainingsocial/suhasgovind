@@ -78,6 +78,37 @@
   /* Text that sits ON yellow. Always the near-black. */
   --on-brand: var(--color-ink-950);
 
+  /**
+   * Brand yellow *as text*, which is a different colour from brand yellow as a surface.
+   *
+   * `--color-brand-600` on a white page measures about 2.4:1 — it fails WCAG AA outright,
+   * and it looks washed out rather than energetic, which is the worse problem: a pale
+   * eyebrow above a heading reads as a rendering fault. Yellow is a background colour
+   * here; when the same accent has to be text, it darkens to a bronze that keeps the hue
+   * and clears 4.5:1 on both the page and the yellow wash a badge sits on.
+   */
+  --brand-text: oklch(0.46 0.115 74);
+
+  /**
+   * Code panels are dark in *both* themes.
+   *
+   * A terminal is dark everywhere else a developer looks, and on a light page the dark
+   * panel is the one element with real weight — it anchors a layout that is otherwise all
+   * text. Making it follow the theme would mean designing two syntax palettes and having
+   * the light one look washed out.
+   *
+   * The syntax colours stay inside the brand: yellow for the thing you read first (a key,
+   * an HTTP method), near-white for values, grey for punctuation. No green strings and no
+   * red keywords — those two colours mean published and failed, and nothing else (§61).
+   */
+  --code-bg: oklch(0.19 0.008 85);
+  --code-chrome: oklch(0.24 0.008 85);
+  --code-border: oklch(0.32 0.008 85);
+  --code-fg: oklch(0.9 0.005 85);
+  --code-dim: oklch(0.62 0.008 85);
+  --code-key: oklch(0.9 0.16 95);
+  --code-value: oklch(0.96 0.005 85);
+
   color-scheme: light;
 }
 
@@ -93,6 +124,8 @@
     --text-muted: var(--color-ink-300);
     --text-subtle: var(--color-ink-500);
     --on-brand: oklch(0.17 0.008 85);
+    /* On a dark page the accent can go back to being genuinely yellow. */
+    --brand-text: oklch(0.88 0.16 95);
 
     /* Washes have to become dark tints, or a badge is a glaring block of pastel. */
     --color-ok-100: oklch(0.28 0.07 150);
@@ -106,6 +139,12 @@
     --color-fail-600: oklch(0.75 0.19 27);
     --color-warn-600: oklch(0.82 0.15 75);
     --color-busy-600: var(--color-ink-300);
+
+    /* The panel sinks below the page instead of rising above it — at 0.19 on a 0.16
+       page it would read as an ordinary card rather than a terminal. */
+    --code-bg: oklch(0.115 0.006 85);
+    --code-chrome: oklch(0.155 0.006 85);
+    --code-border: oklch(0.26 0.008 85);
 
     color-scheme: dark;
   }
@@ -121,6 +160,7 @@
   --text-muted: var(--color-ink-300);
   --text-subtle: var(--color-ink-500);
   --on-brand: oklch(0.17 0.008 85);
+  --brand-text: oklch(0.88 0.16 95);
 
   --color-ok-100: oklch(0.28 0.07 150);
   --color-warn-100: oklch(0.29 0.07 70);
@@ -132,6 +172,10 @@
   --color-fail-600: oklch(0.75 0.19 27);
   --color-warn-600: oklch(0.82 0.15 75);
   --color-busy-600: var(--color-ink-300);
+
+  --code-bg: oklch(0.115 0.006 85);
+  --code-chrome: oklch(0.155 0.006 85);
+  --code-border: oklch(0.26 0.008 85);
 
   color-scheme: dark;
 }

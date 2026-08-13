@@ -50,7 +50,7 @@ describe('ApiError envelope', () => {
     const envelope = new ApiError('TEXT_TOO_LONG').toEnvelope(ctx);
 
     expect(envelope.error.retryable).toBe(false);
-    expect(envelope.error.docs_url).toBe('https://docs.gainingsocial.com/errors/TEXT_TOO_LONG');
+    expect(envelope.error.docs_url).toBe('https://gainingsocial.com/docs/errors/TEXT_TOO_LONG');
     expect(envelope.error.request_id).toBe('req_01');
     expect(envelope.error.trace_id).toBe('trc_01');
     expect(envelope.error.agent_action).toBe('shorten_text');

@@ -108,7 +108,7 @@ export default function TermsPage() {
           <h2 className="text-lg font-semibold text-[var(--text)]">Contact</h2>
           <p className="mt-2">
             Questions about these terms can be sent to{' '}
-            <a href="mailto:legal@gainingsocial.com" className="text-brand-600 hover:underline">
+            <a href="mailto:legal@gainingsocial.com" className="text-[var(--brand-text)] hover:underline">
               legal@gainingsocial.com
             </a>
             .

@@ -3,7 +3,9 @@ import { ApiError } from '@gs/errors';
 import { and, asc, desc, eq, gt, isNull, lt, sql } from 'drizzle-orm';
 
 import type { Database } from '../client.js';
+import { socialConnections } from '../schema/connections.js';
 import { profiles, type Profile } from '../schema/tenancy.js';
+import { deleteConnectionCredentials } from './credentials.js';
 
 /**
  * Profile repository (plan §76 — domain operations, not CRUD).
@@ -203,31 +205,60 @@ export async function updateProfile(
 }
 
 /**
- * Soft-delete a profile.
+ * Soft-delete a profile, disconnecting its accounts and destroying their credentials.
  *
  * Returns false when nothing matched, which the route turns into a 404. Deleting an
  * already-deleted profile is therefore not an error the second time in the sense that
  * matters — the caller's intent is satisfied either way — but it does report `false` so
  * the route can distinguish "gone" from "never existed within your tenant".
+ *
+ * The cascade to credentials is the part that matters for a deletion request. A profile
+ * is the identity somebody publishes on behalf of, so deleting one is a customer saying
+ * they are finished with that brand or client — and leaving live provider access tokens
+ * behind for accounts nobody can reach any more is precisely what a platform's data
+ * deletion review exists to catch (P9). The connection rows survive as history; the
+ * secrets do not.
  */
 export async function softDeleteProfile(
   db: Database,
   projectEnvironmentId: string,
   profileId: string,
 ): Promise<boolean> {
-  const rows = await db
-    .update(profiles)
-    .set({ deletedAt: new Date(), updatedAt: new Date() })
-    .where(
-      and(
-        eq(profiles.id, profileId),
-        eq(profiles.projectEnvironmentId, projectEnvironmentId),
-        isNull(profiles.deletedAt),
-      ),
-    )
-    .returning({ id: profiles.id });
+  const now = new Date();
 
-  return rows.length > 0;
+  return db.transaction(async (tx) => {
+    const rows = await tx
+      .update(profiles)
+      .set({ deletedAt: now, updatedAt: now })
+      .where(
+        and(
+          eq(profiles.id, profileId),
+          eq(profiles.projectEnvironmentId, projectEnvironmentId),
+          isNull(profiles.deletedAt),
+        ),
+      )
+      .returning({ id: profiles.id });
+
+    if (rows.length === 0) return false;
+
+    const connections = await tx
+      .update(socialConnections)
+      .set({ disconnectedAt: now, health: 'disconnected', updatedAt: now })
+      .where(
+        and(
+          eq(socialConnections.profileId, profileId),
+          eq(socialConnections.projectEnvironmentId, projectEnvironmentId),
+          isNull(socialConnections.disconnectedAt),
+        ),
+      )
+      .returning({ id: socialConnections.id });
+
+    for (const connection of connections) {
+      await deleteConnectionCredentials(tx, connection.id);
+    }
+
+    return true;
+  });
 }
 
 /**

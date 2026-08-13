@@ -24,10 +24,11 @@
     "openapi:emit": "pnpm --filter @gs/api openapi:emit",
     "openapi:check": "pnpm --filter @gs/api openapi:check",
     "docs:check": "pnpm --filter @gs/api docs:check",
-    "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm boundaries && pnpm openapi:check && pnpm docs:check && pnpm build",
+    "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm boundaries && pnpm openapi:check && pnpm docs:check && pnpm errors:check && pnpm build",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "ci:full": "pnpm run ci && pnpm test:integration",
-    "setup:github": "node scripts/setup-github-actions.mjs"
+    "setup:github": "node scripts/setup-github-actions.mjs",
+    "errors:check": "pnpm --filter @gs/web errors:check"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260804.1",

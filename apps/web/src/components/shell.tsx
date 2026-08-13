@@ -133,7 +133,7 @@ export function Shell({ children }: { children: ReactNode }) {
                   className={cx(
                     'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
                     isActive(item.href)
-                      ? 'bg-brand-100 font-medium text-brand-600'
+                      ? 'bg-brand-100 font-medium text-[var(--brand-text)]'
                       : 'text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text)]',
                   )}
                 >
@@ -179,7 +179,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 aria-current={isActive(item.href) ? 'page' : undefined}
                 className={cx(
                   'flex min-h-14 flex-col items-center justify-center gap-1 text-[11px]',
-                  isActive(item.href) ? 'text-brand-600' : 'text-[var(--text-subtle)]',
+                  isActive(item.href) ? 'text-[var(--brand-text)]' : 'text-[var(--text-subtle)]',
                 )}
               >
                 {item.icon}
@@ -194,7 +194,7 @@ export function Shell({ children }: { children: ReactNode }) {
               aria-expanded={moreOpen}
               className={cx(
                 'flex min-h-14 w-full flex-col items-center justify-center gap-1 text-[11px]',
-                moreOpen ? 'text-brand-600' : 'text-[var(--text-subtle)]',
+                moreOpen ? 'text-[var(--brand-text)]' : 'text-[var(--text-subtle)]',
               )}
             >
               {icon(<><circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /></>)}

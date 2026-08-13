@@ -143,11 +143,11 @@ export default function FaqPage() {
 
         <p className="mt-12 border-t pt-6 text-sm text-[var(--text-subtle)]">
           Still unsure? The{' '}
-          <Link href="/docs" className="text-brand-600 hover:underline">
+          <Link href="/docs" className="text-[var(--brand-text)] hover:underline">
             documentation
           </Link>{' '}
           covers the API in full, and{' '}
-          <Link href="/platforms" className="text-brand-600 hover:underline">
+          <Link href="/platforms" className="text-[var(--brand-text)] hover:underline">
             supported platforms
           </Link>{' '}
           lists what each network requires.

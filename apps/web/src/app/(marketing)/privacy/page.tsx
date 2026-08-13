@@ -96,7 +96,7 @@ export default function PrivacyPage() {
           </p>
           <p className="mt-2">
             To request deletion of an entire account and everything associated with it, email{' '}
-            <a href="mailto:privacy@gainingsocial.com" className="text-brand-600 hover:underline">
+            <a href="mailto:privacy@gainingsocial.com" className="text-[var(--brand-text)] hover:underline">
               privacy@gainingsocial.com
             </a>{' '}
             from the address on the account. We action requests within 30 days and confirm when the
@@ -131,7 +131,7 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-semibold text-[var(--text)]">Contact</h2>
           <p className="mt-2">
             Questions about this policy, or about data we hold, can be sent to{' '}
-            <a href="mailto:privacy@gainingsocial.com" className="text-brand-600 hover:underline">
+            <a href="mailto:privacy@gainingsocial.com" className="text-[var(--brand-text)] hover:underline">
               privacy@gainingsocial.com
             </a>
             .

@@ -1,3 +1,12 @@
+import { FaqList, Section, SectionHeader, ClosingCta } from '@/components/marketing';
+import { PlatformMark } from '@/components/platform-marks';
+import {
+  PLATFORMS,
+  PLATFORM_COUNT,
+  STATUS_LABEL,
+  STATUS_TONE,
+  type PlatformStatus,
+} from '@/lib/platforms';
 import { breadcrumbSchema, faqSchema, jsonLd, pageSeo, type Faq } from '@/lib/seo';
 
 export const metadata = pageSeo({
@@ -14,106 +23,27 @@ export const metadata = pageSeo({
  * Deliberately honest about what is not available yet. A page that implies everything
  * works is the fastest way to lose a developer's trust, and a plainly stated approval
  * timeline is genuinely useful information nobody else publishes.
+ *
+ * Grouped by status rather than listed flat. Twelve visually identical cards made the one
+ * fact a visitor came for — what can I use today — something they had to read every card
+ * to work out.
  */
 
-interface Platform {
-  name: string;
-  status: 'available' | 'awaiting-approval' | 'planned';
-  approval: string;
-  notes: string;
-  cost: string;
-}
-
-const PLATFORMS: readonly Platform[] = [
+const GROUPS: { status: PlatformStatus; heading: string; lead: string }[] = [
   {
-    name: 'Bluesky',
     status: 'available',
-    approval: 'None',
-    cost: 'Free',
-    notes:
-      'No developer portal and no review queue. You create an app password in Bluesky’s settings and start publishing. That is why it is the first network supported.',
+    heading: 'Publishing today',
+    lead: 'No application, no review queue, no waiting. You can complete the quickstart against this network right now.',
   },
   {
-    name: 'Telegram',
     status: 'awaiting-approval',
-    approval: 'None — bot token only',
-    cost: 'Free',
-    notes:
-      'A bot token from @BotFather is the whole setup. Publishes to channels and groups rather than a public feed.',
+    heading: 'Built, waiting on the platform',
+    lead: 'The adapter is written, tested and deployed. What is outstanding is the network’s own commercial review — a business application we have submitted or are preparing, not code.',
   },
   {
-    name: 'LinkedIn',
-    status: 'awaiting-approval',
-    approval: 'Two tiers, several weeks',
-    cost: 'Free',
-    notes:
-      'Requires a registered legal organisation and a business email; personal addresses do not pass vetting. Development access comes first, then a Standard tier review with a screen recording.',
-  },
-  {
-    name: 'Facebook Pages',
-    status: 'awaiting-approval',
-    approval: '4–6 weeks',
-    cost: 'Free',
-    notes:
-      'Needs Meta Business Verification and app review with a screencast. One Meta app covers Facebook, Instagram and Threads.',
-  },
-  {
-    name: 'Instagram',
-    status: 'awaiting-approval',
-    approval: '4–6 weeks',
-    cost: 'Free',
-    notes:
-      'Requires a Business or Creator account linked to a Facebook Page. Personal accounts cannot publish through any API.',
-  },
-  {
-    name: 'Threads',
-    status: 'awaiting-approval',
-    approval: '4–6 weeks',
-    cost: 'Free',
-    notes: 'Shares the Meta app and its review with Facebook and Instagram.',
-  },
-  {
-    name: 'TikTok',
-    status: 'awaiting-approval',
-    approval: '2–4 week audit',
-    cost: 'Free',
-    notes:
-      'The Content Posting API needs an audit separate from developer signup. Until it passes, TikTok forces every post made through the API to be visible only to its creator.',
-  },
-  {
-    name: 'YouTube',
-    status: 'awaiting-approval',
-    approval: 'Compliance audit',
-    cost: 'Free',
-    notes: 'Uploads from unaudited projects are restricted to private visibility until the audit passes.',
-  },
-  {
-    name: 'Pinterest',
     status: 'planned',
-    approval: 'Standard app review',
-    cost: 'Free',
-    notes: 'Publishes Pins to boards.',
-  },
-  {
-    name: 'X',
-    status: 'planned',
-    approval: 'Immediate, on a paid tier',
-    cost: 'Paid',
-    notes: 'The only major network that charges for the ability to publish.',
-  },
-  {
-    name: 'Discord',
-    status: 'planned',
-    approval: 'None — bot token',
-    cost: 'Free',
-    notes: 'Posts to channels through a bot. The lightest setup of any platform here.',
-  },
-  {
-    name: 'Google Business Profile',
-    status: 'planned',
-    approval: 'Google Cloud project and access request',
-    cost: 'Free',
-    notes: 'Publishes updates to a business listing rather than a social feed.',
+    heading: 'Implemented, application not yet started',
+    lead: 'The adapter exists and passes its certification checks. These applications are queued behind the launch platforms above, because each one costs reviewer attention we would rather spend on the networks customers ask for first.',
   },
 ];
 
@@ -138,19 +68,17 @@ const FAQS: readonly Faq[] = [
     answer:
       'Only X charges for the ability to publish through its API. Bluesky, LinkedIn, Meta, TikTok, YouTube, Pinterest, Discord and Google Business Profile all provide free API access to approved applications.',
   },
+  {
+    question: 'Does my code change when a network is approved?',
+    answer:
+      'No. Every adapter reads its client id and secret from the database at call time, so an approval is a configuration change rather than a deployment. A post that targets a newly approved network uses the same request body it always would.',
+  },
+  {
+    question: 'What happens if I target a network that is not approved yet?',
+    answer:
+      'Authorizing a connection for it returns PROVIDER_NOT_CONFIGURED — a 503 that says the platform is not yet available, rather than a 400 implying you sent something wrong. Capabilities also report the restriction, so an agent can check before composing instead of discovering it at publish time.',
+  },
 ];
-
-const TONE = {
-  available: 'bg-ok-100 text-ok-600',
-  'awaiting-approval': 'bg-warn-100 text-warn-600',
-  planned: 'bg-[var(--surface-sunken)] text-[var(--text-muted)]',
-} as const;
-
-const LABEL = {
-  available: 'Available now',
-  'awaiting-approval': 'Built, awaiting approval',
-  planned: 'Planned',
-} as const;
 
 export default function PlatformsPage() {
   return (
@@ -166,49 +94,102 @@ export default function PlatformsPage() {
       />
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(faqSchema(FAQS))} />
 
-      <div className="mx-auto max-w-4xl px-4 py-14 sm:px-6">
-        <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-          Supported social networks
-        </h1>
-        <p className="mt-4 max-w-2xl text-base text-pretty text-[var(--text-muted)]">
-          Every network below is implemented. What differs is whether the platform has granted
-          access yet — most require a business application that takes weeks, which is why they are
-          listed separately rather than promised vaguely.
-        </p>
+      <div className="mx-auto max-w-6xl px-4 pt-14 pb-4 sm:px-6">
+        <div className="max-w-3xl">
+          <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-[2.6rem] sm:leading-[1.1]">
+            Supported social networks
+          </h1>
+          <p className="mt-5 text-lg text-pretty text-[var(--text-muted)]">
+            All {PLATFORM_COUNT} networks below are implemented and covered by the same request
+            body. What differs is whether the platform has granted access yet — most require a
+            business application that takes weeks, which is why they are listed by status rather
+            than promised vaguely.
+          </p>
+        </div>
 
-        <ul className="mt-10 space-y-3">
-          {PLATFORMS.map((platform) => (
-            <li
-              key={platform.name}
-              className="rounded-[var(--radius-card)] border bg-[var(--surface-raised)] p-4 sm:p-5"
-            >
-              <div className="flex flex-wrap items-center gap-3">
-                <h2 className="text-base font-semibold">{platform.name}</h2>
-                <span
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${TONE[platform.status]}`}
-                >
-                  {LABEL[platform.status]}
-                </span>
-                <span className="ml-auto text-xs text-[var(--text-subtle)]">{platform.cost}</span>
+        {/* An at-a-glance count per status, so the page answers "what can I use today"
+            before any card is read. */}
+        <dl className="mt-10 grid gap-px overflow-hidden rounded-[var(--radius-card)] border bg-[var(--border)] sm:grid-cols-3">
+          {GROUPS.map((group) => {
+            const count = PLATFORMS.filter((p) => p.status === group.status).length;
+            return (
+              <div key={group.status} className="bg-[var(--surface-raised)] p-5">
+                <dt className="text-sm font-medium">{STATUS_LABEL[group.status]}</dt>
+                <dd className="mt-1.5 font-mono text-2xl font-semibold text-[var(--brand-text)]">
+                  {count}
+                </dd>
               </div>
-              <p className="mt-2 text-sm text-pretty text-[var(--text-muted)]">{platform.notes}</p>
-              <p className="mt-2 text-xs text-[var(--text-subtle)]">
-                Approval required: {platform.approval}
-              </p>
-            </li>
-          ))}
-        </ul>
-
-        <h2 className="mt-14 text-2xl font-semibold tracking-tight">Common questions</h2>
-        <dl className="mt-6 divide-y">
-          {FAQS.map((faq) => (
-            <div key={faq.question} className="py-5">
-              <dt className="text-base font-medium">{faq.question}</dt>
-              <dd className="mt-2 text-sm text-pretty text-[var(--text-muted)]">{faq.answer}</dd>
-            </div>
-          ))}
+            );
+          })}
         </dl>
       </div>
+
+      {GROUPS.map((group, index) => (
+        <Section
+          key={group.status}
+          id={group.status}
+          tone={index % 2 === 1 ? 'sunken' : undefined}
+        >
+          <SectionHeader heading={group.heading} lead={group.lead} align="left" />
+
+          <ul className="mt-10 grid gap-4 md:grid-cols-2">
+            {PLATFORMS.filter((platform) => platform.status === group.status).map((platform) => (
+              <li
+                key={platform.id}
+                className="flex flex-col rounded-[var(--radius-card)] border bg-[var(--surface-raised)] p-5"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[var(--surface-sunken)] text-[var(--text)]">
+                    <PlatformMark provider={platform.id} className="h-[22px] w-[22px]" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-base font-semibold">{platform.name}</h3>
+                    <p className="mt-0.5 text-sm text-[var(--text-subtle)]">
+                      {platform.publishesTo}
+                    </p>
+                  </div>
+                  <span
+                    className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_TONE[platform.status]}`}
+                  >
+                    {STATUS_LABEL[platform.status]}
+                  </span>
+                </div>
+
+                <p className="mt-4 text-sm text-pretty text-[var(--text-muted)]">
+                  {platform.notes}
+                </p>
+
+                <dl className="mt-auto flex flex-wrap gap-x-6 gap-y-1 pt-4 text-xs text-[var(--text-subtle)]">
+                  <div className="flex gap-1.5">
+                    <dt>Approval:</dt>
+                    <dd className="text-[var(--text-muted)]">{platform.approval}</dd>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <dt>API access:</dt>
+                    <dd className="text-[var(--text-muted)]">{platform.cost}</dd>
+                  </div>
+                </dl>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ))}
+
+      <Section id="questions">
+        <SectionHeader
+          heading="Common questions"
+          lead="Approval timelines are the part of this product nobody else explains, so these answers are as specific as we can make them."
+          align="left"
+        />
+        <FaqList faqs={FAQS} />
+      </Section>
+
+      <ClosingCta
+        heading="Start on the network that needs no permission"
+        lead="Bluesky publishes today. The same request body reaches every other network the moment its approval lands — no migration, no rewrite."
+        primary={{ href: '/docs/quickstart', label: 'Read the quickstart' }}
+        secondary={{ href: '/docs', label: 'Browse the API' }}
+      />
     </>
   );
 }

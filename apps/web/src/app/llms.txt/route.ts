@@ -65,11 +65,16 @@ request. Each destination succeeds or fails independently and is retried indepen
 - [Media uploads](${SITE_URL}/docs/media): direct-to-storage uploads, probing, per-platform limits
 - [Multi-tenant and white-label](${SITE_URL}/docs/multi-tenant): publishing on behalf of your own customers
 - [Supported networks](${SITE_URL}/platforms): what each platform supports and what it requires
+- [Features](${SITE_URL}/features): every capability, and which ones are optional
+- [Pricing](${SITE_URL}/pricing): free while in development; what is metered for later
+- [Data deletion](${SITE_URL}/data-deletion): how to delete stored data and what is retained
 
 ## Reference
 
 - OpenAPI specification: ${SITE_URL}/openapi.json
 - Error dictionary: ${SITE_URL}/docs/errors
+- Every error code has its own page at ${SITE_URL}/docs/errors/{CODE}, which is the same
+  URL the \`docs_url\` field of an error response points at
 
 ## Notes
 

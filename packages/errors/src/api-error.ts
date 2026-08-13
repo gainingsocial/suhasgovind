@@ -2,7 +2,16 @@ import { ERROR_CODE_METADATA } from './catalog.js';
 import type { ErrorCode } from './codes.js';
 import type { ErrorEnvelope, ErrorType, FieldIssue, SanitizedProviderError, SuggestedAction } from './types.js';
 
-const DEFAULT_DOCS_BASE = 'https://docs.gainingsocial.com/errors';
+/**
+ * Where `docs_url` points.
+ *
+ * This was `docs.gainingsocial.com`, a hostname that has never resolved — so the most
+ * useful field in a failure response was a dead link on every error we have ever returned.
+ * The reference now lives on the marketing site, where a page is generated per code from
+ * this same catalog, so the link a caller follows cannot describe a status or a
+ * retryability the API does not actually return.
+ */
+const DEFAULT_DOCS_BASE = 'https://gainingsocial.com/docs/errors';
 
 export interface ApiErrorOptions {
   /** Overrides the catalog default message. Human-readable only — agents use `code`. */

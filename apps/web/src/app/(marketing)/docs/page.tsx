@@ -44,6 +44,11 @@ const GUIDES = [
     title: 'Multi-tenant and white-label',
     summary: 'Publishing on behalf of your own customers, under your own branding.',
   },
+  {
+    href: '/docs/errors',
+    title: 'Error codes',
+    summary: 'Every code the API returns, its status, and whether retrying could help.',
+  },
 ] as const;
 
 const SECTIONS = [
@@ -105,7 +110,7 @@ export default function DocsPage() {
         )}
       />
 
-      <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6">
+      <div className="max-w-3xl py-14">
         <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
           API documentation
         </h1>
@@ -173,6 +178,12 @@ export default function DocsPage() {
             and a machine-readable next action. Nothing requires parsing an English sentence to
             decide what to do — which matters when the caller is an AI agent rather than a person.
           </p>
+          <Link
+            href="/docs/errors"
+            className="mt-3 inline-block text-sm font-medium underline underline-offset-4"
+          >
+            Browse every error code →
+          </Link>
         </section>
       </div>
     </>

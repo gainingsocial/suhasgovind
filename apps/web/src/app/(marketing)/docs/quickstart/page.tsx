@@ -116,7 +116,7 @@ export default function QuickstartPage() {
         )}
       />
 
-      <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6">
+      <div className="max-w-3xl py-14">
         <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
           Publish your first post
         </h1>
@@ -130,7 +130,7 @@ export default function QuickstartPage() {
           {STEPS.map((step, index) => (
             <li key={step.name}>
               <div className="flex items-center gap-3">
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-100 text-sm font-semibold text-brand-600">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-100 text-sm font-semibold text-[var(--brand-text)]">
                   {index + 1}
                 </span>
                 <h2 className="text-lg font-semibold tracking-tight">{step.name}</h2>
