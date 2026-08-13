@@ -1,6 +1,6 @@
 import { newUuidV7 } from '@gs/contracts/ids';
 import type { PostSample, PerformanceObservation } from '@gs/domain';
-import { and, desc, eq, gte, isNotNull, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, isNotNull, lte, sql } from 'drizzle-orm';
 
 import type { Database } from '../client.js';
 import { analyticsSnapshots, externalPosts } from '../schema/analytics.js';
@@ -188,7 +188,15 @@ export async function loadPostSamples(
         eq(externalPosts.profileId, input.profileId),
         isNotNull(externalPosts.publishedAt),
         gte(externalPosts.publishedAt, input.since),
-        sql`${externalPosts.publishedAt} <= ${input.settledBefore}`,
+        // `lte`, not a raw `sql` template.
+        //
+        // The typed comparison helpers know the column is a timestamp and encode a `Date`
+        // the way the driver expects. A raw template does not: it binds the JS `Date`
+        // object straight through, and postgres.js rejects it with "the string argument
+        // must be of type string ... received an instance of Date". Every call to
+        // `POST /v1/memory/learn` failed with a 500 on this line, which is also why the
+        // sibling `gte` above — one line away, same value type — always worked.
+        lte(externalPosts.publishedAt, input.settledBefore),
         // A deleted post's numbers describe content nobody can see. Learning from it would
         // recommend repeating something that no longer exists.
         sql`${externalPosts.deletedDetectedAt} IS NULL`,

@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { middleware } from './middleware';
 
@@ -11,10 +11,22 @@ import { middleware } from './middleware';
  * branches are deliberately not exercised here: they need a live Supabase project, so
  * they belong to the integration suite rather than to a hermetic unit test.
  *
- * Supabase configuration is absent in this suite, which makes `middleware` return before
- * any network call. That is what lets these assertions run offline, and it is also the
- * documented production behaviour when configuration is missing.
+ * Supabase configuration is stubbed away rather than merely assumed absent, and that
+ * distinction cost a red build: locally the variables are unset, so `middleware` returned
+ * before any network call and every assertion passed. CI *does* set them, so the same code
+ * ran on to the session check and redirected `/app` to `/signin` — a test that passed for
+ * a reason that had nothing to do with what it claimed to verify. Stubbing makes the
+ * behaviour the same in both places.
  */
+
+beforeEach(() => {
+  vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', '');
+  vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', '');
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 function request(url: string): NextRequest {
   const host = new URL(url).host;
@@ -63,7 +75,8 @@ describe('canonical hostname', () => {
   });
 
   it('leaves localhost alone, so development is not redirected to production', async () => {
-    const response = await middleware(request('http://localhost:3000/app'));
+    // A marketing path, so this asserts the hostname rule and nothing about sessions.
+    const response = await middleware(request('http://localhost:3000/pricing'));
 
     expect(response.status).toBe(200);
     expect(response.headers.get('location')).toBeNull();

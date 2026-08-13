@@ -33,7 +33,7 @@ import { ApiError } from '@gs/errors';
 import { Hono, type Context } from 'hono';
 
 import type { AppEnv } from '../env.js';
-import { requirePathId } from '../lib/request.js';
+import { parseBody, requirePathId } from '../lib/request.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { withDatabase } from '../middleware/database.js';
 
@@ -133,8 +133,19 @@ memory.get('/brand', withDatabase(), authenticate(['content:read']), async (c) =
   const principal = c.get('principal');
   const profileId = await resolveProfile(c, c.req.query('profile_id'));
 
+  // `safeParse` and an explicit throw, not a bare `.parse`. A raw Zod error escapes as an
+  // unhandled exception and the caller gets a 500 for what is entirely their typo — the
+  // filter is theirs to correct, and a 500 tells them to retry instead.
   const kindParam = c.req.query('kind');
-  const kind = kindParam ? BrandMemoryKindSchema.parse(kindParam) : undefined;
+  const parsedKind = kindParam ? BrandMemoryKindSchema.safeParse(kindParam) : undefined;
+
+  if (parsedKind && !parsedKind.success) {
+    throw new ApiError('INVALID_REQUEST', {
+      message: '`kind` is not a recognized brand memory kind.',
+    });
+  }
+
+  const kind = parsedKind?.data;
 
   const rows = await listBrandMemory(
     c.get('db'),
@@ -158,7 +169,7 @@ memory.get('/brand', withDatabase(), authenticate(['content:read']), async (c) =
 
 memory.post('/brand', withDatabase(), authenticate(['content:write']), async (c) => {
   const principal = c.get('principal');
-  const body = UpsertBrandMemoryRequestSchema.parse(await c.req.json());
+  const body = await parseBody(c, UpsertBrandMemoryRequestSchema);
   const profileId = await resolveProfile(c, c.req.query('profile_id'));
 
   const row = await upsertBrandMemory(c.get('db'), {
@@ -226,7 +237,7 @@ memory.get('/performance', withDatabase(), authenticate(['analytics:read']), asy
  */
 memory.post('/learn', withDatabase(), authenticate(['analytics:read', 'content:write']), async (c) => {
   const principal = c.get('principal');
-  const body = LearnRequestSchema.parse(await c.req.json());
+  const body = await parseBody(c, LearnRequestSchema);
   const profileId = await resolveProfile(c, body.profile_id);
 
   const now = new Date();
