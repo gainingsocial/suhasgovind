@@ -159,3 +159,11 @@ export {
   recommendationsFrom,
   usefulRecommendations,
 } from './memory/performance.js';
+
+export type {
+  ArticleDerivation,
+  ArticleDerivationOptions,
+  ArticleInput,
+  DerivationSource,
+} from './content/article.js';
+export { deriveArticlePost, toHashtag } from './content/article.js';

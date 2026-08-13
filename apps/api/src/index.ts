@@ -9,6 +9,7 @@ import { me } from './routes/me.js';
 import { apiKeys, environments } from './routes/api-keys.js';
 import { connectRoutes, oauthCallbackRoutes } from './routes/connect.js';
 import { connectSessions, hostedConnect } from './routes/connect-sessions.js';
+import { createArticleRoutes } from './routes/articles.js';
 import { connections } from './routes/connections.js';
 import { brandProfiles, contentItems, contentSources } from './routes/content.js';
 import { createDraftSetRoutes } from './routes/draft-sets.js';
@@ -91,6 +92,19 @@ app.route('/v1/content', contentItems);
 app.route(
   '/v1/draft-sets',
   createDraftSetRoutes((request, env, ctx) => app.fetch(request, env, ctx as ExecutionContext)),
+);
+
+/**
+ * Article sharing (plan §63O).
+ *
+ * The on-ramp for site owners, and the shared engine behind the WordPress plugin, the
+ * site-builder apps, the browser extension and the agent tool. Wired with the internal
+ * dispatcher so it composes the existing media and compose routes rather than acquiring a
+ * second copy of their platform rules.
+ */
+app.route(
+  '/v1/articles',
+  createArticleRoutes((request, env, ctx) => app.fetch(request, env, ctx as ExecutionContext)),
 );
 
 /**

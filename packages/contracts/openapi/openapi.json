@@ -20223,6 +20223,724 @@
           }
         }
       }
+    },
+    "/v1/articles/compose": {
+      "post": {
+        "operationId": "composeArticle",
+        "summary": "Turn a published article into per-network posts",
+        "description": "The one call a site owner needs. Send the headline, URL, body and optionally a featured image and tags; it registers the image, derives a summary and returns what each network would publish, with a `publish_override` per destination to hand straight to `POST /v1/posts`.\n\n**It never writes copy.** It selects, trims and assembles words the author already wrote, preferring their excerpt, then the meta description, then the opening sentences — and reports every choice in `derived.notes`. That means it works with no model provider configured, and that a share never quietly rephrases somebody.\n\nThis is the same derivation the WordPress plugin, the site-builder apps, the browser extension and the `share_article` agent tool all use, so a post reads identically however it was triggered. Composing never publishes.\n\nRequires scope: `posts:read`, `media:write`.",
+        "tags": [
+          "Publishing"
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "profile_id": {
+                    "type": "string"
+                  },
+                  "article": {
+                    "type": "object",
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500
+                      },
+                      "url": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "uri"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "content": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 400000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "content_format": {
+                        "default": "html",
+                        "type": "string",
+                        "enum": [
+                          "html",
+                          "text"
+                        ]
+                      },
+                      "excerpt": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 5000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "meta_description": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "featured_image_url": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "uri"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "featured_image_alt": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 2000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "tags": {
+                        "default": [],
+                        "maxItems": 50,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "maxLength": 100
+                        }
+                      },
+                      "published_at": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "title"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "targets": {
+                    "minItems": 1,
+                    "maxItems": 50,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "destination_id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "destination_id"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "mode": {
+                    "default": "optimize",
+                    "type": "string",
+                    "enum": [
+                      "exact",
+                      "optimize"
+                    ]
+                  },
+                  "include_link": {
+                    "default": true,
+                    "type": "boolean"
+                  },
+                  "include_hashtags": {
+                    "default": true,
+                    "type": "boolean"
+                  },
+                  "max_hashtags": {
+                    "default": 3,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10
+                  }
+                },
+                "required": [
+                  "profile_id",
+                  "article",
+                  "targets"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "What was derived, and what each network would publish.",
+            "headers": {
+              "x-request-id": {
+                "description": "Echoed request identifier. Quote this when reporting a problem.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "x-trace-id": {
+                "description": "Trace identifier correlating this request across services.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "const": "article_composition"
+                    },
+                    "derived": {
+                      "type": "object",
+                      "properties": {
+                        "source": {
+                          "type": "string",
+                          "enum": [
+                            "excerpt",
+                            "meta_description",
+                            "opening_sentences",
+                            "title_only"
+                          ]
+                        },
+                        "text": {
+                          "type": "string"
+                        },
+                        "hashtags": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "link_url": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "media_id": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "notes": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "source",
+                        "text",
+                        "hashtags",
+                        "link_url",
+                        "media_id",
+                        "notes"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "composition": {
+                      "type": "object",
+                      "properties": {
+                        "object": {
+                          "type": "string",
+                          "const": "composition"
+                        },
+                        "mode": {
+                          "type": "string",
+                          "enum": [
+                            "exact",
+                            "optimize"
+                          ]
+                        },
+                        "ready": {
+                          "type": "boolean"
+                        },
+                        "summary": {
+                          "type": "string"
+                        },
+                        "targets": {
+                          "readOnly": true,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "destination_id": {
+                                "type": "string"
+                              },
+                              "provider": {
+                                "type": "string",
+                                "enum": [
+                                  "mock",
+                                  "bluesky",
+                                  "telegram",
+                                  "linkedin",
+                                  "facebook",
+                                  "instagram",
+                                  "threads",
+                                  "tiktok",
+                                  "youtube",
+                                  "pinterest",
+                                  "google_business_profile",
+                                  "x",
+                                  "discord"
+                                ],
+                                "description": "Social platform identifier."
+                              },
+                              "destination_name": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "ready",
+                                  "adapted",
+                                  "needs_review",
+                                  "needs_decision",
+                                  "blocked"
+                                ]
+                              },
+                              "summary": {
+                                "type": "string"
+                              },
+                              "preview": {
+                                "type": "object",
+                                "properties": {
+                                  "text": {
+                                    "type": "string"
+                                  },
+                                  "first_comment_hashtags": {
+                                    "readOnly": true,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "media_ids": {
+                                    "readOnly": true,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "link_url": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "text",
+                                  "first_comment_hashtags",
+                                  "media_ids",
+                                  "link_url"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "text_adaptations": {
+                                "readOnly": true,
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "truncate",
+                                        "move_hashtags",
+                                        "strip_link",
+                                        "strip_mentions"
+                                      ]
+                                    },
+                                    "decision": {
+                                      "type": "string",
+                                      "enum": [
+                                        "PASS",
+                                        "SAFE_AUTOFIX",
+                                        "REVIEW_AUTOFIX",
+                                        "USER_DECISION_REQUIRED",
+                                        "UNSUPPORTED"
+                                      ]
+                                    },
+                                    "reason": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "decision",
+                                    "reason"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "media_fit": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "decision": {
+                                        "type": "string",
+                                        "enum": [
+                                          "PASS",
+                                          "SAFE_AUTOFIX",
+                                          "REVIEW_AUTOFIX",
+                                          "USER_DECISION_REQUIRED",
+                                          "UNSUPPORTED"
+                                        ]
+                                      },
+                                      "items": {
+                                        "readOnly": true,
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "media_id": {
+                                              "type": "string"
+                                            },
+                                            "decision": {
+                                              "type": "string",
+                                              "enum": [
+                                                "PASS",
+                                                "SAFE_AUTOFIX",
+                                                "REVIEW_AUTOFIX",
+                                                "USER_DECISION_REQUIRED",
+                                                "UNSUPPORTED"
+                                              ]
+                                            },
+                                            "transforms": {
+                                              "readOnly": true,
+                                              "type": "array",
+                                              "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                  "kind": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "convert_format",
+                                                      "resize",
+                                                      "crop",
+                                                      "pad",
+                                                      "compress",
+                                                      "trim_duration",
+                                                      "generate_thumbnail"
+                                                    ]
+                                                  },
+                                                  "decision": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "PASS",
+                                                      "SAFE_AUTOFIX",
+                                                      "REVIEW_AUTOFIX",
+                                                      "USER_DECISION_REQUIRED",
+                                                      "UNSUPPORTED"
+                                                    ]
+                                                  },
+                                                  "reason": {
+                                                    "type": "string"
+                                                  },
+                                                  "parameters": {
+                                                    "type": "object",
+                                                    "propertyNames": {
+                                                      "type": "string"
+                                                    },
+                                                    "additionalProperties": {}
+                                                  }
+                                                },
+                                                "required": [
+                                                  "kind",
+                                                  "decision",
+                                                  "reason",
+                                                  "parameters"
+                                                ],
+                                                "additionalProperties": false
+                                              }
+                                            },
+                                            "blocked_reason": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "string"
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
+                                            }
+                                          },
+                                          "required": [
+                                            "media_id",
+                                            "decision",
+                                            "transforms",
+                                            "blocked_reason"
+                                          ],
+                                          "additionalProperties": false
+                                        }
+                                      },
+                                      "findings": {
+                                        "readOnly": true,
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "code": {
+                                              "type": "string"
+                                            },
+                                            "message": {
+                                              "type": "string"
+                                            },
+                                            "decision": {
+                                              "type": "string",
+                                              "enum": [
+                                                "PASS",
+                                                "SAFE_AUTOFIX",
+                                                "REVIEW_AUTOFIX",
+                                                "USER_DECISION_REQUIRED",
+                                                "UNSUPPORTED"
+                                              ]
+                                            }
+                                          },
+                                          "required": [
+                                            "code",
+                                            "message",
+                                            "decision"
+                                          ],
+                                          "additionalProperties": false
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "decision",
+                                      "items",
+                                      "findings"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "errors": {
+                                "readOnly": true,
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "code": {
+                                      "type": "string"
+                                    },
+                                    "message": {
+                                      "type": "string"
+                                    },
+                                    "agent_action": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "code",
+                                    "message",
+                                    "agent_action"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "warnings": {
+                                "readOnly": true,
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "code": {
+                                      "type": "string"
+                                    },
+                                    "message": {
+                                      "type": "string"
+                                    },
+                                    "agent_action": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "code",
+                                    "message",
+                                    "agent_action"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "publish_override": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {}
+                              }
+                            },
+                            "required": [
+                              "destination_id",
+                              "provider",
+                              "destination_name",
+                              "status",
+                              "summary",
+                              "preview",
+                              "text_adaptations",
+                              "media_fit",
+                              "errors",
+                              "warnings",
+                              "publish_override"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "object",
+                        "mode",
+                        "ready",
+                        "summary",
+                        "targets"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "object",
+                    "derived",
+                    "composition"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`INVALID_REQUEST` — The request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTHENTICATION_REQUIRED` — An API key is required. Send it as `Authorization: Bearer sk_live_...`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`PROFILE_NOT_FOUND` — No such profile.\n\n`DESTINATION_NOT_FOUND` — No such destination.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`CONNECTION_REAUTH_REQUIRED` — The social connection must be re-authorized before it can publish.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`MEDIA_URL_NOT_ALLOWED` — The media URL is not allowed. It must be a public HTTPS URL that does not resolve to a private network.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR` — An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {

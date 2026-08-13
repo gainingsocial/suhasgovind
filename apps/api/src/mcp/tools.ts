@@ -1,5 +1,7 @@
 import {
   CancelPostResponseSchema,
+  ComposeArticleRequestSchema,
+  ComposeArticleResponseSchema,
   ComposeRequestSchema,
   ComposeResponseSchema,
   ConnectionListResponseSchema,
@@ -162,6 +164,23 @@ export const MCP_TOOLS: readonly McpTool[] = [
     destructive: false,
     outputSchema: ComposeResponseSchema,
     buildRequest: (args) => ({ method: 'POST', path: '/v1/compose', body: args }),
+  },
+  {
+    name: 'share_article',
+    description:
+      'Turn a published article into per-network posts. Give it the headline, the URL, the ' +
+      'body and optionally a featured image and tags; it registers the image, derives a ' +
+      'summary from the author’s own words — never rewriting them — and returns what each ' +
+      'network would publish plus a `publish_override` to hand to create_post. Use this ' +
+      'rather than composing an article by hand: it is the same derivation every ' +
+      'integration uses, so the post reads identically however it was triggered. Sharing ' +
+      'never publishes.',
+    inputSchema: ComposeArticleRequestSchema,
+    scopes: ['posts:read', 'media:write'],
+    keywords: ['article', 'blog', 'post', 'share', 'wordpress', 'cms', 'url', 'link', 'repurpose'],
+    destructive: false,
+    outputSchema: ComposeArticleResponseSchema,
+    buildRequest: (args) => ({ method: 'POST', path: '/v1/articles/compose', body: args }),
   },
   {
     name: 'preflight_post',

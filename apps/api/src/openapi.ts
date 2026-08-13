@@ -103,6 +103,8 @@ import {
   PerformanceListResponseSchema,
   RecommendationListResponseSchema,
   UpsertBrandMemoryRequestSchema,
+  ComposeArticleRequestSchema,
+  ComposeArticleResponseSchema,
 } from '@gs/contracts/http';
 import { PaginationQuerySchema } from '@gs/contracts/pagination';
 import { API_SCOPES, type ApiScope } from '@gs/contracts/scopes';
@@ -1903,6 +1905,42 @@ const ROUTES: RouteSpec[] = [
       'INSUFFICIENT_SCOPE',
       'MISSING_REQUIRED_FIELD',
       'PROFILE_NOT_FOUND',
+      'TENANT_FORBIDDEN',
+      'INTERNAL_ERROR',
+    ],
+  },
+  // ---- Article sharing (plan §63O) -----------------------------------------
+  {
+    method: 'post',
+    path: '/v1/articles/compose',
+    operationId: 'composeArticle',
+    summary: 'Turn a published article into per-network posts',
+    description:
+      'The one call a site owner needs. Send the headline, URL, body and optionally a ' +
+      'featured image and tags; it registers the image, derives a summary and returns what ' +
+      'each network would publish, with a `publish_override` per destination to hand ' +
+      'straight to `POST /v1/posts`.\n\n' +
+      '**It never writes copy.** It selects, trims and assembles words the author already ' +
+      'wrote, preferring their excerpt, then the meta description, then the opening ' +
+      'sentences — and reports every choice in `derived.notes`. That means it works with no ' +
+      'model provider configured, and that a share never quietly rephrases somebody.\n\n' +
+      'This is the same derivation the WordPress plugin, the site-builder apps, the browser ' +
+      'extension and the `share_article` agent tool all use, so a post reads identically ' +
+      'however it was triggered. Composing never publishes.',
+    tags: ['Publishing'],
+    scopes: ['posts:read', 'media:write'],
+    requestBody: ComposeArticleRequestSchema,
+    successStatus: 200,
+    successDescription: 'What was derived, and what each network would publish.',
+    response: ComposeArticleResponseSchema,
+    errors: [
+      'AUTHENTICATION_REQUIRED',
+      'INSUFFICIENT_SCOPE',
+      'INVALID_REQUEST',
+      'PROFILE_NOT_FOUND',
+      'DESTINATION_NOT_FOUND',
+      'MEDIA_URL_NOT_ALLOWED',
+      'CONNECTION_REAUTH_REQUIRED',
       'TENANT_FORBIDDEN',
       'INTERNAL_ERROR',
     ],
