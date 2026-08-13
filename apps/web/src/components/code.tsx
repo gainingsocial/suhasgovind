@@ -165,7 +165,12 @@ export function CodeBlock({
   return (
     <div
       className={cx(
-        'overflow-hidden rounded-[var(--radius-card)] border border-[var(--code-border)] bg-[var(--code-bg)]',
+        // `min-w-0` so the panel is safe as a direct grid or flex child. Those default to
+        // `min-width: auto` and refuse to shrink below their content, and the content here
+        // is deliberately wider than the column — which grows the track and scrolls the
+        // whole page sideways on a phone, even though the `<pre>` scrolls internally
+        // exactly as intended.
+        'min-w-0 overflow-hidden rounded-[var(--radius-card)] border border-[var(--code-border)] bg-[var(--code-bg)]',
         className,
       )}
     >

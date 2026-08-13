@@ -228,7 +228,16 @@ export function Steps({
       {steps.map((step, index) => (
         <li
           key={step.title}
-          className="flex flex-col rounded-[var(--radius-card)] border bg-[var(--surface-raised)] p-6"
+          /**
+           * `min-w-0` matters here and is not decoration.
+           *
+           * A grid item defaults to `min-width: auto`, so it refuses to shrink below the
+           * intrinsic width of its content — and the content is a code panel whose `<pre>`
+           * is deliberately wider than the column. The track grows to fit it, the card ends
+           * up 488px wide on a 390px phone, and the whole page scrolls sideways even though
+           * the panel scrolls internally exactly as intended.
+           */
+          className="flex min-w-0 flex-col rounded-[var(--radius-card)] border bg-[var(--surface-raised)] p-6"
         >
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-600 font-mono text-sm font-bold text-[var(--on-brand)]">
             {index + 1}

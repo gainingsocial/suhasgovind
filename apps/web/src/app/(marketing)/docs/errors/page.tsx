@@ -76,7 +76,7 @@ export default function ErrorIndexPage() {
         </p>
 
         <div className="mt-10 grid gap-8 xl:grid-cols-2 xl:items-start">
-          <div className="max-w-2xl space-y-4 text-[15px] leading-relaxed text-[var(--text-muted)]">
+          <div className="min-w-0 max-w-2xl space-y-4 text-[15px] leading-relaxed text-[var(--text-muted)]">
             <p>
               Every error uses the same envelope, on every route, including the ones a platform
               caused. <code className="font-mono text-[0.9em]">request_id</code> and{' '}
@@ -157,7 +157,10 @@ export default function ErrorIndexPage() {
 
             <ul className="mt-6 grid gap-3 md:grid-cols-2">
               {group.docs.map((doc) => (
-                <li key={doc.code}>
+                /* min-w-0: `break-words` lets a long code wrap, but it does not reduce the
+                   item's intrinsic minimum width, so the grid track still sizes to
+                   IDEMPOTENCY_REQUEST_IN_PROGRESS unbroken. */
+                <li key={doc.code} className="min-w-0">
                   <Link
                     href={`/docs/errors/${doc.code}` as never}
                     className="flex h-full items-start gap-3 rounded-[var(--radius-card)] border bg-[var(--surface-raised)] p-4 transition-colors hover:border-[var(--border-strong)]"

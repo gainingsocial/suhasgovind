@@ -139,7 +139,10 @@ export default async function ErrorCodePage({ params }: { params: Promise<{ code
         </dl>
 
         <div className="mt-12 grid gap-10 xl:grid-cols-2 xl:items-start">
-          <div className="max-w-2xl">
+          {/* min-w-0: a grid item will not shrink below its content, and the content is a
+              code panel wider than the column. Without it the track grows and the page
+              scrolls sideways on a phone. */}
+          <div className="min-w-0 max-w-2xl">
             <h2 className="text-xl font-semibold tracking-tight">What it means</h2>
             <p className="mt-3 text-[15px] leading-relaxed text-pretty text-[var(--text-muted)]">
               {doc.family.summary}
@@ -165,7 +168,7 @@ export default async function ErrorCodePage({ params }: { params: Promise<{ code
             ) : null}
           </div>
 
-          <div>
+          <div className="min-w-0">
             <CodeBlock
               code={envelope}
               lang="json"
@@ -190,7 +193,7 @@ export default async function ErrorCodePage({ params }: { params: Promise<{ code
             </h2>
             <ul className="mt-5 grid gap-3 sm:grid-cols-2">
               {related.map((other) => (
-                <li key={other.code}>
+                <li key={other.code} className="min-w-0">
                   <Link
                     href={`/docs/errors/${other.code}` as never}
                     className="flex items-center justify-between gap-3 rounded-lg border bg-[var(--surface-raised)] p-3.5 transition-colors hover:border-[var(--border-strong)]"
