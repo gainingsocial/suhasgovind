@@ -127,26 +127,31 @@ deploy. Bluesky, Telegram and Discord need nothing.
 
 ## Database migrations
 
-Applied automatically? **No.** Run them yourself after a deploy that includes one:
-
 ```bash
-pnpm db:migrate
+pnpm db:migrate            # apply everything pending
+pnpm db:migrate --dry-run  # list what would run, change nothing
 ```
 
-The pooled `DATABASE_URL` connects as `gs_app`, which deliberately has no DDL permission —
-an application role that can drop tables is one an application bug can drop tables with. The
-runner falls back to the Supabase Management API, which needs `SUPABASE_ACCESS_TOKEN` in
-`.env`.
+The runner picks its own transport. The pooled `DATABASE_URL` connects as `gs_app`, which
+deliberately has no DDL permission — an application role that can drop tables is one an
+application bug can drop tables with — so the run probes it, sees the refusal, and falls
+through to the Supabase Management API, which acts as `postgres`. It needs
+`SUPABASE_PROJECT_REF` and `SUPABASE_ACCESS_TOKEN` in `.env`; both are already set.
 
-If the Management API returns a 5xx, it is a Supabase-side outage and the correct response
-is to retry rather than to grant `gs_app` more permission.
+The probe is the first DDL statement the migration needs anyway, so a transport that passes
+it has done real work rather than merely predicted it. Only a permission failure falls
+through: a syntax error in a migration fails identically on every transport, and retrying it
+elsewhere would turn one clear error into two confusing ones.
 
-Migrations `0005` through `0010` are already applied to the current database.
+If the Management API returns a 5xx, that is a Supabase-side outage — retry rather than
+granting `gs_app` more permission.
 
-**`0011_social_memory` is not.** It creates `brand_memory_entries` and
-`performance_observations`, which back `/v1/memory/*` and `/v1/recommendations` (plan
-Phase 10). Until it runs, those five routes fail with `INTERNAL_ERROR` on a missing
-relation — nothing else is affected, because no other route touches those tables.
+Everything through `0011_social_memory` is applied to the current database. New tables get
+their `gs_app` grants automatically, because `0002_app_role` set default privileges for
+objects `postgres` creates in `public` — there is no grant to remember alongside a
+migration.
 
-**How to know it worked:** `GET /v1/memory/performance?profile_id=pro_…` returns an empty
-list rather than a 500.
+**Still not run by the deploy.** The workflow deploys Workers and does not migrate, because
+a migration that runs itself on every push is one that can roll a schema forward while the
+previous Worker version is still serving. Run `pnpm db:migrate` after merging a migration;
+`--dry-run` first if you want to see what it will do.

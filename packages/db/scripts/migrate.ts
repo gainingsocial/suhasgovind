@@ -109,20 +109,95 @@ async function createDirectExecutor(connectionString: string): Promise<Executor>
 }
 
 /**
+ * Whether a failure means "this transport cannot do DDL" rather than "the migration is
+ * wrong".
+ *
+ * Only the first is worth trying another transport for. A syntax error in a migration
+ * fails identically everywhere, and silently retrying it against a second connection would
+ * turn one clear error into two confusing ones.
+ */
+function isPermissionFailure(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /permission denied|must be owner|insufficient privilege/i.test(message);
+}
+
+/**
+ * Every transport we could migrate over, in preference order.
+ *
+ * Direct first: it is faster, and on a local or CI database it is the only one configured.
+ * The Management API second, for a hosted project where we hold a management token but not
+ * the database password.
+ *
+ * Both are usually configured at once, and that combination is the interesting case. The
+ * pooled `DATABASE_URL` connects as `gs_app`, which deliberately has no DDL permission — an
+ * application role that can drop tables is one an application bug can drop tables with. So
+ * the direct transport connects fine and then fails the moment it tries to create anything.
+ */
+function resolveExecutors(): { label: string; create: () => Promise<Executor> }[] {
+  const { DATABASE_URL, SUPABASE_PROJECT_REF, SUPABASE_ACCESS_TOKEN } = process.env;
+  const candidates: { label: string; create: () => Promise<Executor> }[] = [];
+
+  if (DATABASE_URL) {
+    candidates.push({
+      label: describeTarget(DATABASE_URL),
+      create: () => createDirectExecutor(DATABASE_URL),
+    });
+  }
+
+  if (SUPABASE_PROJECT_REF && SUPABASE_ACCESS_TOKEN) {
+    candidates.push({
+      label: `Supabase Management API (project ${SUPABASE_PROJECT_REF})`,
+      create: () =>
+        Promise.resolve(createManagementExecutor(SUPABASE_PROJECT_REF, SUPABASE_ACCESS_TOKEN)),
+    });
+  }
+
+  return candidates;
+}
+
+/**
+ * The first transport that can actually create the bookkeeping schema.
+ *
+ * Probing is what makes the fallback real. Connecting proves nothing — `gs_app` connects
+ * happily and then cannot create a table — so the probe is the first DDL statement the run
+ * needs anyway, which means a successful probe has done useful work rather than merely
+ * predicting it.
+ *
  * Rule 14: when the environment is ambiguous, fail with an error that says what to set
  * rather than guessing at a target database.
  */
-async function resolveExecutor(): Promise<Executor> {
-  const { DATABASE_URL, SUPABASE_PROJECT_REF, SUPABASE_ACCESS_TOKEN } = process.env;
+async function selectExecutor(): Promise<Executor> {
+  const candidates = resolveExecutors();
 
-  if (DATABASE_URL) return createDirectExecutor(DATABASE_URL);
-  if (SUPABASE_PROJECT_REF && SUPABASE_ACCESS_TOKEN) {
-    return createManagementExecutor(SUPABASE_PROJECT_REF, SUPABASE_ACCESS_TOKEN);
+  if (candidates.length === 0) {
+    throw new Error(
+      'No migration target configured. Set DATABASE_URL, or set both SUPABASE_PROJECT_REF ' +
+        'and SUPABASE_ACCESS_TOKEN to migrate a hosted project. See .env.example.',
+    );
+  }
+
+  const refusals: string[] = [];
+
+  for (const candidate of candidates) {
+    const executor = await candidate.create();
+    try {
+      await executor.exec(`CREATE SCHEMA IF NOT EXISTS "${MIGRATIONS_SCHEMA}";`);
+      return executor;
+    } catch (error) {
+      await executor.close();
+
+      if (!isPermissionFailure(error)) throw error;
+
+      refusals.push(`  - ${candidate.label}: no permission to create schema`);
+      console.log(`${candidate.label} cannot run DDL; trying the next transport.`);
+    }
   }
 
   throw new Error(
-    'No migration target configured. Set DATABASE_URL, or set both SUPABASE_PROJECT_REF ' +
-      'and SUPABASE_ACCESS_TOKEN to migrate a hosted project. See .env.example.',
+    `No configured transport can run migrations:\n${refusals.join('\n')}\n\n` +
+      'The pooled DATABASE_URL connects as an application role with no DDL permission by ' +
+      'design. Set SUPABASE_PROJECT_REF and SUPABASE_ACCESS_TOKEN so a hosted project can ' +
+      'be migrated through the Management API.',
   );
 }
 
@@ -177,11 +252,12 @@ async function main(): Promise<void> {
 
   await assertEveryMigrationIsJournalled(migrationsFolder, journal.entries);
 
-  const executor = await resolveExecutor();
+  // Selecting the executor also creates the bookkeeping schema — that DDL statement is the
+  // probe, so a transport that passes it has already done the first piece of work.
+  const executor = await selectExecutor();
   console.log(`Target: ${executor.transport}`);
 
   try {
-    await executor.exec(`CREATE SCHEMA IF NOT EXISTS "${MIGRATIONS_SCHEMA}";`);
     await executor.exec(
       `CREATE TABLE IF NOT EXISTS "${MIGRATIONS_SCHEMA}"."${MIGRATIONS_TABLE}" (
          id SERIAL PRIMARY KEY,
