@@ -142,3 +142,11 @@ If the Management API returns a 5xx, it is a Supabase-side outage and the correc
 is to retry rather than to grant `gs_app` more permission.
 
 Migrations `0005` through `0010` are already applied to the current database.
+
+**`0011_social_memory` is not.** It creates `brand_memory_entries` and
+`performance_observations`, which back `/v1/memory/*` and `/v1/recommendations` (plan
+Phase 10). Until it runs, those five routes fail with `INTERNAL_ERROR` on a missing
+relation — nothing else is affected, because no other route touches those tables.
+
+**How to know it worked:** `GET /v1/memory/performance?profile_id=pro_…` returns an empty
+list rather than a 500.
