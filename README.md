@@ -85,6 +85,7 @@ The parts where the *ordering* or the *default* is the design, rather than the c
 | [Media auto-fit](./docs/architecture/media-auto-fit.md) | Where the line between "fix it" and "ask first" sits |
 | [Agent governance](./docs/architecture/agent-governance.md) | Why an unconfigured agent can draft but not publish |
 | [The MCP layer](./docs/architecture/mcp.md) | Why a tool call re-enters the API through its own front door |
+| [Social memory](./docs/architecture/social-memory.md) | When the system is allowed to claim it has learned something |
 
 ## Prerequisites
 

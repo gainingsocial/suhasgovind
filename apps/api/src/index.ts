@@ -13,6 +13,7 @@ import { connections } from './routes/connections.js';
 import { brandProfiles, contentItems, contentSources } from './routes/content.js';
 import { createDraftSetRoutes } from './routes/draft-sets.js';
 import { media } from './routes/media.js';
+import { memory, recommendations } from './routes/memory.js';
 import { destinations, platforms, providerHealth } from './routes/platforms.js';
 import { analytics } from './routes/analytics.js';
 import { comments as inboxComments, conversations as inboxConversations } from './routes/inbox.js';
@@ -91,6 +92,16 @@ app.route(
   '/v1/draft-sets',
   createDraftSetRoutes((request, env, ctx) => app.fetch(request, env, ctx as ExecutionContext)),
 );
+
+/**
+ * Social memory and the optimization loop (plan Phase 10).
+ *
+ * `/v1/memory/learn` is explicit rather than automatic: recomputing is a full scan of a
+ * profile's analytics, which does not belong in a request path somebody is waiting on and
+ * should not be a cost that arrives by surprise.
+ */
+app.route('/v1/memory', memory);
+app.route('/v1/recommendations', recommendations);
 
 /**
  * The MCP endpoint (plan §50).

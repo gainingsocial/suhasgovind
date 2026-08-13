@@ -142,3 +142,20 @@ export {
   healthAfterProviderError,
   isBlockingHealth,
 } from './connections/connection-health.js';
+
+export type {
+  Confidence,
+  PerformanceDimension,
+  PerformanceMetric,
+  PerformanceObservation,
+  PostSample,
+  Recommendation,
+} from './memory/performance.js';
+export {
+  MIN_INTERESTING_LIFT,
+  MIN_SAMPLE_SIZE,
+  computeObservations,
+  confidenceFor,
+  recommendationsFrom,
+  usefulRecommendations,
+} from './memory/performance.js';

@@ -95,6 +95,14 @@ import {
   UpdateContentSourceRequestSchema,
   UpdateDraftSetRequestSchema,
   UpsertBrandProfileRequestSchema,
+  BrandMemoryEntrySchema,
+  BrandMemoryListResponseSchema,
+  DeleteBrandMemoryResponseSchema,
+  LearnRequestSchema,
+  LearnResponseSchema,
+  PerformanceListResponseSchema,
+  RecommendationListResponseSchema,
+  UpsertBrandMemoryRequestSchema,
 } from '@gs/contracts/http';
 import { PaginationQuerySchema } from '@gs/contracts/pagination';
 import { API_SCOPES, type ApiScope } from '@gs/contracts/scopes';
@@ -1748,6 +1756,152 @@ const ROUTES: RouteSpec[] = [
       'AUTHENTICATION_REQUIRED',
       'INSUFFICIENT_SCOPE',
       'INVALID_REQUEST',
+      'PROFILE_NOT_FOUND',
+      'TENANT_FORBIDDEN',
+      'INTERNAL_ERROR',
+    ],
+  },
+  // ---- Social memory (plan Phase 10) ---------------------------------------
+  {
+    method: 'get',
+    path: '/v1/memory/brand',
+    operationId: 'listBrandMemory',
+    summary: 'What we have been told about this brand',
+    description:
+      'Products, audiences, competitors, preferred vocabulary, campaigns, FAQs and banned ' +
+      'claims. Asserted by you and never inferred — a brand that has said it will not make a ' +
+      'claim is not overruled because a post making it performed well. Filter with `kind`.',
+    tags: ['Memory'],
+    scopes: ['content:read'],
+    successStatus: 200,
+    successDescription: 'Every brand memory entry for the profile.',
+    response: BrandMemoryListResponseSchema,
+    errors: [
+      'AUTHENTICATION_REQUIRED',
+      'INSUFFICIENT_SCOPE',
+      'MISSING_REQUIRED_FIELD',
+      'PROFILE_NOT_FOUND',
+      'TENANT_FORBIDDEN',
+      'INTERNAL_ERROR',
+    ],
+  },
+  {
+    method: 'post',
+    path: '/v1/memory/brand',
+    operationId: 'upsertBrandMemory',
+    summary: 'Record or correct a brand fact',
+    description:
+      'Labels are matched case-insensitively within a kind, so re-sending one edits the fact ' +
+      'rather than creating a second copy of it. Correcting a product description is an edit, ' +
+      'not a new assertion.',
+    tags: ['Memory'],
+    scopes: ['content:write'],
+    requestBody: UpsertBrandMemoryRequestSchema,
+    successStatus: 200,
+    successDescription: 'The stored entry.',
+    response: BrandMemoryEntrySchema,
+    errors: [
+      'AUTHENTICATION_REQUIRED',
+      'INSUFFICIENT_SCOPE',
+      'INVALID_REQUEST',
+      'MISSING_REQUIRED_FIELD',
+      'PROFILE_NOT_FOUND',
+      'TENANT_FORBIDDEN',
+      'INTERNAL_ERROR',
+    ],
+  },
+  {
+    method: 'delete',
+    path: '/v1/memory/brand/{entryId}',
+    operationId: 'deleteBrandMemory',
+    summary: 'Forget a brand fact',
+    description:
+      'A hard delete, unlike almost everything else in this API. Somebody telling us to forget ' +
+      'a competitor means it, and a soft-deleted row a generation step could still read would ' +
+      'make the instruction a suggestion.',
+    tags: ['Memory'],
+    scopes: ['content:write'],
+    pathParams: [{ name: 'entryId', description: 'Public memory entry id, `evt_…`.' }],
+    successStatus: 200,
+    successDescription: 'The entry is gone.',
+    response: DeleteBrandMemoryResponseSchema,
+    errors: [
+      'AUTHENTICATION_REQUIRED',
+      'INSUFFICIENT_SCOPE',
+      'RESOURCE_NOT_FOUND',
+      'INTERNAL_ERROR',
+    ],
+  },
+  {
+    method: 'get',
+    path: '/v1/memory/performance',
+    operationId: 'listPerformanceMemory',
+    summary: 'What this profile’s analytics say',
+    description:
+      'Derived from analytics already collected — no model is involved. Every row carries the ' +
+      'sample size it rests on and the baseline it was compared against, and nothing computed ' +
+      'from fewer than five posts is returned at all. Never aggregated across networks: a ' +
+      'video on TikTok and a video on LinkedIn share a word and nothing else.',
+    tags: ['Memory'],
+    scopes: ['analytics:read'],
+    successStatus: 200,
+    successDescription: 'Every stored observation, largest sample first.',
+    response: PerformanceListResponseSchema,
+    errors: [
+      'AUTHENTICATION_REQUIRED',
+      'INSUFFICIENT_SCOPE',
+      'MISSING_REQUIRED_FIELD',
+      'PROFILE_NOT_FOUND',
+      'TENANT_FORBIDDEN',
+      'INTERNAL_ERROR',
+    ],
+  },
+  {
+    method: 'post',
+    path: '/v1/memory/learn',
+    operationId: 'learnFromAnalytics',
+    summary: 'Recompute performance memory',
+    description:
+      'Explicit rather than automatic: it scans a profile’s published posts and their latest ' +
+      'snapshots, which does not belong in a request path somebody is waiting on. Safe to run ' +
+      'twice — the result is a function of the data and the write replaces rather than ' +
+      'appends. Posts published in the last 48 hours are excluded because they are still ' +
+      'accumulating, and counting them concludes that whatever you just started is not working.',
+    tags: ['Memory'],
+    scopes: ['analytics:read', 'content:write'],
+    requestBody: LearnRequestSchema,
+    successStatus: 200,
+    successDescription: 'How many posts were considered and how many observations were stored.',
+    response: LearnResponseSchema,
+    errors: [
+      'AUTHENTICATION_REQUIRED',
+      'INSUFFICIENT_SCOPE',
+      'INVALID_REQUEST',
+      'PROFILE_NOT_FOUND',
+      'TENANT_FORBIDDEN',
+      'INTERNAL_ERROR',
+    ],
+  },
+  {
+    method: 'get',
+    path: '/v1/recommendations',
+    operationId: 'listRecommendations',
+    summary: 'What to do differently',
+    description:
+      'Ranked advice, each statement naming its own evidence — the multiple, the metric and ' +
+      'the number of posts behind it. `reason` distinguishes an empty list caused by having ' +
+      'learned nothing yet from one caused by nothing being notable, because rendering "no ' +
+      'recommendations" for the first tells a new customer their content is average when ' +
+      'nobody has measured it.',
+    tags: ['Memory'],
+    scopes: ['analytics:read'],
+    successStatus: 200,
+    successDescription: 'Ranked recommendations, most consequential first.',
+    response: RecommendationListResponseSchema,
+    errors: [
+      'AUTHENTICATION_REQUIRED',
+      'INSUFFICIENT_SCOPE',
+      'MISSING_REQUIRED_FIELD',
       'PROFILE_NOT_FOUND',
       'TENANT_FORBIDDEN',
       'INTERNAL_ERROR',

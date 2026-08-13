@@ -359,3 +359,18 @@ export {
   updateDraft,
   upsertBrandProfile,
 } from './repositories/content.js';
+
+export type {
+  LoadPostSamplesInput,
+  ReplaceObservationsInput,
+  UpsertBrandMemoryInput,
+} from './repositories/memory.js';
+export {
+  SETTLING_HOURS,
+  deleteBrandMemory,
+  listBrandMemory,
+  listObservations,
+  loadPostSamples,
+  replaceObservations,
+  upsertBrandMemory,
+} from './repositories/memory.js';
