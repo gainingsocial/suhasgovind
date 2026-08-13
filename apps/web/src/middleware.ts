@@ -1,10 +1,17 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+/** The one origin the dashboard is served from. Everything else redirects to it. */
+const CANONICAL_HOST = 'gainingsocial.com';
+
 /**
- * Session refresh and route protection (plan §39).
+ * One canonical origin, session refresh, and route protection (plan §39).
  *
- * Two jobs, and both have to happen here rather than in a page:
+ * Three jobs, and all of them have to happen here rather than in a page:
+ *
+ *   canonical `app.` and `www.` resolve to this same Worker, so the site answered on three
+ *             hostnames. Session cookies are host-only, so crossing between them silently
+ *             signed people out. One origin makes that unreachable.
  *
  *   refresh   Supabase access tokens are short-lived. A Server Component cannot set
  *             cookies, so a refresh performed during render is computed and then thrown
@@ -19,7 +26,34 @@ import { NextResponse, type NextRequest } from 'next/server';
  * redirects.
  */
 export async function middleware(request: NextRequest) {
+  // One origin, before anything else looks at the session.
+  //
+  // `app.gainingsocial.com` and `www.` both resolve to this same Worker, so the app was
+  // reachable on three hostnames at once. That is not merely untidy: the Supabase session
+  // cookie is host-only, so a person who signed in on the apex and then followed a link to
+  // the `app.` subdomain arrived with no session and was asked to sign in a second time.
+  // Collapsing to one host makes that class of bug unreachable.
+  const host = request.headers.get('host')?.split(':')[0]?.toLowerCase();
+  if (host && (host === `app.${CANONICAL_HOST}` || host === `www.${CANONICAL_HOST}`)) {
+    const target = request.nextUrl.clone();
+    target.host = CANONICAL_HOST;
+    target.port = '';
+    target.protocol = 'https:';
+    // Permanent: this is a durable routing decision, and letting browsers and crawlers
+    // cache it keeps the duplicate hostnames out of the search index.
+    return NextResponse.redirect(target, 308);
+  }
+
+  const path = request.nextUrl.pathname;
+
   let response = NextResponse.next({ request });
+
+  // Only the dashboard and the sign-in page have a session to reason about. The matcher
+  // below has to be wide enough for the hostname redirect above to see every request, so
+  // this is what keeps a Supabase round trip off every marketing page view — those pages
+  // are static, indexed, and must stay fast.
+  const needsSession = path.startsWith('/app') || path === '/signin';
+  if (!needsSession) return response;
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -47,8 +81,6 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const path = request.nextUrl.pathname;
-
   if (!user && path.startsWith('/app')) {
     const target = request.nextUrl.clone();
     target.pathname = '/signin';
@@ -68,7 +100,12 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Static assets and images are excluded: running an auth check on every icon request
-  // would add a Supabase round trip to each one.
-  matcher: ['/app/:path*', '/signin'],
+  // Every HTML request, because the canonical-hostname redirect has to see requests for
+  // marketing pages too — a visitor landing on `www.` deserves the redirect wherever they
+  // landed, not only on `/app`.
+  //
+  // Static assets, images and anything with a file extension are still excluded: those are
+  // served from the same hostname the page was, so redirecting them buys nothing and would
+  // put a middleware invocation in front of every icon and script.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.[\\w]+$).*)'],
 };

@@ -42,19 +42,41 @@ never quietly rephrases anybody.
 
 | Integration | Status | Notes |
 | --- | --- | --- |
-| [`wordpress/`](./wordpress) | Built | ~400 lines, no platform logic. Needs a WordPress.org listing to ship |
+| [`wordpress/`](./wordpress) | Built | No platform logic. Auto-share, evergreen re-sharing, UTM tracking, bulk share. Needs a WordPress.org listing to ship |
 | Agent connectors | Live | `share_article` on the `/mcp` endpoint — works in ChatGPT, Claude and any MCP client today |
 | Chrome extension | Not built | Reads `og:*` from the page; covers Wix, Ghost, Squarespace and everything else without a per-platform app |
 | Wix / Squarespace apps | Not built | Deliberately last — weeks of marketplace review for audiences the extension already serves |
 
 ## WordPress
 
-Copy `wordpress/gainingsocial.php` into `wp-content/plugins/gainingsocial/`, activate, and
-paste an API key under **Settings → GainingSocial**.
+Copy the whole `wordpress/` directory into `wp-content/plugins/gainingsocial/`, activate,
+and paste an API key under **GainingSocial** in the admin menu.
 
 A test key can never publish to a real account, so it is safe to try first.
 
-**Not yet verified against a live WordPress install.** The file is structurally sound and
-follows the escaping, nonce and capability conventions the plugin directory requires, but
-no PHP runtime was available here to parse it or exercise it against a real site. Run it on
-a staging site before it goes anywhere near a production one.
+### What it does beyond posting on publish
+
+| | Why it is here |
+| --- | --- |
+| Shares in the background | Two API calls inside `transition_post_status` added up to 40s to a publish click. It queues instead. |
+| Re-shares the archive | Most of a post's potential audience never sees it on the day. This is the whole premise of the most-installed plugin in the category. |
+| Tags links for analytics | A share is worth nothing you can point at unless the traffic shows up attributed. The network name becomes `utm_source`, so each is its own row. |
+| Bulk-shares the back catalogue | The reason someone installs this on an existing site. Staggered a minute apart, because a burst reads as spam. |
+| Delays the first share | A window to catch a typo before it has gone to every network — the one mistake that cannot be taken back. |
+
+### Verification
+
+`tests/test-plugin.php` runs the logic that has a silent wrong answer — tracked-URL
+construction and idempotency-key advancement — against stubbed WordPress functions:
+
+```bash
+php integrations/wordpress/tests/test-plugin.php
+```
+
+CI lints every file and runs those tests on **PHP 7.4 and 8.3**, the two ends of the
+supported range. Modern syntax parses happily on 8.3 and then fatals on the shared hosting
+much of WordPress still runs on, so the 7.4 leg is the one that earns its place.
+
+**Still not exercised against a live WordPress install.** The syntax is verified and the
+pure logic is tested, but nothing here has run inside a real WordPress request. Put it on a
+staging site first.

@@ -102,12 +102,19 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
-            <a
-              href="https://app.gainingsocial.com"
+            {/* Same-origin `/app`, not `https://app.gainingsocial.com`.
+                Both hostnames are served by this one Worker, so the bare subdomain root
+                resolved to the marketing home page — clicking "Open dashboard" reloaded
+                the page you were already on and looked like a dead button.
+                The origin matters beyond the path, too: the Supabase session cookie is
+                host-only, so crossing to a sibling hostname drops the session and asks a
+                signed-in person to sign in again. */}
+            <Link
+              href="/app"
               className="inline-flex min-h-9 items-center rounded-lg bg-brand-600 px-3.5 text-sm font-medium text-[var(--on-brand)] transition-colors hover:bg-brand-500"
             >
               Open dashboard
-            </a>
+            </Link>
 
             <details className="relative md:hidden [&[open]_.chevron]:rotate-180">
               <summary
