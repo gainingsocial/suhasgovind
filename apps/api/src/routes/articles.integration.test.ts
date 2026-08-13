@@ -51,8 +51,19 @@ describeIntegration('article sharing', () => {
   const code = async (response: Response): Promise<string> =>
     (await json<{ error: { code: string } }>(response)).error.code;
 
+  /**
+   * A valid request, with `overrides` merged in.
+   *
+   * `...overrides` has to come *before* `article`, not after. Spread last, it put the
+   * caller's raw `{ article: { excerpt } }` back over the merged object and threw away the
+   * title and URL — so six of these tests were quietly sending a titleless article and
+   * asserting against the 400 that came back rather than against the behaviour they name.
+   * Every one of them passed the day it was written and has been red ever since.
+   */
   const article = (overrides: Record<string, unknown> = {}) => ({
     profile_id: h.tenantA.publicProfileId,
+    targets: [{ destination_id: h.tenantA.publicDestinationId }],
+    ...overrides,
     article: {
       title: 'How we cut publishing latency in half',
       url: 'https://blog.example.com/latency',
@@ -60,8 +71,6 @@ describeIntegration('article sharing', () => {
       tags: ['engineering', 'social media'],
       ...((overrides.article as Record<string, unknown>) ?? {}),
     },
-    targets: [{ destination_id: h.tenantA.publicDestinationId }],
-    ...overrides,
   });
 
   interface Composition {
@@ -230,7 +239,12 @@ describeIntegration('article sharing', () => {
         h.tenantB.apiKey,
       );
 
-      expect(response.status).toBe(404);
+      // 403, the same as `POST /v1/posts` and `/v1/posts/preflight` — this route resolves
+      // targets through the identical helper, and asserting a different code here would be
+      // asserting that composing an article is a different security decision from
+      // publishing one. It is not.
+      expect(response.status).toBe(403);
+      expect(await code(response)).toBe('TENANT_FORBIDDEN');
     });
 
     it('rejects an article with no title', async () => {

@@ -12,9 +12,24 @@ import { browserClient } from '@/lib/supabase-browser';
  * Everything else reads through the API with the session token, so this is the only place
  * an auth SDK is loaded at all — which keeps the credential surface to a single file.
  */
+/**
+ * Why the callback sent them back here.
+ *
+ * `/auth/callback` redirects with one of these rather than rendering its own error page,
+ * so this is the only place the reason can be shown. Without it the person lands on a
+ * blank sign-in form having just clicked a link that appeared to do nothing — which is
+ * indistinguishable from the form being broken, and is exactly the impression this flow
+ * cannot afford to give twice.
+ */
+const CALLBACK_ERRORS: Record<string, string> = {
+  link_expired: 'That link has expired or was already used. Request a new one below.',
+  missing_code: 'That link was incomplete. Request a new one below.',
+};
+
 function Form() {
   const params = useSearchParams();
   const next = params.get('next') ?? '/app';
+  const callbackError = CALLBACK_ERRORS[params.get('error') ?? ''] ?? null;
 
   const [email, setEmail] = useState('');
   const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle');
@@ -57,6 +72,15 @@ function Form() {
 
   return (
     <form onSubmit={submit} className="mt-6 space-y-3">
+      {callbackError && !error ? (
+        <p
+          role="alert"
+          className="rounded-lg border border-fail-600/30 bg-fail-600/10 px-3 py-2 text-sm"
+        >
+          {callbackError}
+        </p>
+      ) : null}
+
       <div>
         <label htmlFor="email" className="block text-sm font-medium">
           Email
