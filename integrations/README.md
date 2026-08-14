@@ -121,11 +121,14 @@ pnpm test -- integrations/chrome
 referenced file exists, that no code is remotely hosted, and that the popup neither
 evaluates strings nor assigns `innerHTML` — page-controlled text reaches that UI.
 
-Icons are generated rather than committed as opaque binaries:
+The icons are derived from the brand master rather than drawn for this surface, so the
+extension in a toolbar and the site in a tab are recognisably the same product:
 
 ```bash
-node integrations/chrome/tools/make-icons.mjs
+pnpm brand:icons     # regenerate every icon in the product from assets/brand/
 ```
+
+`pnpm brand:check` runs in CI and fails if the committed icons no longer match the master.
 
 **Not yet loaded into a real Chrome profile.** The logic is tested and the manifest is
 validated, but the browser APIs it calls have not been exercised.

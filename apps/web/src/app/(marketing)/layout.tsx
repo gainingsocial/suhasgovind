@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { BrandLockup } from '@/components/brand';
 import { jsonLd, organizationSchema } from '@/lib/seo';
 
 /**
@@ -82,11 +83,8 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
 
       <header className="sticky top-0 z-30 border-b bg-[var(--surface-raised)]/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6">
-          <Link href="/" className="flex shrink-0 items-center gap-2">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-sm font-bold text-[var(--on-brand)]">
-              gs
-            </span>
-            <span className="text-[15px] font-semibold tracking-tight">GainingSocial</span>
+          <Link href="/" className="flex shrink-0 items-center">
+            <BrandLockup size={36} />
           </Link>
 
           <nav aria-label="Main" className="ml-4 hidden md:flex md:items-center md:gap-1">
@@ -159,11 +157,8 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
           <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
             <div className="lg:col-span-1">
-              <Link href="/" className="flex items-center gap-2">
-                <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-sm font-bold text-[var(--on-brand)]">
-                  gs
-                </span>
-                <span className="text-[15px] font-semibold tracking-tight">GainingSocial</span>
+              <Link href="/" className="flex items-center">
+                <BrandLockup size={32} />
               </Link>
               <p className="mt-4 max-w-xs text-sm text-pretty text-[var(--text-subtle)]">
                 One REST API for publishing to every major social network — built for software

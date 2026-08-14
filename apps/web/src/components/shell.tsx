@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 
+import { BrandMark } from './brand';
 import { cx } from './ui';
 
 /**
@@ -342,12 +343,12 @@ export function Shell({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * The sidebar mark is the same asset as the marketing header's, one size down — the studio
+ * and the public site are one product and should not carry two different logos.
+ */
 function Logo() {
-  return (
-    <span className="grid h-7 w-7 place-items-center rounded-lg bg-brand-600 text-[13px] font-bold text-[var(--on-brand)]">
-      gs
-    </span>
-  );
+  return <BrandMark size={28} />;
 }
 
 /**

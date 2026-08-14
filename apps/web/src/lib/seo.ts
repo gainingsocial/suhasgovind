@@ -125,13 +125,25 @@ export function productSchema(): Record<string, unknown> {
   };
 }
 
-/** `Organization` — publisher identity, used site-wide. */
+/**
+ * `Organization` — publisher identity, used site-wide.
+ *
+ * `logo` is what Google reads for the knowledge panel and for the brand icon beside a
+ * result; without it the crawler picks some image off the page and usually picks wrong.
+ * It must be an absolute URL and at least 112x112 to qualify, which `/logo.png` (160px) is.
+ */
 export function organizationSchema(): Record<string, unknown> {
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: SITE_NAME,
     url: SITE_URL,
+    logo: {
+      '@type': 'ImageObject',
+      url: `${SITE_URL}/logo.png`,
+      width: 160,
+      height: 160,
+    },
     description: 'Social publishing infrastructure for software and AI agents.',
   };
 }
