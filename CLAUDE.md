@@ -5,7 +5,25 @@
 `UNIFIED_SOCIAL_API_MASTER_BUILD_PLAN.md` (5,958 lines) is the authoritative product and
 architecture specification. When this file and the plan disagree, **the plan wins**.
 
+`CREATOR_FIRST_PRODUCT_PLAN.md` extends it. The engine the master plan describes is built;
+that document decides **who the product is for and what sits on top** — creators,
+influencers, media houses and website owners first, with the developer and agent surfaces
+kept intact. On audience, interface and packaging it wins over the master plan. On
+architecture, security and correctness the master plan still wins.
+
 Read `docs/adr/` before changing architecture (plan §85 Rule 1).
+
+## Creator-surface rules
+
+These govern the dashboard, not the engine (creator plan §3):
+
+- **C2. Nothing in the interface is named after a database table.** A creator has accounts,
+  posts and a calendar — not profiles, destinations, connections or targets. Those names are
+  correct in the API and must never appear in the studio.
+- **C5. Volume is a first-class case.** Every list is designed at 500 items and merely works
+  at 5.
+- **C7. The studio is an API client.** Any studio action a caller could not perform through
+  the public API is a bug in the API, not a UI feature.
 
 ## Hard rules
 

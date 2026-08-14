@@ -22,6 +22,15 @@ interface NavItem {
   icon: ReactNode;
   /** Shown in the bottom bar on small screens. The rest live under "More". */
   primary?: boolean;
+  /**
+   * Which band of the sidebar this belongs to.
+   *
+   * The creator plan (§5.1) reorganizes the dashboard around a person's day rather than
+   * around the API's resources. `daily` is what somebody opens every morning; `setup` is
+   * configuration they touch a few times; `developer` is the original surface, intact but
+   * no longer competing with the daily work for attention.
+   */
+  group: 'daily' | 'setup' | 'developer';
 }
 
 const icon = (path: ReactNode) => (
@@ -40,67 +49,125 @@ const icon = (path: ReactNode) => (
   </svg>
 );
 
+/**
+ * The destinations, in the order a person meets them (creator plan §5.1).
+ *
+ * The previous ordering was the API's resource list — profiles, connections, keys,
+ * webhooks, logs — which is the right vocabulary for the API and the wrong one for the
+ * person publishing. Rule C2: nothing in the studio is named after a database table, so
+ * "Profiles" is Brands and "Connections" is Accounts. The API keeps its own names; only the
+ * label changes, and the routes are untouched so every existing link still resolves.
+ */
 const NAV: NavItem[] = [
+  // Daily — what somebody opens without deciding to.
   {
     href: '/app',
-    label: 'Overview',
+    label: 'Today',
+    group: 'daily',
     primary: true,
     icon: icon(<><rect x="3" y="3" width="7" height="9" rx="1" /><rect x="14" y="3" width="7" height="5" rx="1" /><rect x="14" y="12" width="7" height="9" rx="1" /><rect x="3" y="16" width="7" height="5" rx="1" /></>),
   },
   {
     href: '/app/compose',
-    label: 'Compose',
+    label: 'Studio',
+    group: 'daily',
     primary: true,
     icon: icon(<><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></>),
   },
   {
     href: '/app/posts',
     label: 'Posts',
-    primary: true,
+    group: 'daily',
     icon: icon(<><path d="M4 4h16v12H8l-4 4Z" /></>),
   },
   {
-    href: '/app/profiles',
-    label: 'Profiles',
+    href: '/app/inbox',
+    label: 'Inbox',
+    group: 'daily',
     primary: true,
-    icon: icon(<><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6" /></>),
+    icon: icon(<><path d="M4 13h4l2 3h4l2-3h4" /><path d="M4 13 6 5h12l2 8v6H4Z" /></>),
   },
   {
+    href: '/app/insights',
+    label: 'Insights',
+    group: 'daily',
+    icon: icon(<><path d="M4 19V9" /><path d="M10 19V5" /><path d="M16 19v-7" /><path d="M22 19H2" /></>),
+  },
+  {
+    href: '/app/autopilot',
+    label: 'Autopilot',
+    group: 'daily',
+    primary: true,
+    icon: icon(<><circle cx="12" cy="12" r="3" /><path d="M12 2v3" /><path d="M12 19v3" /><path d="m4.9 4.9 2.2 2.2" /><path d="m16.9 16.9 2.2 2.2" /><path d="M2 12h3" /><path d="M19 12h3" /></>),
+  },
+
+  // Setup — touched a handful of times, then rarely.
+  {
     href: '/app/connections',
-    label: 'Connections',
+    label: 'Accounts',
+    group: 'setup',
     icon: icon(<><path d="M9 15 15 9" /><path d="M10.5 6.5 12 5a4.2 4.2 0 0 1 6 6l-1.5 1.5" /><path d="M13.5 17.5 12 19a4.2 4.2 0 0 1-6-6l1.5-1.5" /></>),
+  },
+  {
+    href: '/app/profiles',
+    label: 'Brands',
+    group: 'setup',
+    icon: icon(<><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6" /></>),
   },
   {
     href: '/app/media',
     label: 'Media',
+    group: 'setup',
     icon: icon(<><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="8.5" cy="9.5" r="1.5" /><path d="m21 16-5-5L5 20" /></>),
-  },
-  {
-    href: '/app/webhooks',
-    label: 'Webhooks',
-    icon: icon(<><path d="M18 16a3 3 0 1 1-2.8-3H16" /><path d="M6 16a3 3 0 1 0 2.8-3" /><path d="M12 5a3 3 0 1 1 2.6 3" /></>),
-  },
-  {
-    href: '/app/keys',
-    label: 'API keys',
-    icon: icon(<><circle cx="7.5" cy="15.5" r="3.5" /><path d="m10 13 8-8 3 3-2 2-2-2-2 2" /></>),
-  },
-  {
-    href: '/app/logs',
-    label: 'Logs',
-    icon: icon(<><path d="M4 5h16" /><path d="M4 12h16" /><path d="M4 19h10" /></>),
-  },
-  {
-    href: '/app/playground',
-    label: 'Playground',
-    icon: icon(<><polygon points="5 3 19 12 5 21 5 3" /></>),
   },
   {
     href: '/app/platforms',
     label: 'Platforms',
+    group: 'setup',
     icon: icon(<><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 9h6v6H9z" /></>),
   },
+  {
+    href: '/app/usage',
+    label: 'Usage',
+    group: 'setup',
+    icon: icon(<><path d="M12 2a10 10 0 1 0 10 10h-10Z" /><path d="M12 2v10h10A10 10 0 0 0 12 2Z" /></>),
+  },
+
+  // Developer — unchanged and undiminished, just no longer in the way (creator plan §4.4).
+  {
+    href: '/app/playground',
+    label: 'Playground',
+    group: 'developer',
+    icon: icon(<><polygon points="5 3 19 12 5 21 5 3" /></>),
+  },
+  {
+    href: '/app/keys',
+    label: 'API keys',
+    group: 'developer',
+    icon: icon(<><circle cx="7.5" cy="15.5" r="3.5" /><path d="m10 13 8-8 3 3-2 2-2-2-2 2" /></>),
+  },
+  {
+    href: '/app/webhooks',
+    label: 'Webhooks',
+    group: 'developer',
+    icon: icon(<><path d="M18 16a3 3 0 1 1-2.8-3H16" /><path d="M6 16a3 3 0 1 0 2.8-3" /><path d="M12 5a3 3 0 1 1 2.6 3" /></>),
+  },
+  {
+    href: '/app/logs',
+    label: 'Logs',
+    group: 'developer',
+    icon: icon(<><path d="M4 5h16" /><path d="M4 12h16" /><path d="M4 19h10" /></>),
+  },
 ];
+
+/** Band headings. `daily` has none — the top of a list needs no label. */
+const GROUP_LABEL: Record<NavItem['group'], string | null> = {
+  daily: null,
+  setup: 'Setup',
+  developer: 'Developer',
+};
+
+const GROUPS: NavItem['group'][] = ['daily', 'setup', 'developer'];
 
 export function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -124,25 +191,42 @@ export function Shell({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto p-3" aria-label="Main">
-          <ul className="space-y-0.5">
-            {NAV.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href as never}
-                  aria-current={isActive(item.href) ? 'page' : undefined}
-                  className={cx(
-                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
-                    isActive(item.href)
-                      ? 'bg-brand-100 font-medium text-[var(--brand-text)]'
-                      : 'text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text)]',
-                  )}
-                >
-                  {item.icon}
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          {GROUPS.map((group) => {
+            const items = NAV.filter((item) => item.group === group);
+            if (items.length === 0) return null;
+
+            const heading = GROUP_LABEL[group];
+
+            return (
+              <div key={group} className="mb-4 last:mb-0">
+                {heading ? (
+                  <h2 className="px-3 pb-1.5 text-[11px] font-semibold tracking-wide text-[var(--text-subtle)] uppercase">
+                    {heading}
+                  </h2>
+                ) : null}
+
+                <ul className="space-y-0.5">
+                  {items.map((item) => (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href as never}
+                        aria-current={isActive(item.href) ? 'page' : undefined}
+                        className={cx(
+                          'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+                          isActive(item.href)
+                            ? 'bg-brand-100 font-medium text-[var(--brand-text)]'
+                            : 'text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text)]',
+                        )}
+                      >
+                        {item.icon}
+                        {item.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </nav>
 
         <div className="border-t p-3">
@@ -212,21 +296,45 @@ export function Shell({ children }: { children: ReactNode }) {
             onClick={() => setMoreOpen(false)}
             className="fixed inset-0 z-30 bg-black/40 lg:hidden"
           />
-          <div className="fixed inset-x-0 bottom-0 z-40 rounded-t-2xl border-t bg-[var(--surface-raised)] pb-[calc(env(safe-area-inset-bottom)+5rem)] lg:hidden">
-            <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-[var(--border-strong)]" />
-            <ul className="p-3">
-              {NAV.filter((item) => !item.primary).map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href as never}
-                    className="flex min-h-12 items-center gap-3 rounded-lg px-3 text-sm text-[var(--text-muted)]"
-                  >
-                    {item.icon}
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+          {/*
+            Scrollable and capped. With three bands the sheet can exceed a short phone's
+            viewport, and a list whose last item cannot be reached is worse than a sidebar.
+          */}
+          <div className="fixed inset-x-0 bottom-0 z-40 max-h-[75dvh] overflow-y-auto rounded-t-2xl border-t bg-[var(--surface-raised)] pb-[calc(env(safe-area-inset-bottom)+5rem)] lg:hidden">
+            <div className="sticky top-0 bg-[var(--surface-raised)] pt-3 pb-1">
+              <div className="mx-auto h-1 w-10 rounded-full bg-[var(--border-strong)]" />
+            </div>
+
+            {GROUPS.map((group) => {
+              const items = NAV.filter((item) => item.group === group && !item.primary);
+              if (items.length === 0) return null;
+
+              const heading = GROUP_LABEL[group];
+
+              return (
+                <div key={group} className="px-3 pb-2">
+                  {heading ? (
+                    <h2 className="px-3 pt-2 pb-1 text-[11px] font-semibold tracking-wide text-[var(--text-subtle)] uppercase">
+                      {heading}
+                    </h2>
+                  ) : null}
+
+                  <ul>
+                    {items.map((item) => (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href as never}
+                          className="flex min-h-12 items-center gap-3 rounded-lg px-3 text-sm text-[var(--text-muted)]"
+                        >
+                          {item.icon}
+                          {item.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
           </div>
         </>
       ) : null}
