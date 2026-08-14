@@ -205,7 +205,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -397,7 +397,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -626,7 +626,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -784,7 +784,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -993,7 +993,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1122,7 +1122,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1348,7 +1348,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1550,7 +1550,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1805,7 +1805,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1940,7 +1940,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2204,7 +2204,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2602,7 +2602,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2875,7 +2875,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3107,7 +3107,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3340,7 +3340,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3465,7 +3465,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3630,7 +3630,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3873,7 +3873,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4408,7 +4408,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4608,7 +4608,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4775,7 +4775,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5192,7 +5192,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5609,7 +5609,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5975,7 +5975,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -6271,7 +6271,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -6590,7 +6590,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -6886,7 +6886,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7005,7 +7005,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7673,7 +7673,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7683,7 +7683,7 @@
             }
           },
           "404": {
-            "description": "`PROFILE_NOT_FOUND` — No such profile.",
+            "description": "`PROFILE_NOT_FOUND` — No such profile.\n\n`DESTINATION_NOT_FOUND` — No such destination.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7984,7 +7984,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -8261,7 +8261,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -8514,7 +8514,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -8681,7 +8681,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -9114,7 +9114,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -9261,7 +9261,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -9462,7 +9462,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -9676,7 +9676,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -9841,7 +9841,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -10362,7 +10362,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -10372,7 +10372,7 @@
             }
           },
           "404": {
-            "description": "`PROFILE_NOT_FOUND` — No such profile.",
+            "description": "`PROFILE_NOT_FOUND` — No such profile.\n\n`DESTINATION_NOT_FOUND` — No such destination.",
             "content": {
               "application/json": {
                 "schema": {
@@ -10880,7 +10880,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -10890,7 +10890,7 @@
             }
           },
           "404": {
-            "description": "`PROFILE_NOT_FOUND` — No such profile.",
+            "description": "`PROFILE_NOT_FOUND` — No such profile.\n\n`DESTINATION_NOT_FOUND` — No such destination.",
             "content": {
               "application/json": {
                 "schema": {
@@ -11213,7 +11213,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -11567,7 +11567,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -11705,7 +11705,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -11843,7 +11843,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -12135,7 +12135,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -12410,7 +12410,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -12632,7 +12632,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -12917,7 +12917,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -13036,7 +13036,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -13168,7 +13168,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -13518,7 +13518,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -13643,7 +13643,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -13778,7 +13778,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -14130,7 +14130,7 @@
             }
           },
           "403": {
-            "description": "`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -14376,7 +14376,7 @@
             }
           },
           "403": {
-            "description": "`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -14487,7 +14487,7 @@
             }
           },
           "403": {
-            "description": "`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -14762,7 +14762,7 @@
             }
           },
           "403": {
-            "description": "`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -14974,7 +14974,7 @@
             }
           },
           "403": {
-            "description": "`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -15091,7 +15091,7 @@
             }
           },
           "403": {
-            "description": "`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -15360,7 +15360,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -16293,7 +16293,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -17694,7 +17694,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -18025,7 +18025,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -18539,7 +18539,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -18718,7 +18718,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -18897,7 +18897,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -19128,7 +19128,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -19307,7 +19307,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -19512,7 +19512,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -19836,7 +19836,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -19990,7 +19990,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -20192,7 +20192,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {
@@ -20890,7 +20890,7 @@
             }
           },
           "403": {
-            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — The requested resource does not belong to this project.",
+            "description": "`INSUFFICIENT_SCOPE` — This API key does not have the scope required for this operation.\n\n`TENANT_FORBIDDEN` — This request may not use that resource.",
             "content": {
               "application/json": {
                 "schema": {

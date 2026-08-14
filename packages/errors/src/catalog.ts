@@ -61,12 +61,15 @@ export const ERROR_CODE_METADATA: Record<ErrorCode, ErrorCodeMetadata> = {
     'The resource belongs to a different environment than this API key.',
     'use_matching_environment_key',
   ),
+  // "not usable by this request", not "not yours" — a resource genuinely belonging to
+  // somebody else never reaches this code, it returns the same NOT_FOUND an id that never
+  // existed would. See docs/errors/README.md, "Where the line sits".
   TENANT_FORBIDDEN: m(
     'authorization_error',
     403,
     false,
-    'The requested resource does not belong to this project.',
-    'use_a_resource_owned_by_this_project',
+    'This request may not use that resource.',
+    'use_a_resource_this_request_may_address',
   ),
 
   // ---- request shape --------------------------------------------------------

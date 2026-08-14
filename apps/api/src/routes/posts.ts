@@ -118,15 +118,36 @@ async function resolveTargets(
     targets.map((t) => t.destinationId),
   );
 
-  for (const [, ownership] of ownerships) {
+  // Iterating what was *requested*, not what was found.
+  //
+  // The previous version walked the ownership map, which only ever contains destinations
+  // that exist. A destination id that matched nothing was therefore never examined here at
+  // all — it fell through to preflight — while one belonging to another tenant threw 403.
+  // Two different answers for "not yours", which is an oracle: a caller could confirm that
+  // an id they had guessed was real by whether it came back 403 rather than 404.
+  for (const target of targets) {
+    const ownership = ownerships.get(target.destinationId);
+
     const wrongTenant =
+      !ownership ||
       ownership.projectEnvironmentId !== principal.projectEnvironmentId ||
       ownership.projectId !== principal.projectId ||
       ownership.organizationId !== principal.organizationId;
 
-    // Cross-tenant and cross-profile are refused identically, so probing cannot
-    // distinguish "exists elsewhere" from "belongs to another profile here".
-    if (wrongTenant || ownership.profileId !== profileId) {
+    // Unknown and another tenant's are answered identically, so the response says nothing
+    // about whether the id exists. This is the boundary that matters, and it is what
+    // `errors.forbidden` documents and what `/v1/media/preflight` has always done.
+    if (wrongTenant) {
+      throw new ApiError('DESTINATION_NOT_FOUND', {
+        message: `No such destination (${target.publicDestinationId}).`,
+        param: 'targets.destination_id',
+      });
+    }
+
+    // Inside the caller's own tenant, on one of their other profiles. They are entitled to
+    // the real reason — hiding it here would only make their own data harder to use, and
+    // reveals nothing they could not already list.
+    if (ownership.profileId !== profileId) {
       throw new ApiError('TENANT_FORBIDDEN', {
         message: 'A destination does not belong to this profile.',
         param: 'targets.destination_id',

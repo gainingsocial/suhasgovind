@@ -239,12 +239,12 @@ describeIntegration('article sharing', () => {
         h.tenantB.apiKey,
       );
 
-      // 403, the same as `POST /v1/posts` and `/v1/posts/preflight` — this route resolves
-      // targets through the identical helper, and asserting a different code here would be
-      // asserting that composing an article is a different security decision from
-      // publishing one. It is not.
-      expect(response.status).toBe(403);
-      expect(await code(response)).toBe('TENANT_FORBIDDEN');
+      // 404, indistinguishable from a destination that does not exist — the same answer
+      // `POST /v1/posts` and `POST /v1/compose` now give, since all three resolve targets
+      // through the same check. This expectation was right when it was first written; the
+      // code was not.
+      expect(response.status).toBe(404);
+      expect(await code(response)).toBe('DESTINATION_NOT_FOUND');
     });
 
     it('rejects an article with no title', async () => {

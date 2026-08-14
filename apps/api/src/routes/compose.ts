@@ -135,13 +135,28 @@ compose.post('/', withDatabase(), authenticate(['posts:read']), async (c) => {
 
   // Ownership is verified before anything is composed (P5). Composing first would tell a
   // caller the character limit of a network somebody else's account is connected to.
-  for (const [, ownership] of ownerships) {
+  //
+  // Over `requested` rather than over the ownership map, and for the same reason as in
+  // `resolveTargets`: the map holds only destinations that exist, so an id matching
+  // nothing was never checked here, while another tenant's threw 403 — telling a caller
+  // which of the two they had guessed.
+  for (const entry of requested) {
+    const ownership = ownerships.get(entry.internalId);
+
     const wrongTenant =
+      !ownership ||
       ownership.projectEnvironmentId !== principal.projectEnvironmentId ||
       ownership.projectId !== principal.projectId ||
       ownership.organizationId !== principal.organizationId;
 
-    if (wrongTenant || ownership.profileId !== profileId) {
+    if (wrongTenant) {
+      throw new ApiError('DESTINATION_NOT_FOUND', {
+        message: `No such destination (${entry.publicId}).`,
+        param: 'targets.destination_id',
+      });
+    }
+
+    if (ownership.profileId !== profileId) {
       throw new ApiError('TENANT_FORBIDDEN', {
         message: 'A destination does not belong to this profile.',
         param: 'targets.destination_id',

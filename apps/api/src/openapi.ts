@@ -845,7 +845,13 @@ const ROUTES: RouteSpec[] = [
     successStatus: 200,
     successDescription: 'Per-target validation results.',
     response: PreflightResponseSchema,
-    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'PROFILE_NOT_FOUND', 'DUPLICATE_DESTINATION'],
+    errors: [
+      ...AUTH_ERRORS,
+      'INVALID_REQUEST',
+      'PROFILE_NOT_FOUND',
+      'DUPLICATE_DESTINATION',
+      'DESTINATION_NOT_FOUND',
+    ],
   },
   {
     method: 'get',
@@ -1025,7 +1031,7 @@ const ROUTES: RouteSpec[] = [
     successStatus: 200,
     successDescription: 'A preview and readiness report per destination.',
     response: ComposeResponseSchema,
-    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'PROFILE_NOT_FOUND'],
+    errors: [...AUTH_ERRORS, 'INVALID_REQUEST', 'PROFILE_NOT_FOUND', 'DESTINATION_NOT_FOUND'],
   },
   {
     method: 'post',
@@ -1056,6 +1062,7 @@ const ROUTES: RouteSpec[] = [
       'VALIDATION_FAILED',
       'PROFILE_NOT_FOUND',
       'DUPLICATE_DESTINATION',
+      'DESTINATION_NOT_FOUND',
     ],
   },
   {

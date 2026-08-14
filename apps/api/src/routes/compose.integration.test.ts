@@ -123,7 +123,7 @@ describeIntegration('POST /v1/compose', () => {
       mode: 'optimize',
     });
 
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(404);
   });
 
   it('rejects a malformed destination id', async () => {
@@ -145,9 +145,11 @@ describeIntegration('POST /v1/compose', () => {
       mode: 'optimize',
     });
 
-    // Cross-tenant profile and cross-tenant destination are refused identically, so
-    // probing cannot distinguish "exists elsewhere" from "does not exist".
-    expect([403, 404]).toContain(response.status);
+    // Was `expect([403, 404]).toContain(...)`. The hedge was the tell: cross-tenant
+    // refusals were supposed to be indistinguishable from "does not exist", and the test
+    // accepted either because the code gave one answer for a profile and a different one
+    // for a destination. Both are 404 now, so this can assert exactly one thing.
+    expect(response.status).toBe(404);
   });
 
   it('defaults to optimize mode when none is given', async () => {

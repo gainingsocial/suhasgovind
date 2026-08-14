@@ -1,3 +1,4 @@
+import { newUuidV7, toPublicId } from '@gs/contracts/ids';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import app from '../index.js';
@@ -203,8 +204,32 @@ describeIntegration('posts', () => {
         crypto.randomUUID(),
       );
 
-      expect(response.status).toBe(403);
-      expect(await code(response)).toBe('TENANT_FORBIDDEN');
+      expect(response.status).toBe(404);
+      expect(await code(response)).toBe('DESTINATION_NOT_FOUND');
+    });
+
+    it('answers another tenant’s destination exactly as it answers one that does not exist', async () => {
+      // The assertion is the *equality*, not either value.
+      //
+      // These used to differ: an id belonging to another tenant threw 403, while an id
+      // matching nothing was never checked here at all and fell through. That gap is an
+      // existence oracle — someone who had guessed or scraped a destination id could
+      // confirm it was real by whether the refusal came back 403 rather than 404, without
+      // ever having access to it.
+      const foreign = await createPost(
+        body({ targets: [{ destination_id: h.tenantB.publicDestinationId }] }),
+        crypto.randomUUID(),
+      );
+
+      // Well-formed and correctly prefixed, so it gets past id parsing and reaches the
+      // same lookup — it simply matches no row.
+      const invented = await createPost(
+        body({ targets: [{ destination_id: toPublicId('destination', newUuidV7()) }] }),
+        crypto.randomUUID(),
+      );
+
+      expect(invented.status).toBe(foreign.status);
+      expect(await code(invented)).toBe(await code(foreign));
     });
 
     it('refuses a profile belonging to another tenant', async () => {
@@ -217,8 +242,10 @@ describeIntegration('posts', () => {
     });
 
     it('refuses a destination on a different profile in the same tenant', async () => {
-      // Cross-profile is refused exactly like cross-tenant, so probing cannot tell the
-      // two apart.
+      // 403 here, deliberately unlike the 404 a cross-tenant destination gets. This one
+      // belongs to the caller's own organization — they can already list it — so hiding
+      // the reason would protect nothing and only make their own data harder to use. The
+      // boundary worth being silent at is the tenant, not the profile.
       const otherProfile = await json<{ id: string }>(
         await call('/v1/profiles', {
           method: 'POST',

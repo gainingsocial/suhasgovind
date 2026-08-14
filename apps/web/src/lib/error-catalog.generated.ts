@@ -23,7 +23,7 @@ export const ERROR_CATALOG: readonly GeneratedErrorCode[] = [
   { code: "API_KEY_MALFORMED", type: "authentication_error", status: 401, retryable: false, message: "The API key is malformed. Expected a key beginning with `sk_test_` or `sk_live_`.", agentAction: "supply_valid_api_key" },
   { code: "INSUFFICIENT_SCOPE", type: "authorization_error", status: 403, retryable: false, message: "This API key does not have the scope required for this operation.", agentAction: "request_key_with_required_scope" },
   { code: "ENVIRONMENT_MISMATCH", type: "authorization_error", status: 403, retryable: false, message: "The resource belongs to a different environment than this API key.", agentAction: "use_matching_environment_key" },
-  { code: "TENANT_FORBIDDEN", type: "authorization_error", status: 403, retryable: false, message: "The requested resource does not belong to this project.", agentAction: "use_a_resource_owned_by_this_project" },
+  { code: "TENANT_FORBIDDEN", type: "authorization_error", status: 403, retryable: false, message: "This request may not use that resource.", agentAction: "use_a_resource_this_request_may_address" },
   { code: "INVALID_REQUEST", type: "validation_error", status: 400, retryable: false, message: "The request body failed validation.", agentAction: "fix_request_body" },
   { code: "MISSING_REQUIRED_FIELD", type: "validation_error", status: 400, retryable: false, message: "A required field is missing.", agentAction: "supply_required_field" },
   { code: "UNSUPPORTED_CONTENT_TYPE", type: "validation_error", status: 415, retryable: false, message: "Send `Content-Type: application/json`.", agentAction: "use_json_content_type" },

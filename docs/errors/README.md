@@ -83,16 +83,33 @@ fact that needs a human decision.
 | Code | Status | Meaning | What to do |
 | --- | --- | --- | --- |
 | `INSUFFICIENT_SCOPE` | 403 | The key lacks a scope the route requires. | The message names the missing scopes. Grant them and retry. |
-| `TENANT_FORBIDDEN` | 403 | The resource belongs to another tenant. | Usually a test key used against live data, or an id from another project. |
+| `TENANT_FORBIDDEN` | 403 | The resource is inside your organization but this request may not use it. | A destination on one of your other profiles, or a profile-restricted key reaching past its profile. |
 | `ENVIRONMENT_MISMATCH` | 403 | The resource belongs to a different environment than the key. | A `sk_test_` key cannot touch live data, or the reverse. Use the matching key. |
 
 Scopes do not imply one another. `posts:write` does not grant `posts:read` — creating a
 post and enumerating existing ones are different capabilities, so each route declares
 exactly what it needs.
 
-`TENANT_FORBIDDEN` is returned rather than a 404. Both leak the same single bit (that the
-id exists), and a distinct code lets a genuine cross-project mistake be understood instead
-of sending someone hunting a phantom 404.
+### Where the line sits
+
+The organization boundary is answered with silence; everything inside it is answered
+honestly.
+
+An id belonging to **another organization** returns exactly what that id would return if it
+had never existed — `PROFILE_NOT_FOUND`, `DESTINATION_NOT_FOUND`, `POST_NOT_FOUND`. Not a
+403. The two cases are indistinguishable on purpose, because any difference between them
+answers a question the caller has no right to ask: someone holding a guessed or scraped id
+could confirm it was real from the status code alone, without ever having access to it.
+
+An id **inside your own organization** that this particular request may not use returns
+`TENANT_FORBIDDEN`, and names the reason. Nothing is protected by being vague here — you
+can already list the resource — and a caller pointing a post at a destination on one of
+their other profiles deserves to be told that, not sent hunting a phantom 404.
+
+> An earlier version of this page argued the opposite: that 403 and 404 "leak the same
+> single bit (that the id exists)". That is only true when the two answers differ. When a
+> cross-tenant id and an unknown id return byte-identical responses, no bit is leaked at
+> all — which is why the rule is written the way it is above.
 
 `ENVIRONMENT_MISMATCH` is the one people hit in their first hour. Test and live are
 separate worlds with separate ids (plan §6); an id copied from the live dashboard into a
@@ -132,8 +149,9 @@ These are per-resource rather than one generic code so a caller can tell *which*
 multi-id request was wrong — a post create naming a bad profile and a bad destination
 should not report the same thing twice.
 
-A 404 here means "not visible to this key". An id belonging to another project reports
-`TENANT_FORBIDDEN` instead; see the note above on why.
+A 404 here means "not visible to this key", and it covers both an id that does not exist
+and one belonging to another organization — deliberately the same answer. See
+[Where the line sits](#where-the-line-sits).
 
 ## Governance
 

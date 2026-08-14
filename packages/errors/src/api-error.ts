@@ -131,9 +131,14 @@ export const errors = {
     new ApiError(code, id ? { message: `${ERROR_CODE_METADATA[code].message} (${id})` } : {}),
 
   /**
-   * Ownership failure. Deliberately returns 404 semantics at the route layer for
-   * cross-tenant reads so a caller cannot probe for the existence of another tenant's
-   * resources; use `TENANT_FORBIDDEN` only when the resource is already known to the caller.
+   * Ownership failure *inside* the caller's own organization — a destination on one of
+   * their other profiles, a profile-restricted key reaching past its profile. They can
+   * already list the resource, so naming the reason protects nothing and helps them.
+   *
+   * Do not use this across the organization boundary. A resource belonging to another
+   * organization must return the same NOT_FOUND its id would return had it never existed,
+   * because any difference between those two answers lets a caller confirm a guessed id is
+   * real. See `docs/errors/README.md` — "Where the line sits".
    */
   forbidden: (message?: string) => new ApiError('TENANT_FORBIDDEN', message ? { message } : {}),
 
