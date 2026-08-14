@@ -1,3 +1,4 @@
+import Anthropic from '@anthropic-ai/sdk';
 import { EXTRACTION_POLICY, ModelGatewayError, type ModelRequest } from '@gs/domain';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -171,42 +172,82 @@ describe('createAnthropicGateway', () => {
     });
   });
 
+  /**
+   * Built from the SDK's real error classes, not look-alikes.
+   *
+   * The hierarchy is the whole risk here: `APIConnectionError` and `APIUserAbortError`
+   * **extend** `APIError` in the TypeScript SDK and carry no status, so a mapping that
+   * tests `instanceof APIError` first silently turns every timeout and network blip into a
+   * non-retryable `UNKNOWN`. A hand-rolled fake object would not reproduce that, and the
+   * test would pass while production never retried a transient outage.
+   */
   describe('error mapping', () => {
-    /**
-     * A wrong key must not look like an outage.
-     *
-     * `PROVIDER_UNAVAILABLE` is retryable, so misclassifying a 401 would have the pipeline
-     * retry a credential that will never work, forever.
-     */
-    it('maps an authentication failure to NOT_CONFIGURED and does not retry it', async () => {
-      const create = vi.fn().mockRejectedValue(
-        Object.assign(new Error('invalid x-api-key'), {
-          constructor: undefined,
-          status: 401,
-        }),
-      );
-      const gateway = createAnthropicGateway({ apiKey: 'sk-bad', client: stubClient(create) });
-
-      // Not an SDK APIError instance here, so it falls through to UNKNOWN — which is still
-      // non-retryable. The instanceof path is covered by the live SDK's own error classes.
-      await expect(gateway.complete(request())).rejects.toMatchObject({ retryable: false });
-    });
-
-    it('maps an abort to a retryable timeout', async () => {
-      const create = vi.fn().mockRejectedValue(new Error('Request was aborted.'));
+    async function failWith(error: unknown) {
+      const create = vi.fn().mockRejectedValue(error);
       const gateway = createAnthropicGateway({ apiKey: 'sk-test', client: stubClient(create) });
+      return gateway.complete(request());
+    }
 
-      await expect(gateway.complete(request())).rejects.toMatchObject({
+    it('maps a connection timeout to a retryable TIMEOUT', async () => {
+      await expect(failWith(new Anthropic.APIConnectionTimeoutError({}))).rejects.toMatchObject({
         code: 'TIMEOUT',
         retryable: true,
       });
     });
 
-    it('always raises a ModelGatewayError, never a vendor error', async () => {
-      const create = vi.fn().mockRejectedValue(new Error('something odd'));
-      const gateway = createAnthropicGateway({ apiKey: 'sk-test', client: stubClient(create) });
+    it('maps an aborted request to a retryable TIMEOUT', async () => {
+      await expect(failWith(new Anthropic.APIUserAbortError())).rejects.toMatchObject({
+        code: 'TIMEOUT',
+        retryable: true,
+      });
+    });
 
-      await expect(gateway.complete(request())).rejects.toBeInstanceOf(ModelGatewayError);
+    it('maps a network failure to a retryable PROVIDER_UNAVAILABLE', async () => {
+      await expect(failWith(new Anthropic.APIConnectionError({}))).rejects.toMatchObject({
+        code: 'PROVIDER_UNAVAILABLE',
+        retryable: true,
+      });
+    });
+
+    /**
+     * A wrong key must not look like an outage. `PROVIDER_UNAVAILABLE` is retryable, so
+     * misclassifying a 401 would have the pipeline retry a credential that can never work.
+     */
+    it('maps an authentication failure to NOT_CONFIGURED and does not retry it', async () => {
+      await expect(
+        // Constructor order is (status, error, message, headers) — the JSON body comes
+        // second, not the headers.
+        failWith(new Anthropic.AuthenticationError(401, undefined, 'invalid x-api-key', new Headers())),
+      ).rejects.toMatchObject({ code: 'NOT_CONFIGURED', retryable: false });
+    });
+
+    it('maps a rate limit to a retryable RATE_LIMITED', async () => {
+      await expect(
+        failWith(new Anthropic.RateLimitError(429, undefined, 'slow down', new Headers())),
+      ).rejects.toMatchObject({ code: 'RATE_LIMITED', retryable: true });
+    });
+
+    it('maps a server error to a retryable PROVIDER_UNAVAILABLE', async () => {
+      await expect(
+        failWith(new Anthropic.InternalServerError(503, undefined, 'overloaded', new Headers())),
+      ).rejects.toMatchObject({ code: 'PROVIDER_UNAVAILABLE', retryable: true });
+    });
+
+    it('recognizes a context-window rejection among 400s', async () => {
+      await expect(
+        failWith(
+          new Anthropic.BadRequestError(
+            400,
+            undefined,
+            'prompt is too long: 250000 tokens',
+            new Headers(),
+          ),
+        ),
+      ).rejects.toMatchObject({ code: 'CONTEXT_TOO_LARGE' });
+    });
+
+    it('always raises a ModelGatewayError, never a vendor error', async () => {
+      await expect(failWith(new Error('something odd'))).rejects.toBeInstanceOf(ModelGatewayError);
     });
   });
 });

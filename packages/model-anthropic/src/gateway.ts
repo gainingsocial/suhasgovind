@@ -62,6 +62,29 @@ export interface AnthropicGatewayConfig {
  * same way whoever is behind it.
  */
 function normalizeError(error: unknown): ModelGatewayError {
+  /**
+   * Most specific first, and the order is load-bearing.
+   *
+   * In the TypeScript SDK `APIConnectionError` and `APIUserAbortError` **extend**
+   * `APIError` (unlike Python, where they are siblings), and they carry no `status`.
+   * Testing `instanceof APIError` first therefore swallows every timeout and every network
+   * blip into the status switch, where an absent status falls through to a non-retryable
+   * `UNKNOWN` — so a transient outage would never be retried, and would look like a bug in
+   * the source rather than a bad minute on the network.
+   */
+  if (error instanceof Anthropic.APIConnectionTimeoutError) {
+    return new ModelGatewayError('TIMEOUT', error.message, true);
+  }
+
+  // Our own abort: the policy's wall-clock budget elapsed, or the caller gave up.
+  if (error instanceof Anthropic.APIUserAbortError) {
+    return new ModelGatewayError('TIMEOUT', error.message, true);
+  }
+
+  if (error instanceof Anthropic.APIConnectionError) {
+    return new ModelGatewayError('PROVIDER_UNAVAILABLE', error.message, true);
+  }
+
   if (error instanceof Anthropic.APIError) {
     switch (error.status) {
       case 400:
@@ -87,14 +110,9 @@ function normalizeError(error: unknown): ModelGatewayError {
     }
   }
 
-  // A timeout arrives as a connection error or an abort, depending on which side gave up
-  // first. Both mean the same thing to the caller.
+  // A plain abort, when the runtime raised one the SDK did not wrap.
   if (error instanceof Error && /abort|timeout|timed out/i.test(error.message)) {
     return new ModelGatewayError('TIMEOUT', error.message, true);
-  }
-
-  if (error instanceof Anthropic.APIConnectionError) {
-    return new ModelGatewayError('PROVIDER_UNAVAILABLE', error.message, true);
   }
 
   return new ModelGatewayError('UNKNOWN', error instanceof Error ? error.message : 'Unknown model failure.');
