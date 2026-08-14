@@ -363,7 +363,11 @@ so it is Wave 2 work, not a text field.
 - [x] **Outbound email** — Cloudflare Email Service, 2026-08-14. Was blocking *every*
       sign-up: the built-in Supabase mailer reached only Supabase project members at 2/hour,
       so no customer could ever receive a sign-in link. See `docs/OPERATIONS.md` §7.
-- [ ] Model gateway adapter (unblocks all AI features — currently `UNCONFIGURED_GATEWAY`)
+- [x] **Model gateway adapter** — Claude, 2026-08-14. Unblocks every AI feature and makes
+      the Autopilot screen a control plane for something that can actually run. The vendor
+      SDK is confined to `@gs/model-anthropic` and `pnpm boundaries` now enforces that
+      (plan §4.2), so swapping the model stays a one-package change. Needs an API key; see
+      `docs/OPERATIONS.md` §5.
 - [ ] Meta data-deletion callback (blocks Meta app review)
 - [ ] Docs: the ~31 remaining pages from plan §99, status page, changelog
 - [ ] Python SDK

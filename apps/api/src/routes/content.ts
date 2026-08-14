@@ -18,9 +18,11 @@ import {
 import { fromPublicId, toPublicId } from '@gs/contracts/ids';
 import {
   createContentSource,
+  createDraftSet,
   disableContentSource,
   findBrandProfile,
   findContentSource,
+  findDestinationOwnerships,
   findProfileById,
   findSourceItemDetail,
   ingestSourceVersion,
@@ -35,18 +37,22 @@ import {
   type SourceItemVersion,
 } from '@gs/db';
 import {
+  ModelGatewayError,
   UNCONFIGURED_GATEWAY,
   htmlToText,
+  repurposeSource,
   scanForInjection,
   splitIntoSpans,
   type ModelGateway,
 } from '@gs/domain';
 import { ApiError } from '@gs/errors';
+import { createAnthropicGateway } from '@gs/model-anthropic';
 import { Hono, type Context } from 'hono';
 
 import type { AppEnv } from '../env.js';
 import { parseBody, parseQuery, requirePathId } from '../lib/request.js';
 import { authenticate } from '../middleware/authenticate.js';
+import { serializeDraftSet } from './draft-set-serializers.js';
 import { withDatabase } from '../middleware/database.js';
 
 /**
@@ -69,13 +75,147 @@ export const contentItems = new Hono<AppEnv>();
 /**
  * The model gateway for this request.
  *
- * A single resolution point, so that wiring an adapter in is one change here rather than a
- * search for every call site. Until then it is the unconfigured gateway, which fails with a
- * code the caller can branch on instead of returning plausible-looking empty output
- * (§63R).
+ * A single resolution point, so that swapping the model provider is one change here rather
+ * than a search for every call site. With no key configured this stays the unconfigured
+ * gateway, which fails with a code the caller can branch on instead of returning
+ * plausible-looking empty output (§63R).
+ *
+ * Constructed per request rather than once at module scope: a Worker isolate is reused
+ * across requests and across deploys of the *secret*, so caching a client built from an
+ * absent key would keep reporting "not configured" after the key was added, until the
+ * isolate happened to be recycled.
  */
-function modelGateway(_c: Context<AppEnv>): ModelGateway {
-  return UNCONFIGURED_GATEWAY;
+function modelGateway(c: Context<AppEnv>): ModelGateway {
+  const apiKey = c.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return UNCONFIGURED_GATEWAY;
+
+  return createAnthropicGateway({
+    apiKey,
+    ...(c.env.CONTENT_MODEL ? { model: c.env.CONTENT_MODEL } : {}),
+  });
+}
+
+interface RepurposeTargetRef {
+  publicId: string;
+  internalId: string;
+  provider: string;
+  maxCharacters: number | null;
+}
+
+/**
+ * Resolve the destinations a repurpose call names, and verify every one belongs to this
+ * tenant (P5).
+ *
+ * Unknown ids and other tenants' ids get the identical answer, for the same reason
+ * `POST /v1/posts` does: two different responses for "not yours" is an oracle that lets a
+ * caller confirm a guessed id is real by which error it produced.
+ */
+async function resolveRepurposeTargets(
+  c: Context<AppEnv>,
+  profileId: string,
+  requested: readonly string[],
+): Promise<RepurposeTargetRef[]> {
+  const principal = c.get('principal');
+
+  const seen = new Set<string>();
+  const resolved: { publicId: string; internalId: string }[] = [];
+
+  for (const publicId of requested) {
+    const internalId = fromPublicId('destination', publicId);
+    if (!internalId) {
+      throw new ApiError('INVALID_REQUEST', {
+        message: `\`${publicId}\` is not a valid destination id.`,
+        param: 'destination_ids',
+      });
+    }
+
+    // A repeated destination would produce two drafts for one place, which is a duplicate
+    // post waiting for somebody to approve both.
+    if (seen.has(internalId)) {
+      throw new ApiError('DUPLICATE_DESTINATION', {
+        message: `Destination ${publicId} appears more than once.`,
+        param: 'destination_ids',
+      });
+    }
+    seen.add(internalId);
+    resolved.push({ publicId, internalId });
+  }
+
+  const ownerships = await findDestinationOwnerships(
+    c.get('db'),
+    resolved.map((entry) => entry.internalId),
+  );
+
+  return resolved.map((entry) => {
+    const ownership = ownerships.get(entry.internalId);
+
+    const wrongTenant =
+      !ownership ||
+      ownership.projectEnvironmentId !== principal.projectEnvironmentId ||
+      ownership.projectId !== principal.projectId ||
+      ownership.organizationId !== principal.organizationId;
+
+    if (wrongTenant) {
+      throw new ApiError('DESTINATION_NOT_FOUND', {
+        message: `No such destination (${entry.publicId}).`,
+        param: 'destination_ids',
+      });
+    }
+
+    // Inside the caller's own tenant but on another of their profiles. They are entitled
+    // to the real reason — it reveals nothing they could not already list.
+    if (ownership.profileId !== profileId) {
+      throw new ApiError('INVALID_REQUEST', {
+        message: `Destination ${entry.publicId} belongs to a different profile.`,
+        param: 'destination_ids',
+      });
+    }
+
+    // Cached at connect time; null when capability was never resolved, in which case the
+    // model simply gets no length hint rather than a fabricated one.
+    const limit = ownership.capabilities?.['max_text_length'];
+
+    return {
+      publicId: entry.publicId,
+      internalId: entry.internalId,
+      provider: ownership.provider,
+      maxCharacters: typeof limit === 'number' ? limit : null,
+    };
+  });
+}
+
+/**
+ * Report a gateway failure in the API's own vocabulary.
+ *
+ * Each code means something different to a caller: a rate limit is worth retrying, a
+ * refusal is not, and an unconfigured provider is an operator problem rather than a
+ * request problem. Collapsing them into one 500 would throw away the entire reason the
+ * gateway has an error taxonomy.
+ */
+function asApiError(error: unknown): ApiError {
+  if (!(error instanceof ModelGatewayError)) {
+    return error instanceof ApiError
+      ? error
+      : new ApiError('INTERNAL_ERROR', { message: 'Repurposing failed unexpectedly.' });
+  }
+
+  switch (error.code) {
+    case 'NOT_CONFIGURED':
+      return new ApiError('MODEL_PROVIDER_NOT_CONFIGURED', { message: error.message });
+    case 'RATE_LIMITED':
+      return new ApiError('RATE_LIMITED', { message: error.message });
+    case 'TIMEOUT':
+    case 'PROVIDER_UNAVAILABLE':
+      return new ApiError('PROVIDER_UNAVAILABLE', { message: error.message });
+    case 'CONTEXT_TOO_LARGE':
+      return new ApiError('INVALID_REQUEST', {
+        message: `${error.message} Try a shorter source, or fewer destinations in one call.`,
+      });
+    case 'CONTENT_FILTERED':
+      return new ApiError('MODEL_REFUSED_SOURCE', { message: error.message });
+    default:
+      return new ApiError('INTERNAL_ERROR', { message: error.message });
+  }
 }
 
 function serializeSource(row: ContentSource) {
@@ -379,7 +519,29 @@ contentItems.post('/repurpose', withDatabase(), authenticate(['content:write']),
     });
   }
 
-  await resolveProfileId(c, body.profile_id);
+  /**
+   * `profile_id` is required by the contract, so the null case here is unreachable today.
+   * Checked rather than asserted because a draft set genuinely cannot exist without a
+   * profile — if the contract is ever loosened, this stays a clear 400 instead of becoming
+   * a null written into the database.
+   */
+  const profileId = await resolveProfileId(c, body.profile_id);
+  if (!profileId) {
+    throw new ApiError('INVALID_REQUEST', {
+      message: '`profile_id` is required to repurpose a source.',
+      param: 'profile_id',
+    });
+  }
+
+  /**
+   * Destinations are resolved and ownership-checked before the model is called (P5).
+   *
+   * Ordered this way because a model call costs money and time: discovering after it that
+   * one of the destinations belongs to somebody else would mean paying for a generation
+   * that must then be thrown away. It also keeps the tenant boundary in front of every
+   * side effect rather than behind one.
+   */
+  const targets = await resolveRepurposeTargets(c, profileId, body.destination_ids);
 
   const gateway = modelGateway(c);
   if (!gateway.configured) {
@@ -390,11 +552,75 @@ contentItems.post('/repurpose', withDatabase(), authenticate(['content:write']),
     });
   }
 
-  // Unreachable until an adapter exists. Left as an explicit throw rather than a silent
-  // fallthrough so that wiring one in fails loudly here rather than returning undefined.
-  throw new ApiError('NOT_IMPLEMENTED', {
-    message: 'A model gateway is configured but the repurposing pipeline is not wired to it yet.',
+  let outcome;
+  try {
+    outcome = await repurposeSource({
+      gateway,
+      sourceText: detail.latestVersion.normalizedText,
+      targets: targets.map((target) => ({
+        key: target.publicId,
+        provider: target.provider,
+        ...(target.maxCharacters !== null ? { maxCharacters: target.maxCharacters } : {}),
+      })),
+    });
+  } catch (error) {
+    throw asApiError(error);
+  }
+
+  /**
+   * The set is written whether or not grounding passed.
+   *
+   * A failed set is the more useful of the two to keep: it records what the model claimed
+   * and which citation could not be traced, which is what a person needs in order to
+   * decide whether the source or the model is at fault. `groundingFailed` is what stops it
+   * publishing, not its absence from the database.
+   */
+  const created = await createDraftSet(c.get('db'), {
+    projectEnvironmentId: principal.projectEnvironmentId,
+    organizationId: principal.organizationId,
+    profileId,
+    title: detail.item.title ?? null,
+    groundingFailed: outcome.groundingFailed,
+    drafts: outcome.drafts.map((draft, index) => {
+      const target = targets.find((candidate) => candidate.publicId === draft.key)!;
+      const grounding = outcome.grounding[index]!;
+      const failed = new Set(grounding.failures.map((failure) => failure.claim));
+
+      return {
+        destinationId: target.internalId,
+        provider: target.provider,
+        body: draft.body,
+        claims: draft.claims.map((claim) => {
+          const failure = grounding.failures.find((entry) => entry.claim === claim.text);
+          return {
+            claimText: claim.text,
+            claimKind: claim.kind,
+            sourceSpanIds: [...claim.sourceSpanIds],
+            verified: !failed.has(claim.text),
+            failureReason: failure?.reason ?? null,
+          };
+        }),
+      };
+    }),
   });
+
+  /**
+   * Metered against the draft set that resulted, not the source item.
+   *
+   * One source repurposed for three networks twice is two jobs, not one — and keying the
+   * usage row to the set is what makes that distinction survive into billing.
+   */
+  await meter(c.get('db'), {
+    organizationId: principal.organizationId,
+    projectId: principal.projectId,
+    projectEnvironmentId: principal.projectEnvironmentId,
+    metric: 'repurpose_job',
+    quantity: 1,
+    resourceType: 'draft_set',
+    resourceId: created.set.id,
+  });
+
+  return c.json(serializeDraftSet(created), 201);
 });
 
 contentItems.get('/items', withDatabase(), authenticate(['content:read']), async (c) => {

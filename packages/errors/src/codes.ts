@@ -164,6 +164,15 @@ export const ERROR_CODES = [
    */
   'MODEL_PROVIDER_NOT_CONFIGURED',
   /**
+   * The model declined to process this source.
+   *
+   * A statement about this particular article, not a transport failure — so it is not
+   * retryable, and the source is left unprocessed rather than partially drafted. Separate
+   * from `CONTENT_GROUNDING_FAILED`, which means drafts were produced and one of their
+   * claims could not be traced; here there are no drafts at all.
+   */
+  'MODEL_REFUSED_SOURCE',
+  /**
    * A generated claim could not be traced back to a span of the source (P18).
    *
    * Not retryable and not overridable: a set that fails grounding may be edited and

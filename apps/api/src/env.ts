@@ -99,6 +99,23 @@ export interface Env {
    * (plan §39). Not a secret — it is a public discovery endpoint.
    */
   SUPABASE_URL?: string;
+
+  /**
+   * Model provider credential for Content Intelligence (plan §4.2, §63R). A Worker Secret.
+   *
+   * Absent by default and that is a supported state, not a broken one: publishing,
+   * composing, media auto-fit, analytics, the inbox and MCP all work without a model
+   * (P19 — AI is optional around publishing). Only repurposing needs it, and it reports
+   * `MODEL_PROVIDER_NOT_CONFIGURED` rather than producing empty drafts.
+   */
+  ANTHROPIC_API_KEY?: string;
+
+  /**
+   * Overrides the model Content Intelligence uses. A `var`, not a secret — a model id is
+   * not confidential, and putting it in configuration means changing it is a deploy with a
+   * diff rather than an invisible secret edit.
+   */
+  CONTENT_MODEL?: string;
 }
 
 /** Hono generic: bindings plus the per-request context the middleware installs. */

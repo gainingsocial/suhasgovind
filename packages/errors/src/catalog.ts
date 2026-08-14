@@ -503,6 +503,13 @@ export const ERROR_CODE_METADATA: Record<ErrorCode, ErrorCodeMetadata> = {
     'No model provider is configured. Content Intelligence needs one; publishing does not.',
     'contact_support',
   ),
+  MODEL_REFUSED_SOURCE: m(
+    'validation_error',
+    422,
+    false,
+    'The model declined to process this source, so no drafts were produced.',
+    'use_different_source',
+  ),
   CONTENT_GROUNDING_FAILED: m(
     'validation_error',
     422,

@@ -100,21 +100,54 @@ comment appears under `GET /v1/comments`.
 
 ---
 
-## 5. A model provider for Content Intelligence
+## 5. A model provider key for Content Intelligence
 
 **Blocks:** source-to-social repurposing. Nothing else.
 
-The model gateway is a port with no adapter. Publishing, composing, media auto-fit,
-analytics, the inbox and MCP all work without it (plan P19: AI is optional around
-publishing). Until a provider is configured, the content pipeline returns `NOT_CONFIGURED`
-rather than producing empty drafts.
+The adapter is **built and deployed**. It needs one secret:
 
-To enable it, decide which provider and supply an API key. The gateway interface is
-`packages/domain/src/content/model-gateway.ts`; an adapter implements `complete()` and
-nothing above it changes.
+```bash
+npx wrangler secret put ANTHROPIC_API_KEY --name gs-api
+```
 
-**This is a decision, not just a key** — model choice affects cost per source and output
-quality, and I did not want to pick one on your behalf.
+Get the key from <https://platform.claude.com>. Nothing is deployed after setting it — the
+gateway is resolved per request, so the next call picks the key up.
+
+Publishing, composing, media auto-fit, analytics, the inbox and MCP all work without it
+(plan P19: AI is optional around publishing). Until the key is set, `POST
+/v1/content/repurpose` returns `MODEL_PROVIDER_NOT_CONFIGURED` — a 503 saying the
+capability is waiting on a key — rather than producing empty drafts.
+
+**How to know it worked:** `POST /v1/content/repurpose` with a source item and a
+destination returns a draft set instead of a 503.
+
+### What it costs, and the one knob
+
+Repurposing runs on **Claude Opus** by default. Opus rather than a cheaper tier because
+the two jobs here are the ones where a weaker model costs more than it saves: an extraction
+that misreads the source produces claims that fail grounding verification, and a generation
+that drifts produces drafts a human rewrites. Both failures get paid for twice.
+
+To choose otherwise, set the `CONTENT_MODEL` var in `apps/api/wrangler.jsonc` to any Claude
+model id. It is a `var` rather than a secret on purpose — a model id is not confidential,
+and putting it in configuration makes changing it a deploy with a visible diff rather than
+an invisible secret edit.
+
+Every repurpose run records a `repurpose_job` usage event, and the AI token metrics are in
+the same table, so cost per source is measurable from day one rather than estimated.
+
+### What it will not do
+
+A refusal is reported, not routed around. If the model declines a source, the API returns
+`MODEL_REFUSED_SOURCE` and the item is left unprocessed — it is not retried against a
+different model, because quietly changing model halfway through a customer's archive would
+change the output characteristics of their content with nobody being told.
+
+Generated claims are verified against the source before anything is stored. A draft whose
+citation points at a span that does not exist is saved with `grounding_failed` set and
+cannot be published as it stands. That check is not advisory: a model asked to cite its
+sources will cite `span_47` for a nine-span document, and nothing about the output looks
+wrong until something checks.
 
 ---
 

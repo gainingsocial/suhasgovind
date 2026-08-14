@@ -362,6 +362,61 @@ describeIntegration('content intelligence', () => {
 
       expect(response.status).toBe(404);
     });
+
+    /**
+     * Rule 5 ownership test for the destinations this route now resolves.
+     *
+     * Checked *before* the model is called, so a cross-tenant id cannot cost a generation
+     * that then has to be thrown away — and answered as 404 rather than 403, so the
+     * response says nothing about whether the id exists.
+     */
+    it("answers another tenant's destination and a nonexistent one alike", async () => {
+      const sourceId = (await json<{ id: string }>(await createSource({ name: 'Ownership' }))).id;
+
+      const ingested = await json<{ item: { id: string } }>(
+        await post('/v1/content/ingest', {
+          content_source_id: sourceId,
+          external_id: 'article-ownership',
+          content: 'Something worth adapting for several networks.',
+        }),
+      );
+
+      const otherTenant = await post('/v1/content/repurpose', {
+        source_item_id: ingested.item.id,
+        profile_id: h.tenantA.publicProfileId,
+        destination_ids: [h.tenantB.publicDestinationId],
+      });
+
+      const nonexistent = await post('/v1/content/repurpose', {
+        source_item_id: ingested.item.id,
+        profile_id: h.tenantA.publicProfileId,
+        destination_ids: ['dst_00000000000000000000000000'],
+      });
+
+      expect(otherTenant.status).toBe(404);
+      expect(nonexistent.status).toBe(404);
+      expect(await code(otherTenant)).toBe(await code(nonexistent));
+    });
+
+    it('refuses the same destination twice rather than drafting it twice', async () => {
+      const sourceId = (await json<{ id: string }>(await createSource({ name: 'Duplicate' }))).id;
+
+      const ingested = await json<{ item: { id: string } }>(
+        await post('/v1/content/ingest', {
+          content_source_id: sourceId,
+          external_id: 'article-duplicate',
+          content: 'Something worth adapting for several networks.',
+        }),
+      );
+
+      const response = await post('/v1/content/repurpose', {
+        source_item_id: ingested.item.id,
+        profile_id: h.tenantA.publicProfileId,
+        destination_ids: [h.tenantA.publicDestinationId, h.tenantA.publicDestinationId],
+      });
+
+      expect(await code(response)).toBe('DUPLICATE_DESTINATION');
+    });
   });
 
   describe('brand profile', () => {

@@ -102,6 +102,7 @@ export const ERROR_CATALOG: readonly GeneratedErrorCode[] = [
   { code: "MEDIA_PROCESSING_FAILED", type: "media_error", status: 422, retryable: false, message: "Media processing failed.", agentAction: "upload_a_different_file" },
   { code: "MEDIA_URL_NOT_ALLOWED", type: "media_error", status: 422, retryable: false, message: "The media URL is not allowed. It must be a public HTTPS URL that does not resolve to a private network.", agentAction: "use_public_https_url_or_upload_media" },
   { code: "MODEL_PROVIDER_NOT_CONFIGURED", type: "api_error", status: 503, retryable: false, message: "No model provider is configured. Content Intelligence needs one; publishing does not.", agentAction: "contact_support" },
+  { code: "MODEL_REFUSED_SOURCE", type: "validation_error", status: 422, retryable: false, message: "The model declined to process this source, so no drafts were produced.", agentAction: "use_different_source" },
   { code: "CONTENT_GROUNDING_FAILED", type: "validation_error", status: 422, retryable: false, message: "A generated claim could not be traced to the source it cites.", agentAction: "edit_ungrounded_claims" },
   { code: "SOURCE_NOT_FOUND", type: "not_found_error", status: 404, retryable: false, message: "No such content source." },
   { code: "DRAFT_SET_NOT_FOUND", type: "not_found_error", status: 404, retryable: false, message: "No such draft set." },

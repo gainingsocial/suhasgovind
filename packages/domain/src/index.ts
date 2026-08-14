@@ -125,6 +125,17 @@ export {
   extractionCacheKey,
 } from './content/model-gateway.js';
 
+export type {
+  RepurposeDraft,
+  RepurposeOutcome,
+  RepurposeTarget,
+} from './content/repurpose.js';
+export {
+  REPURPOSE_PROMPT_VERSION,
+  repurposeSchema,
+  repurposeSource,
+} from './content/repurpose.js';
+
 export type { InjectionScan, ModelCallPolicy } from './content/untrusted-source.js';
 export {
   EXTRACTION_POLICY,

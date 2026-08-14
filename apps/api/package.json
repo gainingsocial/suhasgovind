@@ -15,18 +15,19 @@
   "dependencies": {
     "@gs/auth": "workspace:*",
     "@gs/contracts": "workspace:*",
+    "@gs/crypto": "workspace:*",
     "@gs/db": "workspace:*",
+    "@gs/domain": "workspace:*",
     "@gs/errors": "workspace:*",
     "@gs/events": "workspace:*",
+    "@gs/model-anthropic": "workspace:*",
     "@gs/observability": "workspace:*",
     "@gs/platform-credentials": "workspace:*",
-    "hono": "^4.10.3",
-    "zod": "^4.4.3",
     "@gs/provider-kit": "workspace:*",
     "@gs/providers": "workspace:*",
-    "@gs/domain": "workspace:*",
-    "@gs/crypto": "workspace:*",
-    "@gs/storage": "workspace:*"
+    "@gs/storage": "workspace:*",
+    "hono": "^4.10.3",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260804.1",

@@ -347,6 +347,7 @@ Business or Creator account is required — the connection succeeds and publishi
 | Code | Status | Retryable | Meaning | What to do |
 | --- | --- | --- | --- | --- |
 | `MODEL_PROVIDER_NOT_CONFIGURED` | 503 | no | No model provider is configured. | Nothing you can do from the API; the platform operator supplies the key. |
+| `MODEL_REFUSED_SOURCE` | 422 | no | The model declined to process this source, so no drafts were produced. | Repurpose a different source. Retrying this one refuses identically. |
 | `CONTENT_GROUNDING_FAILED` | 422 | no | A generated claim could not be traced to the source it cites. | Edit the draft so every claim is grounded, then publish. |
 | `SOURCE_NOT_FOUND` | 404 | no | No such content source or source item within your tenant. | Check the id and the environment the key is scoped to. |
 | `DRAFT_SET_NOT_FOUND` | 404 | no | No such draft set within your tenant. | Check the id and the environment. |
@@ -354,6 +355,13 @@ Business or Creator account is required — the connection succeeds and publishi
 `MODEL_PROVIDER_NOT_CONFIGURED` is scoped to the content pipeline and nothing else.
 Publishing, composing, media auto-fit, analytics, the inbox and MCP all work without a
 model (P19), so this never degrades the parts of the product that matter most.
+
+`MODEL_REFUSED_SOURCE` means the model declined this particular article, so the item is
+left unprocessed rather than partially drafted. It is deliberately not retried against a
+different model: quietly switching model mid-archive would change the output characteristics
+of a customer's content with nobody being told. It is distinct from
+`CONTENT_GROUNDING_FAILED`, where drafts *were* produced and one of their claims could not
+be traced — here there are no drafts at all.
 
 `CONTENT_GROUNDING_FAILED` is not overridable, including by a source whose automation mode
 is `auto_publish_if_safe`. Choosing that mode expresses a preference about review; it does

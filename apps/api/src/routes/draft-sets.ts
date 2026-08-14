@@ -1,13 +1,11 @@
 import {
   DraftSetListResponseSchema,
-  DraftSetSchema,
   ListDraftSetsQuerySchema,
   PublishDraftSetRequestSchema,
   PublishDraftSetResponseSchema,
   UpdateDraftSetRequestSchema,
 } from '@gs/contracts/http';
 import { fromPublicId, toPublicId } from '@gs/contracts/ids';
-import { isProviderName } from '@gs/contracts/providers';
 import {
   findDraftSetDetail,
   findSpansForExtraction,
@@ -24,6 +22,7 @@ import type { AppEnv } from '../env.js';
 import { parseBody, parseQuery, requirePathId } from '../lib/request.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { withDatabase } from '../middleware/database.js';
+import { serializeDraftSet } from './draft-set-serializers.js';
 
 /**
  * Draft sets — review, edit and publish (plan §63N, §63Q, §63T).
@@ -44,35 +43,6 @@ export type InternalDispatch = (
   env: AppEnv['Bindings'],
   ctx: unknown,
 ) => Promise<Response> | Response;
-
-function serializeDraftSet(detail: DraftSetDetail) {
-  return DraftSetSchema.parse({
-    id: toPublicId('draftSet', detail.set.id),
-    object: 'draft_set',
-    status: detail.set.status,
-    profile_id: toPublicId('profile', detail.set.profileId),
-    title: detail.set.title,
-    grounding_failed: detail.set.groundingFailed,
-    drafts: detail.drafts.map((draft) => ({
-      id: toPublicId('draft', draft.id),
-      object: 'social_draft',
-      provider: isProviderName(draft.provider) ? draft.provider : 'mock',
-      destination_id: draft.destinationId ? toPublicId('destination', draft.destinationId) : null,
-      body: draft.body,
-      media_ids: draft.mediaIds.map((id) => toPublicId('media', id)),
-      post_id: draft.postId ? toPublicId('post', draft.postId) : null,
-      claims: draft.claims.map((claim) => ({
-        claim_text: claim.claimText,
-        claim_kind: claim.claimKind,
-        source_span_ids: claim.sourceSpanIds,
-        verified: claim.verified,
-        failure_reason: claim.failureReason,
-      })),
-    })),
-    created_at: detail.set.createdAt.toISOString(),
-    updated_at: detail.set.updatedAt.toISOString(),
-  });
-}
 
 export function createDraftSetRoutes(dispatch: InternalDispatch): Hono<AppEnv> {
   const draftSets = new Hono<AppEnv>();

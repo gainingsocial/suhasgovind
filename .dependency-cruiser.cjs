@@ -57,6 +57,22 @@ module.exports = {
       },
     },
 
+    // ---- §4.2: the model vendor SDK is reachable from one package only ----
+    {
+      name: 'only-the-model-adapter-may-import-a-model-sdk',
+      severity: 'error',
+      comment:
+        'Plan §4.2: "application/domain code must not directly depend on a model-vendor SDK". ' +
+        'Everything above the gateway is written against the ModelGateway port in @gs/domain, so ' +
+        'swapping the model behind it stays a one-package change. Only @gs/model-anthropic may ' +
+        'import the vendor SDK.',
+      from: { path: '^(apps|workers|workflows|packages)/', pathNot: '^packages/model-anthropic/' },
+      to: {
+        dependencyTypes: ['npm', 'npm-dev', 'npm-optional', 'npm-peer'],
+        path: '^(@anthropic-ai/|openai$|@google/generative-ai|@mistralai/|cohere-ai$)',
+      },
+    },
+
     // ---- P11 / §75: the dashboard is an API client, not a database client ----
     {
       name: 'web-may-not-touch-the-database',
