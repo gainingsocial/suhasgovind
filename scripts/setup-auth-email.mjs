@@ -114,7 +114,10 @@ if (smtp.host && smtp.port && smtp.user && smtp.pass && smtp.admin) {
   const ok = await patch(
     {
       smtp_host: smtp.host,
-      smtp_port: Number(smtp.port),
+      // A string, despite being a port. The Management API rejects a number outright with
+      // "smtp_port: Invalid input: expected string, received number", so the obvious
+      // `Number(...)` here failed every time it ran.
+      smtp_port: String(smtp.port),
       smtp_user: smtp.user,
       smtp_pass: smtp.pass,
       smtp_admin_email: smtp.admin,

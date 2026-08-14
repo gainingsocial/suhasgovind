@@ -34,11 +34,12 @@ product described actually exists.
 | Item | Status | Notes |
 | --- | --- | --- |
 | Legal entity (registered name + address) | ☐ not started | LinkedIn rejects personal-email applicants outright |
-| Business email on the company domain | ☐ not started | `@gainingsocial.com`, not Gmail |
+| Business email on the company domain | ◐ sending works | Outbound runs on Cloudflare Email Service as `accounts@gainingsocial.com`, with SPF and DKIM passing — see [OPERATIONS §7](./docs/OPERATIONS.md). **Receiving is the open half**: reviewers reply to the address on the application, and inbound still goes to the Namecheap forwarder, where a mailbox for the address you submit has to exist |
 | Public marketing site | ☑ built | `gainingsocial.com` — pages live, zone active in Cloudflare |
 | Privacy policy | ☑ built | `/privacy` — required by Meta, LinkedIn, TikTok, Google |
 | Terms of service | ☑ built | `/terms` |
-| Data deletion instructions + callback | ☐ not started | `/data-deletion` — Meta hard requirement |
+| Data deletion instructions | ☑ built | `/data-deletion` — the human-readable half |
+| Data deletion **callback** | ☐ not built | Meta hard requirement, and a separate thing from the page above. Meta POSTs a `signed_request` and expects JSON carrying a confirmation URL and a tracking code. No such route exists yet, so a Meta submission fails this check even though the page passes |
 | Demo screencast of the publish flow | ☐ blocked on credentials | Reused across Meta, TikTok, LinkedIn Standard Tier. The flow it records is now buildable end to end — connect, compose, publish, watch the timeline — but a recording needs a real account on the platform being reviewed, which needs that platform's credentials first. Bluesky, Telegram or Discord can be recorded today |
 | Support contact | ☐ not started | |
 

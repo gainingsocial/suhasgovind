@@ -9,47 +9,36 @@ Nothing here blocks the code from being correct. Each item blocks one capability
 
 ---
 
-## 1. Cloudflare queues for the new workers
+## 1. Cloudflare queues — done, no action needed
 
-**Blocks:** inbound provider webhooks being processed.
+All six queues exist: `gs-publish`, `gs-webhook-delivery` and `gs-provider-events`, each with
+its dead-letter pair. The provider-events pair was created 2026-08-12.
 
-The provider-webhooks worker produces to a queue that does not exist yet. Create it and its
-dead-letter queue once:
+Verified 2026-08-14 with `npx wrangler queues list`. Nothing to do.
 
-```bash
-npx wrangler queues create gs-provider-events
-npx wrangler queues create gs-provider-events-dlq
-```
-
-Without them, `wrangler deploy` for that worker fails with an unknown-queue error. The
-existing `gs-publish` and `gs-webhook-delivery` queues are already provisioned.
-
-**How to know it worked:** `npx wrangler queues list` shows all four.
+A queue cannot be missing silently, which is why this needs no ongoing check: a Worker
+declaring a consumer for a queue that does not exist fails `wrangler deploy` outright, so a
+green deploy is itself the proof.
 
 ---
 
-## 2. Secrets for the two new workers
+## 2. Worker secrets — done, no action needed
 
-**Blocks:** token refresh, and inbound webhook signature verification.
+Wrangler secrets are per worker, and every worker that needs one has it. Verified
+2026-08-14 with `npx wrangler secret list --name <worker>`:
 
-Both workers need the same secrets the publisher already has. Wrangler secrets are per
-worker, so they must be set again for each:
+| Worker | Secrets set |
+| --- | --- |
+| `gs-api` | `CREDENTIAL_KEK_V1`, `CREDENTIAL_KEK_ACTIVE_VERSION`, `API_KEY_HASH_PEPPER`, `WEBHOOK_SIGNING_ROOT`, `CONNECT_SESSION_SIGNING_KEY`, the four `R2_*` |
+| `gs-publisher` | `CREDENTIAL_KEK_V1`, `CREDENTIAL_KEK_ACTIVE_VERSION`, the four `R2_*` |
+| `gs-connection-health` | `CREDENTIAL_KEK_V1`, `CREDENTIAL_KEK_ACTIVE_VERSION` |
+| `gs-provider-webhooks` | `CREDENTIAL_KEK_V1`, `CREDENTIAL_KEK_ACTIVE_VERSION`, `WEBHOOK_SIGNING_ROOT` |
+| `gs-customer-webhooks` | `WEBHOOK_SIGNING_ROOT` |
+| `gs-reconciler` | none needed — it never decrypts a credential |
 
-```bash
-# gs-connection-health — decrypts credentials to refresh them
-npx wrangler secret put CREDENTIAL_KEK_V1 --name gs-connection-health
-npx wrangler secret put CREDENTIAL_KEK_ACTIVE_VERSION --name gs-connection-health
-
-# gs-provider-webhooks — decrypts the app secret each provider signs with,
-# and derives the subscription verify tokens
-npx wrangler secret put CREDENTIAL_KEK_V1 --name gs-provider-webhooks
-npx wrangler secret put CREDENTIAL_KEK_ACTIVE_VERSION --name gs-provider-webhooks
-npx wrangler secret put WEBHOOK_SIGNING_ROOT --name gs-provider-webhooks
-```
-
-Use the **same values** already set on `gs-api` and `gs-publisher`. A different KEK on one
-worker means credentials encrypted elsewhere cannot be decrypted there, and the symptom is a
-refresh that fails for every connection with no obvious cause.
+The KEK must be the **same value** on every worker that holds it. A worker with a different
+KEK cannot decrypt credentials encrypted elsewhere, and the symptom is a refresh that fails
+for every connection with no obvious cause.
 
 `node scripts/generate-secrets.mjs` prints fresh values — use it only for a new environment,
 never to rotate one worker in isolation.
@@ -70,9 +59,23 @@ The hostname is declared as a Custom Domain in the worker's own config, so `wran
 creates it and its DNS record. Nothing to do by hand.
 
 **How to know it worked:** `GET https://webhooks.gainingsocial.com/webhooks/providers/facebook`
-returns a bare 404 rather than a Cloudflare error page or a JSON error envelope. A bare 404
-is correct for a GET without handshake parameters and proves the ingress Worker is answering;
-a JSON envelope would mean the API Worker is answering instead.
+returns **403 with an empty body**. That is the pass, not a failure.
+
+A plain GET carries no `hub.mode`/`hub.challenge`, so the Meta adapter reads it as a failed
+subscription handshake and refuses it — the same answer anyone gets who finds the URL without
+knowing the verify token. Reaching that refusal at all means the request was routed to the
+ingress Worker, decoded as a provider path, and handed to a real adapter.
+
+What the other answers mean:
+
+| Response | Meaning |
+| --- | --- |
+| `403`, empty body | Correct. Ingress is live and the Meta adapter is wired up |
+| `404`, empty body | Ingress is live, but that provider has no certified webhook verification. Correct for every provider outside the Meta family |
+| A JSON error envelope | Wrong Worker — the API is answering this hostname |
+| A Cloudflare error page | The Worker is not deployed, or the Custom Domain is missing |
+
+Verified 2026-08-14: returns 403 with `cfWorker` timing present, which is the expected pass.
 
 ---
 
@@ -122,6 +125,63 @@ quality, and I did not want to pick one on your behalf.
 Unchanged from before, and tracked in [`PLATFORM_APPROVALS.md`](../PLATFORM_APPROVALS.md).
 Paste a client id and secret on the **Platforms** page and that provider goes live — no
 deploy. Bluesky, Telegram and Discord need nothing.
+
+---
+
+## 7. Outbound email — done, no action needed
+
+**Was blocking:** every sign-up. Nobody outside the Supabase project could receive a
+sign-in link, so the dashboard was effectively closed to customers.
+
+Sending runs on **Cloudflare Email Service** (public beta, Workers Paid, ~$0.35 per 1,000).
+Set up 2026-08-14 and verified end to end.
+
+| Setting | Value |
+| --- | --- |
+| Host | `smtp.mx.cloudflare.net` |
+| Port | `465`, implicit TLS |
+| Username | the literal string `api_token` |
+| Password | a Cloudflare API token with **Email Sending: Edit** |
+| From | `accounts@gainingsocial.com` |
+
+Port 465 is the only outbound option Cloudflare offers. Plaintext SMTP, STARTTLS on 587 and
+unauthenticated relay on 25 are all unsupported, so a client that cannot do implicit TLS
+cannot send through this at all.
+
+**The username trips everyone.** The token goes in the *password* field and the username is
+the fixed string `api_token`. Cloudflare's own documentation contradicts itself here — the
+settings table says one thing and the `535 5.7.8` troubleshooting note says the opposite —
+so it was settled against the live server: `api_token` authenticates, and the token as
+username hangs until it times out.
+
+DNS was added automatically because the zone is on Cloudflare. All five records resolve:
+`cf-bounce` MX ×3, the SPF TXT on `cf-bounce`, and DKIM on
+`cf-bounce._domainkey.gainingsocial.com`. Sent mail aligns for DMARC through DKIM, since the
+Return-Path sits on the `cf-bounce` subdomain rather than the apex.
+
+Re-run after any change with `node scripts/setup-auth-email.mjs`. It is idempotent.
+
+**How to know it worked:** request a sign-in link and receive it. The Supabase auth endpoint
+returns 200 once it has handed the message to SMTP and 500 when the handoff fails, so a 200
+plus an arriving email is the full check.
+
+### Two things to decide
+
+**DMARC is now `p=reject` with no reporting address.** Cloudflare set
+`_dmarc.gainingsocial.com` to `v=DMARC1; p=reject;` during onboarding. That is the strictest
+policy: any mail claiming to be from this domain that fails both SPF and DKIM alignment is
+refused outright rather than sent to spam. Mail we send through Cloudflare is fine. Anything
+*else* that ever sends as `@gainingsocial.com` — a marketing tool, a helpdesk, Google
+Workspace — will be rejected until its SPF or DKIM is added. There is also no `rua=`, so
+none of that is reported and the first symptom would be mail silently vanishing. Adding a
+reporting address is cheap insurance.
+
+**Inbound mail still goes to Namecheap.** The apex MX records point at
+`eforward1-5.registrar-servers.com` and the apex SPF authorizes only their forwarder — this
+is untouched, so existing forwarding keeps working. But `accounts@gainingsocial.com` only
+receives replies if that address exists in the Namecheap forwarder. Sending does not depend
+on it. Moving inbound to Cloudflare Email Routing would replace the apex MX and is a
+separate decision.
 
 ---
 
